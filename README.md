@@ -16,7 +16,7 @@ The full documentation is available [here](https://github.com/yoann-dufresne/SLI
 
 **Can I try it?**
 
-Yes! This website is intended to give you a demo of the tool's possibilities. The demo server has a reduced processing power  and the upload capacity is **limited to 1 Gb per run**. However, it should allows you to process a full illumina MiSeq run.
+Yes! This website is intended to give you a demo of the tool's possibilities. The demo server has a reduced processing capacity  and the upload is **limited to 1 Gb per run**. This should be enough to process a full illumina MiSeq run.
 
 To try it, you can either :
 - download this [exemple tutorial](https://github.com/trtcrd/SLIM/blob/gh-pages/assets/tuto/exemple_tuto.zip) to check by yourself the files and their required format. 
@@ -28,7 +28,9 @@ OR
 
 — 
 
-The server is available >> [HERE](http://129.194.58.48:8080/) << 
+The demo server is available >> [HERE](http://129.194.58.48:8080/) << 
+
+
 
 
 
