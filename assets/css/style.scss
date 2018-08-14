@@ -5,5 +5,21 @@
 header>h1 {
 display:none;
 }
+header>h1>p {
+margin-left: 13px;
+}
+section {
+font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+margin-top: 68px;
+}
+a:hover, a:focus {
+font-weight: normal;
+color: #312783
+}
+a {
+color: #009640
+}
+
+
 
 

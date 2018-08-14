@@ -1,8 +1,4 @@
   
-# Welcome to the [SLIM](https://github.com/yoann-dufresne/SLIM) website
-
-—
-
 **What is it?**
 
 This project has been initiated by the [Pawlowski group](https://genev.unige.ch/research/laboratory/Jan-Pawlowski) at the [University of Geneva](https://www.unige.ch/en/university/presentation/). Its aim is to bring easy access to state-of-art bioinfirmatic tools to non-specialist and to command-line reluctant for the processing of raw amplicon sequencing data, i.e. DNA metabarcoding, from illumina paired-end FASTQ to an annotated OTU matrix. 
