@@ -24,7 +24,7 @@ OR
 
 — 
 
-The SLIM demo server is >> [HERE](http://slim-demo.genev.unige.ch:8080) << 
+The SLIM demo server is >> [HERE](https://slim-demo.genev.unige.ch:8080) << 
 
 
 
