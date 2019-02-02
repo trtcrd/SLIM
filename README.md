@@ -26,7 +26,7 @@ OR
 
 The SLIM demo server is >> [HERE](https://slim-demo.genev.unige.ch:8080) << (Please use firefox or chrome)
 
-- 
+
 
 You are welcome to:
 
