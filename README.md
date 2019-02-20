@@ -33,7 +33,7 @@ You are welcome to:
 - make suggestions and report bugs [here](https://github.com/yoann-dufresne/SLIM/issues)
 - send a pull request [here](https://github.com/yoann-dufresne/SLIM)
 
-**To cite SLIM, please refer to:**
+**Citation**
 
 Dufresne, Y., Lejzerowicz, F., Apotheloz Perret-Gentil, L., Pawlowski, J., & Cordier, T. (2019). SLIM : a flexible web application for the reproducible processing of environmental DNA metabarcoding data. BMC Bioinformatics, 20(1), 88. https://doi.org/10.1186/s12859-019-2663-2
 
