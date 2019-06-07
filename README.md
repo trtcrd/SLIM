@@ -38,6 +38,31 @@ You are welcome to:
 Dufresne, Y., Lejzerowicz, F., Apotheloz Perret-Gentil, L., Pawlowski, J., & Cordier, T. (2019). SLIM : a flexible web application for the reproducible processing of environmental DNA metabarcoding data. BMC Bioinformatics, 20(1), 88. https://doi.org/10.1186/s12859-019-2663-2
 
 
+**Version history**
+
+v0.5
+
+Integration of the IDTAXA module
+
+v0.4.1
+
+Fixed the Dockerfile to fetch the latest R version and CASPER util.c file
+
+v0.4
+
+Added timing checkpoints in the logs of the scheduler; Added the third-party software version infos in the email
+
+v0.3
+
+Fixed LULU module and the otu table writing is now done by a python script
+
+v0.2
+
+Updated the `get_dependencies` script.
+
+v0.1
+
+First release, with third-parties versions handled within the `get_dependencies_slim.sh` script.
 
 
 
