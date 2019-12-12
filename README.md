@@ -40,31 +40,31 @@ Dufresne, Y., Lejzerowicz, F., Apotheloz Perret-Gentil, L., Pawlowski, J., & Cor
 
 **Version history**
 
-v0.5.3
+### v0.5.3
 DTD: added an option for trimming the primers at the end of the reads in (for fully overlapping pair-end reads) and a contig length filtering
 
-v0.5.2
+### v0.5.2
 DADA2 beta integration, small fix on IDATAXA
 
-v0.5.1
+### v0.5.1
 BUGFIX of the IDTAXA module, added wiki for the module
 
-v0.5
+### v0.5
 Integration of the IDTAXA module
 
-v0.4.1
+### v0.4.1
 Fixed the Dockerfile to fetch the latest R version and CASPER util.c file
 
-v0.4
+### v0.4
 Added timing checkpoints in the logs of the scheduler; Added the third-party software version infos in the email
 
-v0.3
+### v0.3
 Fixed LULU module and the otu table writing is now done by a python script
 
-v0.2
+### v0.2
 Updated the get_dependencies script.
 
-v0.1
+### v0.1
 First release, with third-parties versions handled within the get_dependencies_slim.sh script.
 
 
