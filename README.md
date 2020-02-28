@@ -40,6 +40,10 @@ Dufresne, Y., Lejzerowicz, F., Apotheloz Perret-Gentil, L., Pawlowski, J., & Cor
 
 **Version history**
 
+### v0.6
+BUGFIX: resolved issues with the order of module execution when DADA2 is used. 
+BUGFIX: resolved issues with the pipeline.conf file that did not included the checkbox and radio buttons.
+
 ### v0.5.3
 DTD: added an option for trimming the primers at the end of the reads in (for fully overlapping pair-end reads) and a contig length filtering
 
