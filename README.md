@@ -24,7 +24,7 @@ OR
 
 — 
 
-The SLIM demo server is >> [HERE] << :( The server is down until further notice :(
+The SLIM demo server is >> [HERE] << **:( The server is down until further notice :(**
 
 —
 
