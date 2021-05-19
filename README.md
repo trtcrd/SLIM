@@ -3,8 +3,8 @@
   <img src="https://github.com/yoann-dufresne/SLIM/blob/master/www/imgs/slim_logo.svg" alt="SLIM logo" width="250px"/>
 </p>
 
-SLIM is a node.js web app providing an easy Graphical User Interface (GUI) to wrap bioinformatics tools for amplicon sequencing analysis (from illumina paired-end FASTQ to annotated ASV/OTU matrix).
-All the pipeline is embedded in a [docker](https://www.docker.com/).
+SLIM is a node.js web app providing an easy Graphical User Interface (GUI) to wrap bioinformatics tools for amplicon sequencing data analysis (from illumina paired-end FASTQ to annotated ASV/OTU matrix).
+The application is embedded in a [docker](https://www.docker.com/).
 
 # Install and deploy the web app
 
