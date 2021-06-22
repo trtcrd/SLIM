@@ -14,13 +14,12 @@ def main():
 	with open(str(args.output), 'w') as fw:
 		for record in SeqIO.parse(args.input, "fasta"):
 			if args.input and args.output != "": # and args.output_rep_set == "":
-				fw.write('>' + record.description.split("cluster=")[1].split(";")[0] + '\n')
-				fw.write(str(record.seq + '\n'))
-
-			else:
-				print("\nWrong argument given for trim position\n")
-				parser.print_help()
-				exit(1)
+				if "cluster=" in record.description:
+					fw.write('>' + record.description.split("cluster=")[1].split(";")[0] + '\n')
+					fw.write(str(record.seq + '\n'))
+				else:
+					fw.write('>' + record.description + '\n')
+					fw.write(str(record.seq + '\n'))
 
 
 if __name__ == "__main__":
