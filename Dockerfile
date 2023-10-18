@@ -33,7 +33,8 @@ RUN apt-get update && apt-get install -y \
 	dos2unix \
 	python3-pip python3-dev python3-numpy python3-biopython \
 	libc6 \
-	r-base-dev r-base-core r-recommended r-base-html r-base
+	r-base-dev r-base-core r-recommended r-base-html r-base \
+	libfontconfig1-dev
 
 
 ## solving locales issue for biopython
@@ -46,22 +47,6 @@ RUN dpkg -l locales
 #RUN python3 -m pip install biopython --upgrade
 
 RUN mkdir /app/lib
-
-
-# ----- R dependancies -----
-
-###RUN apt-get -y build-dep libcurl4-gnutls-dev
-###RUN apt-get -y install libcurl4-gnutls-dev
-RUN R -e 'install.packages("devtools", repos="https://stat.ethz.ch/CRAN/")'
-RUN R -e 'install.packages("dplyr", repos="https://stat.ethz.ch/CRAN/")'
-RUN R -e 'install.packages("seqinr", repos="https://stat.ethz.ch/CRAN/")'
-RUN R -e 'library(devtools);install_github("tobiasgf/lulu")'
-RUN R -e 'install.packages("BiocManager",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
-#RUN R -e 'BiocManager::install("DECIPHER")'
-#RUN R -e 'BiocManager::install("dada2")'
-RUN R -e 'library(devtools);devtools::install_github("benjjneb/dada2", ref="v1.16")'
-RUN R -e 'install.packages("https://www.bioconductor.org/packages/3.11/bioc/src/contrib/Archive/DECIPHER/DECIPHER_2.16.0.tar.gz", repos = NULL, type = "source")'#
-
 
 # ----- Libraries deployments -----
 
@@ -78,6 +63,7 @@ COPY lib/pandaseq /app/lib/pandaseq
 COPY lib/vsearch /app/lib/vsearch
 COPY lib/casper /app/lib/casper
 COPY lib/swarm /app/lib/swarm
+COPY lib/sratoolkit /app/lib/sratoolkit
 
 # Compile DTD
 RUN cd /app/lib/DTD && make && cd /app
@@ -89,10 +75,48 @@ RUN cd /app/lib/vsearch && ./autogen.sh && ./configure && make && cd /app
 RUN cd /app/lib/casper/casper_v0.8.2 && make && cd /app
 # Compile swarm
 RUN cd /app/lib/swarm/src && make && cd /app
+# export path of the binnaries from sratoolkit
+RUN export PATH="$PATH:/app/lib/sratoolkit/bin/"
 
 # Copy Python and R scripts
 COPY lib/python_scripts /app/lib/python_scripts
 COPY lib/R_scripts /app/lib/R_scripts
+
+# ----- R dependancies -----
+
+COPY lib/lulu /app/lib/lulu
+COPY lib/dada2 /app/lib/dada2
+
+# RUN R -e 'getwd()'
+###RUN apt-get -y build-dep libcurl4-gnutls-dev
+###RUN apt-get -y install libcurl4-gnutls-dev
+# RUN R -e 'install.packages("devtools", repos="https://stat.ethz.ch/CRAN/")'
+RUN R -e 'install.packages("dplyr", repos="https://stat.ethz.ch/CRAN/")'
+RUN R -e 'install.packages("seqinr", repos="https://stat.ethz.ch/CRAN/")'
+# RUN R -e 'library(devtools);install_github("tobiasgf/lulu")'
+RUN R -e 'install.packages("/app/lib/lulu",repos=NULL)'
+RUN R -e 'install.packages("BiocManager",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
+RUN R -e 'install.packages("ggplot2",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
+RUN R -e 'install.packages("reshape2",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
+RUN R -e 'install.packages("RcppParallel",dependencies=TRUE)'
+RUN R -e 'install.packages("IRanges",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
+RUN R -e 'install.packages("XVector",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
+RUN R -e 'install.packages("BiocGenerics",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
+RUN R -e 'BiocManager::install("Biostrings")'
+RUN R -e 'BiocManager::install("ShortRead")'
+# RUN R -e 'BiocManager::install("DECIPHER")'
+# RUN R -e 'BiocManager::install("dada2")'
+# RUN R -e 'install.packages("https://github.com/benjjneb/dada2/archive/refs/tags/v1.16.tar.gz", repos = NULL, type = "source")'#
+RUN R -e 'install.packages("/app/lib/dada2",repos=NULL, dependencies = TRUE)'
+# RUN R -e 'library(devtools);devtools::install_github("benjjneb/dada2", ref="v1.16")'
+RUN R -e 'BiocManager::install("DECIPHER")'
+# RUN R -e 'install.packages("https://www.bioconductor.org/packages/3.11/bioc/src/contrib/Archive/DECIPHER/DECIPHER_2.16.0.tar.gz", repos = NULL, type = "source")'#
+
+# ----- install broserify ----- #
+# RUN npm install -g browserify
+
+# ----- install vim for manual editing (remove after during developing) ----- #
+# RUN apt-get install vim -y
 
 # ----- Webserver -----
 
@@ -107,6 +131,9 @@ EXPOSE 80
 RUN cp node_modules/jquery/dist/jquery.js /app/www/js/jquery.js
 COPY lib/jquery-autocomplete/dist/jquery.autocomplete.js /app/www/js/jquery.autocomplete.js
 COPY lib/papa/papaparse.js /app/www/js/papaparse.js
+
+# use browserify to create the bundle.js file
+# RUN browserify /app/www/js/upload_SRA.js -o /app/www/js/bundle.js
 
 # prepare data folder
 RUN mkdir /app/data
