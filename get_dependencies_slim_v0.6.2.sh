@@ -98,10 +98,44 @@ if [ ! -d "swarm" ]; then
 	# git clone https://github.com/torognes/swarm.git swarm/
 	cd swarm
 	#git pull
-	curl -OL https://github.com/torognes/swarm/archive/v2.2.2.tar.gz
-	tar -xzvf v2.2.2.tar.gz
-	mv swarm-2.2.2/* .
+	curl -OL https://github.com/torognes/swarm/archive/v3.1.4.tar.gz
+	tar -xzvf v3.1.4.tar.gz
+	mv swarm-3.1.4/* .
 	cd ..
 else
 	echo "SWARM is already there..."
 fi
+
+# lulu
+if [ ! -d "lulu" ]; then
+	git clone https://github.com/tobiasgf/lulu
+else
+	echo "lulu is already there..."
+fi
+
+
+# DADA2
+if [ ! -d "dada2" ]; then
+	mkdir dada2
+	cd dada2
+	curl -OL https://github.com/benjjneb/dada2/archive/refs/tags/v1.16.tar.gz
+	tar -xzvf v1.16.tar.gz
+	mv dada2-1.16/* .
+	cd ..
+else
+	echo "dada2 is already there..."
+fi
+
+
+# SRAtoolkit
+if [ ! -d "sratoolkit" ]; then
+	mkdir sratoolkit
+	cd sratoolkit
+	wget --output-document sratoolkit.tar.gz https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/3.0.7/sratoolkit.3.0.7-ubuntu64.tar.gz
+	tar -vxzf sratoolkit.tar.gz
+	mv sratoolkit.3.0.7-ubuntu64/* .
+	cd ..
+else
+	echo "sratoolkit is already there..."
+fi
+
