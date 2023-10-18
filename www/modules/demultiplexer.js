@@ -57,7 +57,12 @@ class DemultiplexerModule extends Module {
 
 		// Change the output files using the tags file
 		var that = this;
-		tags_text.onchange = () => {that.generate_R1R2fields(()=>{})};
+		tags_text.onchange = () => {
+			var idx = tags_text.value.indexOf('.csv');
+			if (idx == -1)
+				return;
+			that.generate_R1R2fields(()=>{})
+		};
 	}
 
 	create_R1R2_pair (library_name, pair) {

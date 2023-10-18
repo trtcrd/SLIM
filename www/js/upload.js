@@ -1,6 +1,8 @@
-
+// This file contains the code to upload files to the server
 var up_formData;
 var up_filenames = [];
+
+// this will select the files to upload
 document.querySelector("#up_files").onchange = function (event) {
 	var files = event.target.files;
 	up_filenames = [];
@@ -27,6 +29,8 @@ document.querySelector("#up_files").onchange = function (event) {
 }
 
 
+
+// this seems to be submiting the files from the up_files 
 document.querySelector("#up_submit").onclick = function (event) {
 	// Stop stuff happening
 	event.stopPropagation();

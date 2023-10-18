@@ -30,14 +30,27 @@ body
 		div#uploader.module
 			h2 Files uploader
 			div#up_list.file_list
+			// the up_forms leaves space above the buttons but I can't see where it is definned.
 			form#up_form
 				p Add files:
+				// up_files will run in www/js/upload.js
 				input#up_files(type='file', name='uploaded' multiple)
+				// up_submit will run in www/js/upload.js
 				button#up_submit Upload
 				div.progress
 					div.progress-bar(role="progressbar")
+				// create a form to have a field where to write a string used as input
+			// form#up_form
+			// p Add a SRA:
+			// input#up_string_SRA(type='text', name='string')
+			// button#up_submit_SRA Upload
+					
+
+			
 
 		script(src='/js/upload.js')
+		// the following script is created by borwserify in the dockerfile from the file www/js/upload_SRA.js
+		// script(src='/js/bundle.js')
 
 		div.gui_warnings
 
