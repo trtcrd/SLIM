@@ -16,6 +16,9 @@ class AssignFastaIdTaxaModule extends Module {
     let threshold = this.dom.getElementsByClassName('param_value')[0];
 
     fasta.onchange = () => {
+      var idx = fasta.value.lastIndexOf('.');
+			if (idx <= 0)
+				return;
       assignIdTaxa.value = fasta.value.substr(0,fasta.value.lastIndexOf('.'))+ '_assigned-idtaxa.tsv';
       assignIdTaxa.onchange();
     };
@@ -25,3 +28,4 @@ class AssignFastaIdTaxaModule extends Module {
 module_manager.moduleCreators['assignment-fasta-IDTAXA'] = (params) => {
   return new AssignFastaIdTaxaModule(params);
 }
+   
