@@ -57,7 +57,7 @@ exports.upload = function (app) {
 		// specify that we want to allow the user to upload multiple files in a single request
 		form.multiples = true;
 		// specify th emaximum upload allowed
-		form.maxFileSize = 10 * 1024 * 1024 * 1024;
+		form.maxFileSize = 60 * 1024 * 1024 * 1024;
 
 		// set upload directory corresponding to the token send
 		var token = null;
