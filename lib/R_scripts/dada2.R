@@ -59,19 +59,20 @@ filtering <- filterAndTrim(fwd=fnFs, rev=fnRs, filt=filtFs, filt.rev=filtRs, mul
 filter_stats <- filtering
 
 # extract samples with no reads if any
-noReads <- rownames(subset(filtering, filtering[,"reads.out"] == 0))
+noReads <- rownames(subset(filtering, filtering[, "reads.out"] == 0))
 noReads <- sub("_fwd_noPrimers.fastq", "", noReads)
 noReads <- sub("_fwd.fastq", "", noReads)
-withReads <- rownames(subset(filtering, filtering[,"reads.out"] != 0))
+withReads <- rownames(subset(filtering, filtering[, "reads.out"] != 0))
 withReads <- sub("_fwd_noPrimers.fastq", "", withReads)
 withReads <- sub("_fwd.fastq", "", withReads)
 # if there was primer filtering on fastq before, the filtering table won't have the empty samples,
 # similarly, if we don't use the full tag-to-sample
 # for thoses cases, we don't deal with them...
-if (nrow(filtering) != length(t2s$sample))
-{
+if (nrow(filtering) != length(t2s$sample)){
   noReads_track <- FALSE
-} else  {noReads_track <- TRUE}
+} else  {
+  noReads_track <- TRUE
+}
 
 ##keep only samples with reads
 parsfiltFs <- sub(paste0(path, "/filterAndTrimed/"), "", filtFs)
@@ -91,8 +92,7 @@ message("DADA2: filterAndTrim done...")
 message("DADA2: Learning error model(s) step")
 cpt <- 1
 
-for (i in lib_list)
-{
+for (i in lib_list){
   message(paste("DADA2: learning ", paste(cpt, "/", length(lib_list))))
   # fetch here either the list of sample to be processed, or the unique sample from the list
   assign(paste("filtFs_",i, sep=""), filtFs_kept[grep(paste0(i, "_"), filtFs_kept)])
@@ -118,11 +118,10 @@ for (i in lib_list)
   drpR <- derepFastq(filtRs_n)
   # rename with sample names
 
-  for (j in 1:length(filtFs_n))
-  {
+  for (j in 1:length(filtFs_n)){
     name_full <- filtFs_n[j]
     prefix <- paste(path, "/filterAndTrimed/", sub(".csv", "", tail(strsplit(t2s_file, "/")[[1]],1)), "_",
-      as.character(get(paste0("t2s_keep_",i))[j,"run"]), "_", sep="")
+    as.character(get(paste0("t2s_keep_", i))[j, "run"]), "_", sep = "")
     suffix <- "_fwd_noPrimers.fastq"
     suffix2 <- "_fwd.fastq"
     name <- sub(prefix, "", name_full)
@@ -138,8 +137,7 @@ for (i in lib_list)
   ddR <- dada(drpR, err=errR, selfConsist=F, multithread=cpus, pool = pool)
   merger <- mergePairs(ddF, drpF, ddR, drpR, trimOverhang=TRUE)
   # export merger file
-  if (by_lib)
-  {
+  if (by_lib){
     if (lib_sample) saveRDS(merger, file.path(path, paste0(i, "_merger.rds")))
     if (!lib_sample) saveRDS(merger, file.path(path, paste0(i, "_merger_lib.rds")))
     if (!lib_sample) for (k in 1:length(merger)) saveRDS(merger[k], file.path(path, paste0(names(merger)[k], "_merger.rds")))

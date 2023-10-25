@@ -1,7 +1,7 @@
 
-class SwarmModule extends Module {
+class Swarm2Module extends Module {
 	constructor (params) {
-		super ("swarm", "https://github.com/yoann-dufresne/SLIM/wiki/Swarm-module");
+		super ("swarm2", "https://github.com/yoann-dufresne/SLIM/wiki/Swarm-module");
 
 		this.params = params;
 	}
@@ -61,7 +61,7 @@ class SwarmModule extends Module {
 };
 
 
-module_manager.moduleCreators['swarm'] = (params) => {
-	return new SwarmModule(params);
+module_manager.moduleCreators['swarm2'] = (params) => {
+	return new Swarm2Module(params);
 };
 

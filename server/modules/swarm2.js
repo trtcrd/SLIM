@@ -6,7 +6,7 @@ const otu_manager = require('../otu_manager.js');
 const merging = require('./fasta-merging.js');
 
 
-exports.name = 'swarm';
+exports.name = 'swarm2';
 exports.multicore = true;
 exports.category = 'ASVs inference / OTUs clustering';
 
@@ -68,8 +68,8 @@ var otu_search = (os, config, callback) => {
 
 	// Execute swarm
 	console.log("Running swarm with the command line:");
-	console.log('/app/lib/swarm/bin/swarm', options.join(' '));
-	var child = exec('/app/lib/swarm/bin/swarm', options);
+	console.log('/app/lib/swarm2/bin/swarm', options.join(' '));
+	var child = exec('/app/lib/swarm2/bin/swarm', options);
 
 	child.stdout.on('data', function(data) {
 		fs.appendFileSync(directory + config.log, data);

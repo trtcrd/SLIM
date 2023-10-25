@@ -156,6 +156,8 @@ exports.compress_outputs = (token, jokers) => {
 				var options = ['--use-compress-program=pigz',
 					'-Pcf', '/app/data/' + token + '/' + joker + '.tar.gz',
 					'-C', '/app/data/' + token + '/'].concat(files);
+				console.log('Compressing files:');
+				console.log('tar ' + options);
 				var child = exec('tar', options);
 				child.on('close', () => {});
 

@@ -92,18 +92,32 @@ fi
 cd ..
 
 
-# Swarm
-if [ ! -d "swarm" ]; then
-	mkdir swarm
+# Swarm2
+if [ ! -d "swarm2" ]; then
+	mkdir swarm2
 	# git clone https://github.com/torognes/swarm.git swarm/
-	cd swarm
+	cd swarm2
+	#git pull
+	curl -OL https://github.com/torognes/swarm/archive/v2.2.2.tar.gz
+	tar -xzvf v2.2.2.tar.gz
+	mv swarm-2.2.2/* .
+	cd ..
+else
+	echo "SWARM2 is already there..."
+fi
+
+# Swarm3
+if [ ! -d "swarm3" ]; then
+	mkdir swarm3
+	# git clone https://github.com/torognes/swarm.git swarm/
+	cd swarm3
 	#git pull
 	curl -OL https://github.com/torognes/swarm/archive/v3.1.4.tar.gz
 	tar -xzvf v3.1.4.tar.gz
 	mv swarm-3.1.4/* .
 	cd ..
 else
-	echo "SWARM is already there..."
+	echo "SWARM3 is already there..."
 fi
 
 # lulu

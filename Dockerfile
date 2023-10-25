@@ -62,7 +62,8 @@ COPY lib/DTD /app/lib/DTD
 COPY lib/pandaseq /app/lib/pandaseq
 COPY lib/vsearch /app/lib/vsearch
 COPY lib/casper /app/lib/casper
-COPY lib/swarm /app/lib/swarm
+COPY lib/swarm /app/lib/swarm2
+COPY lib/swarm /app/lib/swarm3
 COPY lib/sratoolkit /app/lib/sratoolkit
 
 # Compile DTD
@@ -73,8 +74,10 @@ RUN cd /app/lib/pandaseq && ./autogen.sh && ./configure && make && cd /app
 RUN cd /app/lib/vsearch && ./autogen.sh && ./configure && make && cd /app
 # Compile casper
 RUN cd /app/lib/casper/casper_v0.8.2 && make && cd /app
-# Compile swarm
-RUN cd /app/lib/swarm/src && make && cd /app
+# Compile swarm2
+RUN cd /app/lib/swarm2/src && make && cd /app
+# Compile swarm3
+RUN cd /app/lib/swarm3/src && make && cd /app
 # export path of the binnaries from sratoolkit
 RUN export PATH="$PATH:/app/lib/sratoolkit/bin/"
 
