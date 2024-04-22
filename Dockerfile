@@ -62,8 +62,8 @@ COPY lib/DTD /app/lib/DTD
 COPY lib/pandaseq /app/lib/pandaseq
 COPY lib/vsearch /app/lib/vsearch
 COPY lib/casper /app/lib/casper
-COPY lib/swarm /app/lib/swarm2
-COPY lib/swarm /app/lib/swarm3
+COPY lib/swarm2 /app/lib/swarm2
+COPY lib/swarm3 /app/lib/swarm3
 COPY lib/sratoolkit /app/lib/sratoolkit
 
 # Compile DTD
