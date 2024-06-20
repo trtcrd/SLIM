@@ -5,7 +5,7 @@ const formidable = require('formidable');
 
 const sub_process = require('./sub_process.js');
 const uploads = require('./files_upload.js');
-const mailer = require('./mail_manager.js');
+// const mailer = require('./mail_manager.js');
 const accounts = require('./accounts.js');
 const config_module = require('./config.js');
 
@@ -181,7 +181,7 @@ var sub_process_start = (tok, configs_array) => {
 			console.log(err);
 			job.status = 'aborted';
 			fs.writeFileSync('/app/data/' + token + '/exec.log', JSON.stringify(job));
-			mailer.send_crash_email(token);
+			// mailer.send_crash_email(token);
 			delete running_jobs[token]
 		}
 };
@@ -266,12 +266,12 @@ var run_job = (params, callback) => {
 		return;
 	}
 	// Save URL and mail address
-	mailer.mails[token] = mail;
+	// mailer.mails[token] = mail;
 
 	// Send a mail and cancel the directory removal
 	if (uploads.deletions[token])
 			clearTimeout(uploads.deletions[token]);
-	mailer.send_address(token);
+	// mailer.send_address(token);
 
 	// Save the conf and return message
 	fs.writeFileSync('/app/data/' + token + '/pipeline.conf', JSON.stringify(params));
@@ -323,9 +323,9 @@ var run_job = (params, callback) => {
 exports.expose_status = function (app) {
 	app.get('/status', function (req, res) {
 		messages = []
-		if (config_module.mailer.auth.user == "username") {
-			messages.push("No mail address configured for the server<br/>You will not receive updates by email for your job.");
-		}
+		// if (config_module.mailer.auth.user == "username") {
+		// 	messages.push("No mail address configured for the server<br/>You will not receive updates by email for your job.");
+		// }
 
 		// If no token, send back a general status
 		if (req.query.token == undefined) {
