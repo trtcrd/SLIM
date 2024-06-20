@@ -15,7 +15,7 @@ Help()
     echo "options:"
     echo "-h --help		Print this Help."
     echo ""
-    echo "-p --podman	Use podman instead of docker"
+    echo "-d --docker	Use docker instead of podman"
     echo ""
     echo "-P --port	  	<numeric:numeric> Specify the port that has to be opened for the container. 8080:80 by default"
     echo ""
@@ -26,19 +26,21 @@ do
     case "${flag}" in
         h) Help
         exit;;
-        p) podman=true;;
+        p) podman=false;;
         P) port="${OPTARG}";;
         \?) echo "usage: bash start_slim_v0.6.2.sh [-h|p|P]"
+        # \?) echo "usage: bash start_slim_v0.6.2.sh [-h|P]"
         exit;;
     esac
 done
 
-# check if podman has been enabled in the arguments, if not set to false
+
+# check if podman has been enabled in the arguments, if not set to true
 if [ -z "${podman}" ]; then
-    echo 'Running with docker'
-    podman=false
-else
     echo 'Running with podman'
+    podman=true
+else
+    echo 'Running with docker'
 fi
 
 # Check if the user has set a new port and see if the argument follows the syntax
