@@ -4,7 +4,8 @@ class Dada2Module extends Module {
     super ("DADA2", "https://github.com/trtcrd/SLIM/wiki/DADA2");
     this.params = params;
   }
-
+  // I understand that this is an extension of the Module class
+  // defined in the module.js file.
   getConfiguration () {
     let conf = super.getConfiguration();
 

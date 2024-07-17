@@ -15,7 +15,7 @@ var run = document.querySelector('#start');
 
 var get_config = () => {
 	var config = {
-		token:exec_token,
+		token:exec_token //,
 		// mail: document.getElementById('mail').value
 	};
 	for (var idx in module_manager.modules) {
