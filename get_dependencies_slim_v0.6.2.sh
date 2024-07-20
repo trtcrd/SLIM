@@ -153,3 +153,18 @@ else
 	echo "sratoolkit is already there..."
 fi
 
+
+# msi
+if [ ! -d "msi" ]; then
+	# when issue is fixed, use the following
+	# mkdir msi
+	# cd msi
+	# curl -OL https://github.com/nunofonseca/msi/archive/refs/tags/0.3.7.tar.gz
+	# tar -vxzf 0.3.7.tar.gz
+	# mv msi-0.3.7/* .
+	git clone https://github.com/adriantich/msi.git
+	cd ..
+else
+	echo "msi is already there..."
+fi
+

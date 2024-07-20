@@ -177,6 +177,19 @@ RUN /bin/bash -c "source activate env && \
 	conda update -c conda-forge zlib && \
 	conda install -c bioconda chopper=0.8.0"
 
+# ----- install msi ----- #
+COPY lib/msi /app/lib/msi
+RUN /bin/bash -c "source activate env && \
+	apt-get install emboss -y && \
+	apt-get install time -y && \
+	conda install cmake -y && \
+	conda install -c anaconda git -y && \
+	conda install -c anaconda wget -y && \
+	conda install -c bioconda java-jdk -y"
+# RUN /bin/bash -c "source activate env && \
+# 	/app/lib/msi/scripts/msi_install.sh -i /app/lib/msi_installed"
+RUN /bin/bash -c "source activate env && \
+	/app/lib/msi/scripts/msi_install.sh -i /app/lib/msi"
 
 # ----- Webserver -----
 
