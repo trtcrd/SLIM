@@ -141,17 +141,17 @@ else
 fi
 
 
-# SRAtoolkit
-if [ ! -d "sratoolkit" ]; then
-	mkdir sratoolkit
-	cd sratoolkit
-	wget --output-document sratoolkit.tar.gz https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/3.0.7/sratoolkit.3.0.7-ubuntu64.tar.gz
-	tar -vxzf sratoolkit.tar.gz
-	mv sratoolkit.3.0.7-ubuntu64/* .
-	cd ..
-else
-	echo "sratoolkit is already there..."
-fi
+# # SRAtoolkit
+# if [ ! -d "sratoolkit" ]; then
+# 	mkdir sratoolkit
+# 	cd sratoolkit
+# 	wget --output-document sratoolkit.tar.gz https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/3.0.7/sratoolkit.3.0.7-ubuntu64.tar.gz
+# 	tar -vxzf sratoolkit.tar.gz
+# 	mv sratoolkit.3.0.7-ubuntu64/* .
+# 	cd ..
+# else
+# 	echo "sratoolkit is already there..."
+# fi
 
 
 # msi

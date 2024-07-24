@@ -85,7 +85,7 @@ COPY lib/vsearch /app/lib/vsearch
 COPY lib/casper /app/lib/casper
 COPY lib/swarm2 /app/lib/swarm2
 COPY lib/swarm3 /app/lib/swarm3
-COPY lib/sratoolkit /app/lib/sratoolkit
+# COPY lib/sratoolkit /app/lib/sratoolkit
 
 # Compile DTD
 RUN cd /app/lib/DTD && make && cd /app
@@ -100,7 +100,7 @@ RUN cd /app/lib/swarm2/src && make && cd /app
 # Compile swarm3
 RUN cd /app/lib/swarm3/src && make && cd /app
 # export path of the binnaries from sratoolkit
-RUN export PATH="$PATH:/app/lib/sratoolkit/bin/"
+# RUN export PATH="$PATH:/app/lib/sratoolkit/bin/"
 
 # Copy Python and R scripts
 COPY lib/python_scripts /app/lib/python_scripts
