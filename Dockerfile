@@ -23,7 +23,7 @@ COPY lib/miniconda /app/lib/miniconda
 RUN bash /app/lib/miniconda/Miniconda3-latest-Linux-x86_64.sh -b
 # RUN rm Miniconda3-latest-Linux-x86_64.sh
 ENV PATH="/root/miniconda3/bin:${PATH}"
-RUN conda update conda
+# RUN conda update conda
 
 # Install packages needed for tools
 RUN apt-get update && apt-get install -y \
@@ -129,6 +129,7 @@ RUN R -e 'install.packages("BiocGenerics",dependencies=TRUE,repos="https://stat.
 RUN R -e 'BiocManager::install("Biostrings")'
 RUN R -e 'BiocManager::install("ShortRead")'
 RUN R -e 'install.packages("/app/lib/dada2",repos=NULL, dependencies = TRUE)'
+COPY lib/DECIPHER /app/lib/DECIPHER
 RUN R -e 'install.packages("/app/lib/DECIPHER",repos=NULL, dependencies = TRUE)'
 
 # ----- more installations ----- #
