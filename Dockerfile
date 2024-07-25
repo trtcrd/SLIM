@@ -191,21 +191,36 @@ RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y
 RUN apt-get update && apt-get install -y \
     gcc-10 \
     g++-10
-
 # Set GCC and G++ to the new versions
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 \
     && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 100
-
 # Install the latest libstdc++6
 RUN apt-get install -y libstdc++6
 # Verify the installation
 RUN gcc --version && g++ --version
-
 # Check the installed versions of libstdc++
 RUN strings /usr/lib/x86_64-linux-gnu/libstdc++.so.6 | grep GLIBCXX
-
 RUN /bin/bash -c "source activate env && \
 	/app/lib/msi/scripts/msi_install.sh -i /app/lib/msi"
+
+# ----- install ASHURE ----- #
+COPY lib/ASHURE /app/lib/ASHURE
+# minimap2 has been installed with msi and its located at /app/lib/msi/bin/minimap2
+# install spoa
+RUN /bin/bash -c "source activate env && \
+	cd /app/lib/ASHURE/spoa && \
+	cmake -B build -DCMAKE_BUILD_TYPE=Release && \
+	make -C build && cd /app"
+# install python modules for ASHURE
+RUN /bin/bash -c "source activate env && \
+	pip install pandas && \
+	pip install scikit-learn && \
+	pip install hdbscan"
+# install ashure
+RUN /bin/bash -c "source activate env && \
+	cd /app/lib/ASHURE && \
+	chmod +x src/ashure.py && \
+	src/ashure.py run -h && cd /app"
 
 # ----- Webserver -----
 

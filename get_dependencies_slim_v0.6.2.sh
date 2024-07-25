@@ -153,7 +153,7 @@ fi
 # 	echo "sratoolkit is already there..."
 # fi
 
-# msi
+# DECIPHER
 if [ ! -d "DECIPHER" ]; then
 	mkdir DECIPHER
 	cd DECIPHER
@@ -180,3 +180,18 @@ else
 	echo "msi is already there..."
 fi
 
+# ASHURE
+if [ ! -d "ASHURE" ]; then
+	mkdir ASHURE
+	cd ASHURE
+	curl -OL https://github.com/BBaloglu/ASHURE/archive/refs/tags/v1.0.0.tar.gz
+	tar -vxzf v1.0.0.tar.gz
+	mv ASHURE-1.0.0/* .
+	# download spoa
+	curl -OL https://github.com/rvaser/spoa/archive/refs/tags/4.1.0.tar.gz
+	tar -vxzf 4.1.0.tar.gz
+	mv spoa-4.1.0 spoa
+	cd ..
+else
+	echo "ASHURE is already there..."
+fi
