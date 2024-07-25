@@ -1,25 +1,135 @@
-<p>Forward reads</p>
-<input type="text" name="fastq" class='input_file fastq'>
+<p>Input fastq file</p>
+<input type="text" name="fastq" class='input_file fastq fastq'>
 
-<p>Output file</p>
-<span class="output_zone">
-	<input type="text" name="assembly" value='filtered_reads.fastq' />
+<p>Metadata file</p>
+<input type="text" name="metadata" class="input_file tsv">
+
+<p>Output files</p>
+<p>(if blast refdb not provided, only running.stats.tsv.gz and results.fasta.gz can be downloaded)</p>
+<!-- <span class="output_zone">
+	<input type="text" name="assembly"/>
 	<a href="" download><img src="/imgs/download.png" class="download"/></a>
-</span>
+</span> -->
+<div class="file_list" readonly></div>
+
 
 <div class="options">
-	<p class="chopperQuality">
-		Quality threshold: 
-		<input type="text" name="threshold" class="integer number param_value" value="0">
+	<p class="blastdb">
+		Blast refdb (fasta file; if not provided blast will not be run): 
+		<input type="text" name="refdb" class="input_file fasta">
 	</p>
-	<div class="choppertrim">
-		<p>Nucleotides to trim from:</p>
-		<p>Start: <input type="text" name="headcrop" class="integer number param_value" value="0">
-		End: <input type="text" name="tailcrop" class="integer number param_value" value="0"></p>
-	</div>
-	<div class="chopperlength">
+	<p class="clusterminreads">
+		Cluster min reads: 
+		<input type="text" name="clusterminreads" class="integer number param_value" value="1">
+	</p>
+	<p class="cdhitclusterthr">
+		Cd hit cluster threshold: 
+		<input type="text" name="cdhitclusterthr" class="integer number param_value" value="1">
+	</p>
+	<p class="primermaxerror">
+		primer max error: 
+		<input type="text" name="primermaxerror" class="integer number param_value" value="1">
+	</p>
+	<div class="msilength">
 		<p>Reads length:</p>
 		<p>Min: <input type="text" name="minlength" class="integer number param_value" value="1">
 		Max: <input type="text" name="maxlength" class="integer number param_value" value="2147483647"></p>
 	</div>
+	<p class="minqual">
+		<p>Minimum phred score:</p> 
+		<input type="text" name="minqual" class="integer number param_value" value="9">
+	</p>
+	<p class="minmap">
+		<p>Minimum mapped fraction of read to be included in cluster:</p> 
+		<input type="text" name="minmap" class="integer number param_value" value="0.7">
+	</p>
+	<p class="minaligned">
+		<p>Minimum aligned fraction of read to be included in cluster:</p> 
+		<input type="text" name="minaligned" class="integer number param_value" value="0.4">
+	</p>
 </div>
+
+<!--
+shown:
+metadata file
+run blast
+cluster min reads
+cd hit cluster threshold
+primer max error
+min len
+max len
+min equal
+clust mapped threshold
+clust aligned threshold
+blast_refdb="local_db"
+
+not shown:
+L_DIR="path/to/fastq/files"
+OUT_FOLDER="results"
+THREADS=5
+TAXONOMY_DATA_DIR="$MSI_DIR/db"
+EXPERIMENT_ID=.    
+-->
+
+<!-- 
+TL_DIR="path/to/fastq/files"         # path to the toplevel folder containing the fastq files to be processed
+OUT_FOLDER="results"                 # path to the folder where the files produced by MSI will be stored
+THREADS=5                            # maximum number of threads
+METADATAFILE="samplesheet.tsv"       # metadata about each fastq file
+SKIP_BLAST="N"                       # Stop MSI before blast? Yes/No
+TAXONOMY_DATA_DIR="$MSI_DIR/db"      # path to the taxonomy database 
+CLUSTER_MIN_READS=1                  # minimum number of reads per cluster
+CD_HIT_CLUSTER_THRESHOLD=0.99        # cluster/group reads with a similitiry greater than the given threshould (range from 0 to 1)
+PRIMER_MAX_ERROR=0.2                 # maximum error accepted when matching a primer sequence to the reads
+
+MIN_LEN=40                           # Reads shorter than MIN_LEN are discarded
+MAX_LEN=1000000                      # Reads longer than MAX_LEN are discard
+MIN_QUAL=9                           # Minimum phred score
+
+EXPERIMENT_ID=.                      # can be used to filter the entries in the metadata file 
+## Parameters from isONclust
+# Minmum mapped fraction of read to be included in cluster. 
+CLUST_MAPPED_THRESHOLD=0.70
+# Minmum aligned fraction of read to be included in cluster. Aligned
+# identity depends on the quality of the read. (default: 0.4)
+CLUST_ALIGNED_THRESHOLD=0.40
+
+
+### binning options (passed to metabinkit, check metabinkit manual for details)
+#mbk_Species=
+#mbk_Genus=
+#mbk_Family=
+#mabk_AboveF=
+#mbk_TopSpecies=
+#mbk_TopGenus=
+#mbk_TopFamily=
+#mbk_TopAF=
+#mbk_sp_discard_sp=              
+#mbk_sp_discard_mt2w=
+#mbk_sp_discard_num=
+#mbk_minimal_cols=
+#mbk_no_mbk=
+#mbk_FilterFile=
+#mbk_FilterCol=
+#mbk_FamilyBL=
+#mbk_GenusBL=
+#mbk_SpeciesBL=
+#mbk_SpeciesNegFilter=
+
+### blast options (passed to blast, check blast manual for details)
+blast_refdb="local_db"            # path to a blast database
+#blast_max_hsps= 
+#blast_word_size=
+#blast_perc_identity=
+#blast_qcov_hsp_perc= 
+#blast_gapopen= 
+#blast_gapextend=
+#blast_reward=
+#blast_evalue=
+#blast_penalty=
+#blast_max_target_seqs=
+#blast_taxids_blacklist_files=
+#blast_taxids_poslist_files= 
+-->
+
+

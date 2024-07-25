@@ -4,20 +4,9 @@ const fs = require('fs');
 // const derep = require('./dereplication.js');
 const tools = require('../toolbox.js');
 
-
 exports.name = 'msi';
 exports.multicore = true;
-exports.category = 'Utils';
-
-// var algorithms = {
-// 	bayesian: 'simple_bayesian',
-// 	fastqjoin: 'ea_util',
-// 	flash: 'flash',
-// 	pear: 'pear',
-// 	rdp: 'rdp_mle',
-// 	stitch: 'stitch',
-// 	uparse: 'uparse'
-// };
+exports.category = 'Full pipeline';
 
 exports.run = function (os, config, callback) {
 	let token = os.token;
@@ -33,23 +22,56 @@ exports.run = function (os, config, callback) {
 	// else
 	// 	project = project.substr(0, project.lastIndexOf('_panda'));
 
-	var command = ['--input', directory + config.params.inputs.fastq,
-		'--quality', options.threshold,
-		'--headcrop', options.headcrop,
-		'--tailcrop', options.tailcrop,
-		'--minlength', options.minlength,
-		'--maxlength', options.maxlength,
-		'--threads', os.cores];
+	// if options.refdb is not defined, set it to empty string
+
+function logAttributes(obj, prefix = '') {
+	for (const key in obj) {
+		if (obj.hasOwnProperty(key)) {
+			const value = obj[key];
+			const newPrefix = prefix ? `${prefix}.${key}` : key;
+			if (typeof value === 'object' && value !== null) {
+				logAttributes(value, newPrefix);
+			} else {
+				console.log(newPrefix);
+			}
+		}
+	}
+}
+
+// Call the function with the options object
+logAttributes(options);
+logAttributes(config);
+
+
+if (config.params.inputs.refdb === " " || config.params.inputs.refdb === "") {
+    console.log("params.inputs.refdb is undefined");
+    refdb_option = '';
+} else {
+    refdb_option = '-b ' + config.params.inputs.refdb;
+}
+	
+	var command = ['-i', directory, // TL_DIR
+		'-y', config.params.inputs.fastq, // FASTQ
+		'-t', os.cores, // THREADS
+		'-I', config.params.inputs.metadata, // METADATAFILE
+		'-C', options.clusterminreads, // CLUSTER_MIN_READS
+		'-a', options.cdhitclusterthr, // CD_HIT_CLUSTER_THRESHOLD
+		'-A', options.primermaxerror, // PRIMER_MAX_ERROR
+		'-m', options.minlength, // MIN_LEN
+		'-M', options.maxlength, // MAX_LEN
+		'-q', options.minqual, // MIN_QUAL
+		'-x', options.minmap, // CLUST_MAPPED_THRESHOLD
+		'-X', options.minaligned, // CLUST_ALIGNED_THRESHOLD
+		refdb_option]; // blast_refdb
 
 
 	// Joining
-	console.log('Running chopper');
-	console.log('/root/miniconda3/envs/env/bin/chopper', command.join(' '));
+	console.log('Running msi');
+	console.log('/app/lib/bash_scripts/run_msi.sh', command.join(' '));
 	fs.appendFileSync(directory + config.log, '--- Command ---\n');
-	fs.appendFileSync(directory + config.log, 'chopper ' + command.join(' ') + '\n');
+	fs.appendFileSync(directory + config.log, 'run_msi ' + command.join(' ') + '\n');
 	fs.appendFileSync(directory + config.log, '--- Exec ---\n');
-	// var command_output = '/root/miniconda3/envs/env/bin/chopper > ' + directory + config.params.outputs.assembly;
-	var command_output = '/root/miniconda3/envs/env/bin/chopper';
+	var command_output = '/app/lib/bash_scripts/run_msi.sh';
 	var child = exec(command_output, command);
 
 
@@ -61,31 +83,8 @@ exports.run = function (os, config, callback) {
 	});
 	child.on('close', function(code) {
 		if (code == 0) {
-			var outfile = directory + config.params.outputs.assembly;
-			tools.sort(outfile, () => {callback(os, null);});
-			// // Params definition for dereplication
-			// let derep_params = {params: {
-			// 	inputs: {fastq: tmp_outfile},
-			// 	outputs: {derep: config.params.outputs.assembly},
-			// 	params: {}
-			// },log:config.log};
-
-			// // Dereplicate and sort
-			// derep.run(os, derep_params, (os, msg) => {
-			// 	fs.unlink(directory + tmp_outfile, ()=>{});
-				
-			// 	// Error case
-			// 	if (msg != null) {
-			// 		callback(os, msg);
-			// 		return;
-			// 	}
-
-			// 	// Normal case
-			// 	tools.sort(directory + config.params.outputs.assembly, () => {
-			// 		callback(os, msg);
-			// 	});
-			// });
+			callback(os, null);
 		} else
-			callback(os, "chopper terminate on code " + code);
+			callback(os, "msi terminate on code " + code);
 	});
 };
