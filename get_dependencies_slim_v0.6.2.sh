@@ -153,6 +153,18 @@ fi
 # 	echo "sratoolkit is already there..."
 # fi
 
+# msi
+if [ ! -d "DECIPHER" ]; then
+	mkdir DECIPHER
+	cd DECIPHER
+	curl -OL https://www.bioconductor.org/packages/3.11/bioc/src/contrib/Archive/DECIPHER/DECIPHER_2.16.0.tar.gz
+	tar -vxzf DECIPHER_2.16.0.tar.gz
+	mv DECIPHER/* .
+	cd ..
+else
+	echo "DECIPHER is already there..."
+fi
+
 
 # msi
 if [ ! -d "msi" ]; then
