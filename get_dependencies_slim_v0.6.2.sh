@@ -195,3 +195,16 @@ if [ ! -d "ASHURE" ]; then
 else
 	echo "ASHURE is already there..."
 fi
+
+
+# miniconda
+if [ ! -d "miniconda" ]; then
+	mkdir miniconda
+	cd miniconda
+	wget https://repo.anaconda.com/miniconda/Miniconda3-py312_24.5.0-0-Linux-x86_64.sh -O miniconda.sh
+	cd ..
+else
+	echo "miniconda is already there..."
+fi
+
+
