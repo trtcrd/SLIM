@@ -39,17 +39,18 @@ exports.run = function (os, config, callback) {
 		'--tailcrop', options.tailcrop,
 		'--minlength', options.minlength,
 		'--maxlength', options.maxlength,
-		'--threads', os.cores];
+		'--threads', os.cores,
+		'--output', directory + config.params.outputs.assembly];
 
 
 	// Joining
 	console.log('Running chopper');
-	console.log('/root/miniconda3/envs/env/bin/chopper', command.join(' '));
+	console.log('chopper', command.join(' '));
 	fs.appendFileSync(directory + config.log, '--- Command ---\n');
 	fs.appendFileSync(directory + config.log, 'chopper ' + command.join(' ') + '\n');
 	fs.appendFileSync(directory + config.log, '--- Exec ---\n');
 	// var command_output = '/root/miniconda3/envs/env/bin/chopper > ' + directory + config.params.outputs.assembly;
-	var command_output = '/root/miniconda3/envs/env/bin/chopper';
+	var command_output = '/app/lib/bash_scripts/run_chopper.sh';
 	var child = exec(command_output, command);
 
 
@@ -61,30 +62,7 @@ exports.run = function (os, config, callback) {
 	});
 	child.on('close', function(code) {
 		if (code == 0) {
-			var outfile = directory + config.params.outputs.assembly;
-			tools.sort(outfile, () => {callback(os, null);});
-			// // Params definition for dereplication
-			// let derep_params = {params: {
-			// 	inputs: {fastq: tmp_outfile},
-			// 	outputs: {derep: config.params.outputs.assembly},
-			// 	params: {}
-			// },log:config.log};
-
-			// // Dereplicate and sort
-			// derep.run(os, derep_params, (os, msg) => {
-			// 	fs.unlink(directory + tmp_outfile, ()=>{});
-				
-			// 	// Error case
-			// 	if (msg != null) {
-			// 		callback(os, msg);
-			// 		return;
-			// 	}
-
-			// 	// Normal case
-			// 	tools.sort(directory + config.params.outputs.assembly, () => {
-			// 		callback(os, msg);
-			// 	});
-			// });
+			callback(os, null);
 		} else
 			callback(os, "chopper terminate on code " + code);
 	});

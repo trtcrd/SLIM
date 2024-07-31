@@ -20,7 +20,7 @@ RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-c
 # ----- install conda ----- #
 # RUN curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 COPY lib/miniconda /app/lib/miniconda
-RUN bash /app/lib/miniconda/Miniconda3-latest-Linux-x86_64.sh -b
+RUN bash /app/lib/miniconda/miniconda.sh -b
 # RUN rm Miniconda3-latest-Linux-x86_64.sh
 ENV PATH="/root/miniconda3/bin:${PATH}"
 # RUN conda update conda
@@ -44,16 +44,7 @@ RUN apt-get update && apt-get install -y \
 	python3-pip python3-dev python3-numpy python3-biopython \
 	libc6
 
-# RUN apt-get install curl m4 -y
-# RUN curl -OL http://ftp.gnu.org/gnu/autoconf/autoconf-2.71.tar.gz && \
-#     tar -xzvf autoconf-2.71.tar.gz && \
-#     cd autoconf-2.71 && \
-#     ./configure && make && make install && \
-#     cd ..
-# RUN curl -OL https://github.com/pkgconf/pkgconf/archive/refs/tags/pkgconf-2.2.0.tar.gz && \
-# 	tar -xzvf pkgconf*tar.gz && cd pkgconf-pkgconf* && ls -lhtr && /bin/bash ./autogen.sh && make && make install && cd ..
-RUN apt-get install -y \
-	# pkgconf-2.2.0 \
+	RUN apt-get install -y \
 	r-base-core r-recommended r-base-html r-base r-base-dev \
 	libfontconfig1-dev
 
@@ -99,8 +90,6 @@ RUN cd /app/lib/casper/casper_v0.8.2 && make && cd /app
 RUN cd /app/lib/swarm2/src && make && cd /app
 # Compile swarm3
 RUN cd /app/lib/swarm3/src && make && cd /app
-# export path of the binnaries from sratoolkit
-# RUN export PATH="$PATH:/app/lib/sratoolkit/bin/"
 
 # Copy Python and R scripts
 COPY lib/python_scripts /app/lib/python_scripts
@@ -111,13 +100,8 @@ COPY lib/R_scripts /app/lib/R_scripts
 COPY lib/lulu /app/lib/lulu
 COPY lib/dada2 /app/lib/dada2
 
-# RUN R -e 'getwd()'
-###RUN apt-get -y build-dep libcurl4-gnutls-dev
-###RUN apt-get -y install libcurl4-gnutls-dev
-# RUN R -e 'install.packages("devtools", repos="https://stat.ethz.ch/CRAN/")'
 RUN R -e 'install.packages("dplyr", repos="https://stat.ethz.ch/CRAN/")'
 RUN R -e 'install.packages("seqinr", repos="https://stat.ethz.ch/CRAN/")'
-# RUN R -e 'library(devtools);install_github("tobiasgf/lulu")'
 RUN R -e 'install.packages("/app/lib/lulu",repos=NULL)'
 RUN R -e 'install.packages("BiocManager",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
 RUN R -e 'install.packages("ggplot2",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
@@ -133,58 +117,35 @@ COPY lib/DECIPHER /app/lib/DECIPHER
 RUN R -e 'install.packages("RSQLite",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
 RUN R -e 'install.packages("/app/lib/DECIPHER",repos=NULL, dependencies = TRUE)'
 
-# ----- more installations ----- #
-# RUN apt-get update && apt-get install -y wget
-# RUN wget https://github.com/wdecoster/chopper/releases/download/v0.8.0/chopper-linux.zip && \
-# 	unzip chopper-linux.zip && \
-# 	mv chopper /app/lib/. && \
-# 	chmod +x /app/lib/chopper
-
-# ----- install broserify ----- #
-# RUN npm install -g browserify
-
-# ----- install vim for manual editing (remove after during developing) ----- #
-# RUN apt-get install vim -y
-
-# ----- install nextflow ----- #
-# I'm having problems installing it
-# RUN curl -s https://get.sdkman.io | bash && source "/root/.sdkman/bin/sdkman-init.sh" && sdk install java 17.0.10-tem
-# RUN curl -s https://get.nextflow.io | bash && chmod +x nextflow && mv nextflow /app/lib/.
-
-# # ----- install conda ----- #
-# # RUN curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-# COPY lib/miniconda /app/lib/miniconda
-# RUN bash /app/lib/miniconda/Miniconda3-latest-Linux-x86_64.sh -b
-# # RUN rm Miniconda3-latest-Linux-x86_64.sh
-# ENV PATH="/root/miniconda3/bin:${PATH}"
-# RUN conda update conda
 # ----- install conda dependencies ----- #
 RUN apt-get install -y \
 	clang 
 
-# ----- install conda packages ----- #
-RUN conda create -n env python=3.9 -y
-RUN echo "source activate env" >> ~/.bashrc
-RUN /bin/bash -c "source activate env && \
-	conda install -c conda-forge libgcc-ng && \
-	conda update -c conda-forge libgcc-ng && \
-	conda install -c conda-forge libstdcxx-ng && \
-	conda update -c conda-forge libstdcxx-ng && \
-	conda install -c conda-forge  zlib && \
-	conda update -c conda-forge zlib && \
-	conda install -c bioconda chopper=0.8.0"
+# for those packages that require conda install create a new environment
+# for each to avoid incompatibilities
+
+# ----- install chopper ----- #
+RUN conda create -n chopper python=3.9 -y
+# RUN echo "source activate env" >> ~/.bashrc
+RUN /bin/bash -c "source activate chopper && \
+	conda install -c conda-forge libgcc-ng -y && \
+	conda update -c conda-forge libgcc-ng -y && \
+	conda install -c conda-forge libstdcxx-ng -y && \
+	conda update -c conda-forge libstdcxx-ng -y && \
+	conda install -c conda-forge  zlib -y && \
+	conda update -c conda-forge zlib -y && \
+	conda install -c bioconda chopper=0.8.0 -y "
 
 # ----- install msi ----- #
 COPY lib/msi /app/lib/msi
-RUN /bin/bash -c "source activate env && \
+RUN conda create -n msi python=3.9 -y
+RUN /bin/bash -c "source activate msi && \
 	apt-get install emboss -y && \
 	apt-get install time -y && \
 	conda install cmake -y && \
 	conda install -c anaconda git -y && \
 	conda install -c anaconda wget -y && \
 	conda install -c bioconda java-jdk -y"
-# RUN /bin/bash -c "source activate env && \
-# 	/app/lib/msi/scripts/msi_install.sh -i /app/lib/msi_installed"
 # Update and install GCC and G++
 RUN apt-get update && apt-get install -y software-properties-common
 RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y
@@ -194,33 +155,62 @@ RUN apt-get update && apt-get install -y \
 # Set GCC and G++ to the new versions
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 \
     && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 100
-# Install the latest libstdc++6
+# # Install the latest libstdc++6
 RUN apt-get install -y libstdc++6
-# Verify the installation
+# # Verify the installation
 RUN gcc --version && g++ --version
-# Check the installed versions of libstdc++
+# # Check the installed versions of libstdc++
 RUN strings /usr/lib/x86_64-linux-gnu/libstdc++.so.6 | grep GLIBCXX
-RUN /bin/bash -c "source activate env && \
+RUN /bin/bash -c "source activate msi && \
+	conda install -c conda-forge r-base=4.1.0 -y"
+# the path used to install BiocManager in metabinkit is not available.
+# this is solved if we install BiocManager in the msi environment and
+# in the specified path
+RUN /bin/bash -c "source activate msi && \
+	mkdir -p /app/lib/msi/Rlibs && \
+	R -e \"install.packages('BiocManager',dependencies=TRUE,repos='https://stat.ethz.ch/CRAN/',lib='/app/lib/msi/Rlibs')\""
+# RUN /bin/bash -c "source activate msi && \
+# 	R -e \"!requireNamespace('BiocManager', quietly = TRUE)\""
+RUN /bin/bash -c "source activate msi && \
 	/app/lib/msi/scripts/msi_install.sh -i /app/lib/msi"
 
 # ----- install ASHURE ----- #
 COPY lib/ASHURE /app/lib/ASHURE
+RUN conda create -n ashure python=3.9 -y
 # minimap2 has been installed with msi and its located at /app/lib/msi/bin/minimap2
+# RUN /bin/bash -c "source activate ashure && \
+# 	/app/lib/msi/bin/minimap2"
+# install cmake and git in ashure environment
+RUN /bin/bash -c "source activate ashure && \
+conda install -c conda-forge cmake git -y"
 # install spoa
-RUN /bin/bash -c "source activate env && \
+RUN /bin/bash -c "source activate ashure && \
 	cd /app/lib/ASHURE/spoa && \
 	cmake -B build -DCMAKE_BUILD_TYPE=Release && \
 	make -C build && cd /app"
 # install python modules for ASHURE
-RUN /bin/bash -c "source activate env && \
-	pip install pandas && \
+	# due to a deprecation error, pandas need to be previous to 1.4.0
+RUN /bin/bash -c "source activate ashure && \
+	pip install pandas==1.3.3 && \
 	pip install scikit-learn && \
-	pip install hdbscan"
+	pip install hdbscan "
 # install ashure
-RUN /bin/bash -c "source activate env && \
+RUN /bin/bash -c "source activate ashure && \
 	cd /app/lib/ASHURE && \
 	chmod +x src/ashure.py && \
 	src/ashure.py run -h && cd /app"
+# check if ashure commands are working
+RUN /bin/bash -c "source activate ashure && \
+	/app/lib/ASHURE/src/ashure.py prfg -h && \
+	/app/lib/ASHURE/src/ashure.py fgs -h && \
+	/app/lib/ASHURE/src/ashure.py msa -h && \
+	/app/lib/ASHURE/src/ashure.py fpmr -h"
+
+# ----- copy bash_scripts -----
+
+COPY lib/bash_scripts /app/lib/bash_scripts
+RUN chmod +x /app/lib/bash_scripts/*
+
 
 # ----- Webserver -----
 
