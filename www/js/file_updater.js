@@ -27,6 +27,7 @@ class FileUpdater {
 		var up_func = () => {
 			that.update_input_lists();
 			that.update_input_files();
+			that.update_input_files_text();
 			that.timeout = null;
 		};
 		
@@ -72,6 +73,43 @@ class FileUpdater {
 
 						// Update previous values
 						that.prev_values[mod_idx + '_' + input_file.name] = suggestion.data;
+					}
+				});
+			}
+		}
+	}
+
+	update_input_files_text () {
+		var that = this;
+		var modules = module_manager.modules;
+		for (let mod_idx in modules) {
+			var input_files_text = modules[mod_idx].dom.getElementsByClassName('input_file_text');
+
+			for (let id_file=0 ; id_file<input_files_text.length ; id_file++) {
+				let input_file_text = input_files_text[id_file];
+
+				// Get all the file list for autocomplete
+				let autocomplete = file_manager.getFiles(input_file_text.classList).filter((val)=>{return typeof(val) == "string"});
+				
+				// Transform the file list to autocomplete format
+				for (let idx=0 ; idx<autocomplete.length ; idx++) {
+					autocomplete[idx] = {value:autocomplete[idx], data:autocomplete[idx]};
+				}
+
+				// Setup the jquery autocomplete
+				$(input_file_text).autocomplete({
+					lookup: autocomplete,
+					onSelect: function(suggestion) {
+						// Read values
+						let prev = that.prev_values[mod_idx + '_' + input_file_text.name];
+						input_file_text.value = suggestion.data;
+
+						// Compare and execute specific actions
+						if (input_file_text.onchange != undefined && prev != input_file_text.value)
+							input_file_text.onchange();
+
+						// Update previous values
+						that.prev_values[mod_idx + '_' + input_file_text.name] = suggestion.data;
 					}
 				});
 			}

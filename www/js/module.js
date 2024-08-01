@@ -108,6 +108,15 @@ class Module {
 					input.value = this.params.inputs[input.name].replace('$', '*');
 			}
 
+			// Reload input files text
+			var in_files_text = this.dom.getElementsByClassName('input_file_text');
+			for (let in_id=0 ; in_id<in_files_text.length ; in_id++) {
+				let input = in_files_text[in_id];
+
+				if (this.params.inputs[input.name] != undefined)
+					input.value = this.params.inputs[input.name].replace('$', '*');
+			}
+
 			// Reload input lists
 			var in_lists = this.dom.getElementsByClassName('input_list');
 			for (let list_id=0 ; list_id<in_lists.length ; list_id++) {
@@ -174,6 +183,18 @@ class Module {
 			let input = in_files[in_id];
 			if (input.classList.contains('agregate')) {
 				input.value = input.value.replace('*', '$');
+			}
+
+			config.inputs[input.name] = input.value;
+		}
+
+		// text file inputs
+		var in_files_text = this.dom.getElementsByClassName('input_file_text');
+		console.log(in_files_text);
+		for (let in_id=0 ; in_id<in_files_text.length ; in_id++) {
+			let input = in_files_text[in_id];
+			if (input.classList.contains('agregate')) {
+				input.value = input.value.replace('*', '€');
 			}
 
 			config.inputs[input.name] = input.value;
