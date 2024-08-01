@@ -193,7 +193,8 @@ RUN /bin/bash -c "source activate ashure && \
 RUN /bin/bash -c "source activate ashure && \
 	pip install pandas==1.3.3 && \
 	pip install scikit-learn && \
-	pip install hdbscan "
+	pip install hdbscan &&\
+	pip install numpy"
 # install ashure
 RUN /bin/bash -c "source activate ashure && \
 	cd /app/lib/ASHURE && \
