@@ -32,6 +32,13 @@ else
  SKIP_BLAST="N"
  fi
 
+# check if fastq_files has '$' in it
+if [[ ${input_file} == *'€'* ]]; then
+    echo "more than one fastq file"
+    # change the $ to a space
+    input_file=$(echo ${input_file} | sed 's/\€/\*/g')
+fi
+
 source /app/lib/msi/metabinkit_env.sh
 export PATH=$PATH/root/.local/bin/
 export PYTHONPATH=$PYTHONPATH:/app/lib/msi/python/lib/python3.9/site-packages/
