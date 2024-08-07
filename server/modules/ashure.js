@@ -58,7 +58,7 @@ exports.run = function (os, config, callback) {
 
 
 	// Joining
-	console.log('Running msi');
+	console.log('Running optics');
 	console.log('/app/lib/bash_scripts/run_ashure.sh', command.join(' '));
 	fs.appendFileSync(directory + config.log, '--- Command ---\n');
 	fs.appendFileSync(directory + config.log, 'run_ashure ' + command.join(' ') + '\n');
