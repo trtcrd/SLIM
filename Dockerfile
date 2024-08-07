@@ -91,10 +91,6 @@ RUN cd /app/lib/swarm2/src && make && cd /app
 # Compile swarm3
 RUN cd /app/lib/swarm3/src && make && cd /app
 
-# Copy Python and R scripts
-COPY lib/python_scripts /app/lib/python_scripts
-COPY lib/R_scripts /app/lib/R_scripts
-
 # ----- R dependancies -----
 
 COPY lib/lulu /app/lib/lulu
@@ -207,8 +203,13 @@ RUN /bin/bash -c "source activate ashure && \
 	/app/lib/ASHURE/src/ashure.py msa -h && \
 	/app/lib/ASHURE/src/ashure.py fpmr -h"
 
-# ----- copy bash_scripts -----
+# ----- copy python_scripts -----
+COPY lib/python_scripts /app/lib/python_scripts
 
+# ----- copy R_scripts -----
+COPY lib/R_scripts /app/lib/R_scripts
+
+# ----- copy bash_scripts -----
 COPY lib/bash_scripts /app/lib/bash_scripts
 RUN chmod +x /app/lib/bash_scripts/*
 
