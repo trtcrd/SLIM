@@ -57,7 +57,6 @@ def main():
     # apply new settings
     config = update_config(config, vars(args))
 
-    # os.chdir('/media/adan/Elements/SLIMtests/testASHURE/testoptics/testmodule')
     os.chdir(config['dir'])
     bpy._minimap2 = '/app/lib/msi/bin/minimap2'
 
