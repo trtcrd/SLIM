@@ -1,0 +1,50 @@
+<p>Input fastq/fasta files</p>
+<p>(must be uploaded as compressed .tar.gz, and contain the fasta/fastq files to detect the general pattern</p>
+<p>However, the pattern can be entered manually)</p>
+<input type="text" name="fasta" class='input_file_text fa agregate'>
+
+
+<p>Cluster center sequences output file</p>
+<span class="output_zone">
+	<input type="text" name="fasta_out" value='consensus_seqs.fasta' />
+	<a href="" download><img src="/imgs/download.png" class="download"/></a>
+</span>
+
+<p>OTU table output file</p>
+<span class="output_zone">
+	<input type="text" name="otutab" value='otu_table.csv' />
+	<a href="" download><img src="/imgs/download.png" class="download"/></a>
+</span>
+
+<div class="options">
+		<!-- clst_th_m threshold for marking clusters to merge -->
+	<p class="clst_csize">
+		<p>Minimum cluster size:</p> 
+		<input type="text" name="clst_csize" class="integer number param_value" value="20">
+	</p>
+		<!-- clst_th_m threshold for marking clusters to merge -->
+	<p class="clst_th_m">
+		<p>Threshold for marking clusters to merge:</p> 
+		<input type="text" name="clst_th_m" class="integer number param_value" value="0.9">
+	</p>
+		<!-- clst_th_s partitions to split the sequences for sweep -->
+	<p class="clst_th_s">
+		<p>Partitions to split the sequences for sweep:</p>  
+		<input type="text" name="clst_th_s" class="integer number param_value" value="4">
+	</p>
+		<!-- clst_N size of sequence subsample -->
+	<p class="clst_N">
+		<p>Size of sequence subsample:</p>  
+		<input type="text" name="clst_N" class="integer number param_value" value="2000">
+	</p>
+	<!-- clst_N_iter iterations to run clustering -->
+	<p class="clst_N_iter">
+		<p>Iterations to run clustering:</p>  
+		<input type="text" name="clst_N_iter" class="integer number param_value" value="10">
+	</p>
+	<!-- sim_thr simmilarity threshold for a sequence reads to be merged into the center sequence -->
+	<p class="sim_thr">
+	<p>Simmilarity threshold for sequence reads to be merged into the center sequence:</p>  
+	<input type="text" name="sim_thr" class="integer number param_value" value="0.8">
+	</p>
+</div>
