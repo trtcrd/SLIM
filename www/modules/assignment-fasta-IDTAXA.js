@@ -1,7 +1,7 @@
 class AssignFastaIdTaxaModule extends Module {
   constructor (params) {
   // lien de la doc
-  super ("assignment-fasta-IDTAXA", "https://github.com/trtcrd/SLIM/wiki/FASTA-IDTAXA-classifier");
+  super ("assignment-fasta-IDTAXA", "https://github.com/adriantich/SLIM/wiki/FASTA-IDTAXA-classifier");
 
   this.params = params;
   }

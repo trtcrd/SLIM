@@ -1,7 +1,7 @@
 
 class OtuFilteringModule extends Module {
 	constructor (params) {
-		super ("asv-otu-filtering", 'https://github.com/yoann-dufresne/amplicon_pipeline/wiki/OTU-filtering');
+		super ("asv-otu-filtering", "https://github.com/adriantich/SLIM/wiki/OTU-filtering");
 
 		this.params = params;
 	}

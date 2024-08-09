@@ -1,7 +1,7 @@
 
 class AssignOtuVsearchModule extends Module {
 	constructor (params) {
-		super ("assignment-table-vsearch", "https://github.com/yoann-dufresne/amplicon_pipeline/wiki/OTU-table-assignment-Vsearch");
+		super ("assignment-table-vsearch", "https://github.com/adriantich/SLIM/wiki/OTU-table-assignment-Vsearch");
 		this.params = params;
 	}
 

@@ -1,7 +1,7 @@
 
 class DemultiplexerModule extends Module {
 	constructor (params) {
-		super ("demultiplexer", "https://github.com/yoann-dufresne/amplicon_pipeline/wiki/Double-Tag-Demultiplexing-(DTD)");
+		super ("demultiplexer", "https://github.com/adriantich/SLIM/wiki/Double-Tag-Demultiplexing-(DTD)");
 
 		this.out_files = [];
 		this.params = params;
