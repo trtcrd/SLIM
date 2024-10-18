@@ -11,7 +11,6 @@ RUN mkdir /app/lib
 
 # Add the CRAN repos sources for install latest version of R
 RUN apt-get update && apt-get install -y dirmngr gnupg apt-transport-https ca-certificates software-properties-common
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
 RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/'
 #RUN sh -c 'echo "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/" >> /etc/apt/sources.list'
 #RUN apt-key add /app/jranke.asc
@@ -19,10 +18,10 @@ RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-c
 
 # ----- install conda ----- #
 # RUN curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-COPY lib/miniconda /app/lib/miniconda
-RUN bash /app/lib/miniconda/miniconda.sh -b
+COPY lib/miniforge3 /app/lib/miniforge3
+RUN bash /app/lib/miniforge3/miniforge3.sh -b
 # RUN rm Miniconda3-latest-Linux-x86_64.sh
-ENV PATH="/root/miniconda3/bin:${PATH}"
+ENV PATH="/root/miniforge3/bin:${PATH}"
 # RUN conda update conda
 
 # Install packages needed for tools
@@ -136,11 +135,12 @@ RUN /bin/bash -c "source activate chopper && \
 COPY lib/msi /app/lib/msi
 RUN conda create -n msi python=3.9 -y
 RUN /bin/bash -c "source activate msi && \
+	apt-get update && \
 	apt-get install emboss -y && \
 	apt-get install time -y && \
 	conda install cmake -y && \
-	conda install -c anaconda git -y && \
-	conda install -c anaconda wget -y && \
+	conda install -c conda-forge git -y && \
+	conda install -c conda-forge wget -y && \
 	conda install -c bioconda java-jdk -y"
 # Update and install GCC and G++
 RUN apt-get update && apt-get install -y software-properties-common
