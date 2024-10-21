@@ -175,6 +175,9 @@ if [ ! -d "msi" ]; then
 	# tar -vxzf 0.3.7.tar.gz
 	# mv msi-0.3.7/* .
 	git clone https://github.com/adriantich/msi.git
+	cd msi
+	git clone https://github.com/adriantich/fastq_utils.git
+	sed -i 's/git clone/\# git clone/g' scripts/msi_install.sh
 	cd ..
 else
 	echo "msi is already there..."
