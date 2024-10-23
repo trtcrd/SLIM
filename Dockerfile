@@ -67,6 +67,7 @@ RUN apt-get install curl -y
 RUN curl -sL https://deb.nodesource.com/setup_18.x | bash -
 RUN apt install nodejs -y
 COPY package.json /app
+RUN apt install npm -y
 RUN npm install
 
 # Copy libraries
