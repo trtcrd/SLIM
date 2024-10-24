@@ -42,9 +42,10 @@ RUN apt-get update && apt-get install -y \
 	pigz \
 	dos2unix \
 	python3-pip python3-dev python3-numpy python3-biopython \
-	libc6
+	libc6 \
+	libcurl4-openssl-dev
 
-	RUN apt-get install -y \
+RUN apt-get install -y \
 	r-base-core r-recommended r-base-html r-base r-base-dev \
 	libfontconfig1-dev
 
