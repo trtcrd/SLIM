@@ -179,6 +179,7 @@ if [ ! -d "msi" ]; then
 	git clone https://github.com/adriantich/fastq_utils.git
 	sed -i 's/git clone/\# git clone/g' scripts/msi_install.sh
 	sed -i 's/ nmembers / \$nmembers /g' /app/lib/msi/scripts/msi_clustr_add_size.pl
+	git clone https://github.com/lh3/seqtk.git
 	cd ..
 else
 	echo "msi is already there..."
