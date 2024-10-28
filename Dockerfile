@@ -42,8 +42,8 @@ RUN apt-get update && apt-get install -y \
 	pigz \
 	dos2unix \
 	python3-pip python3-dev python3-numpy python3-biopython \
-	libc6 \
-	libcurl4-openssl-dev
+	libc6
+	# libcurl4-openssl-dev
 
 RUN apt-get install -y \
 	r-base-core r-recommended r-base-html r-base r-base-dev \
@@ -57,8 +57,6 @@ ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US.UTF-8
 RUN dpkg -l locales
 ENV CXXFLAGS="-std=c++11"
-
-#RUN python3 -m pip install biopython --upgrade
 
 
 # ----- Libraries deployments -----
@@ -215,6 +213,13 @@ COPY lib/R_scripts /app/lib/R_scripts
 COPY lib/bash_scripts /app/lib/bash_scripts
 RUN chmod +x /app/lib/bash_scripts/*
 
+# ----- correction on msi source code -----
+RUN sed -i 's/\/dev\/stderr/stderr_msi/g' /app/lib/msi/bin/bam_annotate.sh /app/lib/msi/bin/fastq2bam /app/lib/msi/bin/fastq_validator.sh /app/lib/msi/*/msi /app/lib/msi/exe/metabinkit_blastgendb 
+# RUN sed -i 's/ nmembers / \$nmembers /g' /app/lib/msi/bin/msi_clustr_add_size.pl /app/lib/msi/scripts/msi_clustr_add_size.pl
+RUN cd /app/lib/msi/seqtk && make && cd /app
+
+# updates on biopython
+RUN python3 -m pip install biopython --upgrade
 
 # ----- Webserver -----
 
