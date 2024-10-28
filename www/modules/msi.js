@@ -43,17 +43,21 @@ class msiModule extends Module {
 
 		let runstats = 'running.stats.tsv.gz';
 		let resultsfasta = 'results.fasta.gz';
-		let resultstsv = 'results.tsv.gz';
-		let binrestsv = 'binres.tsv.gz';
-		let bintsv = 'bin.tsv.gz';
+		let sample_centroids = 'sample_centroids.tar.gz';
+		// let resultstsv = 'results.tsv.gz';
+		// let binrestsv = 'binres.tsv.gz';
+		// let bintsv = 'bin.tsv.gz';
 
-		let out_files = [runstats, resultsfasta, resultstsv, binrestsv, bintsv];
+		let out_files = [runstats, resultsfasta]; //, resultstsv, binrestsv, bintsv];
 		
 		out_files.sort();
 		for (let idx in out_files) {
 			let filename = out_files[idx];
 			that.out_area.innerHTML += that.format_output(filename);
 		}
+		that.out_area.innerHTML += '<p>centroids_of_samples_complesed' +
+			'  <a href="' + file_manager.get_download_link(sample_centroids) +
+			'" download><img src="/imgs/download.png" class="download"></a></p>';
 
 		// Notify the file adds
 		var event = new Event('new_output');

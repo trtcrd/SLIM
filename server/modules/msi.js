@@ -40,20 +40,23 @@ function logAttributes(obj, prefix = '') {
 
 // Call the function with the options object
 logAttributes(options);
+console.log('checking config');
 logAttributes(config);
 
 
-if (config.params.inputs.refdb === " " || config.params.inputs.refdb === "") {
-    console.log("params.inputs.refdb is undefined");
-    refdb_option = '';
-} else {
-    refdb_option = '-b ' + config.params.inputs.refdb;
-}
+// if (config.params.inputs.refdb === " " || config.params.inputs.refdb === "") {
+//     console.log("params.inputs.refdb is undefined");
+//     refdb_option = '';
+// } else {
+//     refdb_option = '-b ' + config.params.inputs.refdb;
+// }
 	
 	var command = ['-i', directory, // TL_DIR
 		'-y', config.params.inputs.fastq, // FASTQ
 		'-t', os.cores, // THREADS
-		'-I', config.params.inputs.metadata, // METADATAFILE
+		// '-I', config.params.inputs.metadata, // METADATAFILE
+		'-p', config.params.inputs.primerfile, // primerfile
+		// '-g', options.target_gene, // target_gene
 		'-C', options.clusterminreads, // CLUSTER_MIN_READS
 		'-a', options.cdhitclusterthr, // CD_HIT_CLUSTER_THRESHOLD
 		'-A', options.primermaxerror, // PRIMER_MAX_ERROR
@@ -61,8 +64,9 @@ if (config.params.inputs.refdb === " " || config.params.inputs.refdb === "") {
 		'-M', options.maxlength, // MAX_LEN
 		'-q', options.minqual, // MIN_QUAL
 		'-x', options.minmap, // CLUST_MAPPED_THRESHOLD
-		'-X', options.minaligned, // CLUST_ALIGNED_THRESHOLD
-		refdb_option]; // blast_refdb
+		// '-X', options.minaligned, // CLUST_ALIGNED_THRESHOLD
+		// refdb_option]; // blast_refdb
+		'-X', options.minaligned]; // CLUST_ALIGNED_THRESHOLD
 
 
 	// Joining

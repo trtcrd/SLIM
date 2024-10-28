@@ -1,11 +1,16 @@
+<p>Process, Polish and Cluster</p>
+<p></p>
+
+
 <p>Input fastq file</p>
 <input type="text" name="fastq" class='input_file_text fastq agregate'>
 
-<p>Metadata file</p>
-<input type="text" name="metadata" class="input_file tsv">
+<p>Primers fasta file</p>
+<p>(First sequence is the forward and second is the reverse)</p>
+<input type="text" name="primerfile" class="input_file fasta">
 
 <p>Output files</p>
-<p>(if blast refdb not provided, only running.stats.tsv.gz and results.fasta.gz can be downloaded)</p>
+<!-- <p>(if blast refdb not provided, only running.stats.tsv.gz and results.fasta.gz can be downloaded)</p> -->
 <!-- <span class="output_zone">
 	<input type="text" name="assembly"/>
 	<a href="" download><img src="/imgs/download.png" class="download"/></a>
@@ -14,14 +19,18 @@
 
 
 <div class="options">
-	<p class="blastdb">
+	<!-- <p class="blastdb">
 		Blast refdb (fasta file; if not provided blast will not be run): 
 		<input type="text" name="refdb" class="input_file fasta">
-	</p>
+	</p> -->
 	<p class="clusterminreads">
 		Cluster min reads: 
 		<input type="text" name="clusterminreads" class="integer number param_value" value="1">
 	</p>
+	<!-- <p class="target_gene">
+		Cluster min reads: 
+		<input type="text" name="target_gene" class="text number param_value" value="">
+	</p> -->
 	<p class="cdhitclusterthr">
 		Cd hit cluster threshold: 
 		<input type="text" name="cdhitclusterthr" class="integer number param_value" value="1">
