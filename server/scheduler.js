@@ -276,7 +276,7 @@ var run_job = (params, callback) => {
 	// Save the conf and return message
 	fs.writeFileSync('/app/data/' + token + '/pipeline.conf', JSON.stringify(params));
 	console.log(token + ': configuration saved!');
-	delete params.mail;
+	// delete params.mail;
 
 	// Create the execution log file
 	var logFile = '/app/data/' + token + '/exec.log';
