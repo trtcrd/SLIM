@@ -35,12 +35,13 @@
 
 
 # while getopts i:y:t:I:C:a:A:m:M:q:x:X:b:c: flag
-while getopts i:y:t:p:C:a:A:m:M:q:x:X:b:c: flag
+while getopts i:y:t:o:p:C:a:A:m:M:q:x:X:b:c: flag
 do
     case "${flag}" in
 	i) dir="$( cd -P "$( dirname "${OPTARG}" )" >/dev/null 2>&1 && pwd )/$( echo ${OPTARG%\/} | rev | cut -f1 -d '/' | rev )/";;
 	y) input_file="${OPTARG}";;
     t) threads="${OPTARG}";;
+    o) output_file="${OPTARG}";;
 	# I) metadata="${OPTARG}";;
     p) primers="${OPTARG}";;
     # g) target_gene="${OPTARG}";;
@@ -54,7 +55,7 @@ do
     X) clust_aligned_threshold="${OPTARG}";;
     # b) blast_database="${OPTARG}";;
     # c) config_file="${OPTARG}";;
-	\?) echo "usage: bash run_msi.sh [-i|t|p|C|a|A|m|M|q|x|X|b]"; exit;;
+	\?) echo "usage: bash run_msi.sh [-i|t|o|p|C|a|A|m|M|q|x|X|b]"; exit;;
     esac
 done
 
@@ -72,6 +73,12 @@ if [[ ${input_file} == *'€'* ]]; then
     echo "more than one fastq file"
     # change the $ to a space
     input_file=$(echo ${input_file} | sed 's/\€/\*/g')
+fi
+# check if fastq_files has '$' in it
+if [[ ${output_file} == *'€'* ]]; then
+    echo "more than one fastq file"
+    # change the $ to a space
+    output_file=$(echo ${output_file} | sed 's/\€/\*/g')
 fi
 
 source activate msi
@@ -197,11 +204,18 @@ msi -c ${config_file} -i ${dir}input_msi
 for file in $(ls ${input_file})
 do
     sample_id=${file/.fastq/}
-    mv ${dir}${sample_id}/${sample_id}.centroids.fasta ${dir}${sample_id}_consensus.fasta
+    cp ${dir}${sample_id}/${sample_id}.centroids.fasta ${dir}${sample_id}_consensus.fasta
+    sed -i 's/:\([^=]*=\)/;\1/g' ${dir}${sample_id}_consensus.fasta
 done
 
+# # check if output_file has "_consensus.fasta" in it
+# if [[ ${output_file} == *'_consensus.fasta'* ]]; then
+#     echo "output_file has _consensus.fasta in it"
+#     # change the $ to a space
+#     output_file=$(echo ${output_file} | sed 's/_consensus.fasta//g')
+# fi
 
-tar -czf sample_centroids.tar.gz *.consensus.fasta
+tar --use-compress-program=pigz -Pcf "${output_file}" -C ${dir} ./*_consensus.fasta
 
 
 exit 0

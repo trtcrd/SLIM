@@ -54,6 +54,7 @@ logAttributes(config);
 	var command = ['-i', directory, // TL_DIR
 		'-y', config.params.inputs.fastq, // FASTQ
 		'-t', os.cores, // THREADS
+		'-o', config.params.outputs.consens, // OUTPUT
 		// '-I', config.params.inputs.metadata, // METADATAFILE
 		'-p', config.params.inputs.primerfile, // primerfile
 		// '-g', options.target_gene, // target_gene
@@ -80,7 +81,8 @@ logAttributes(config);
 
 
 	child.stdout.on('data', function(data) {
-		fs.appendFileSync(directory + config.params.outputs.assembly, data);
+		// fs.appendFileSync(directory + config.params.outputs.assembly, data);
+		fs.appendFileSync(directory + config.log, data);
 	});
 	child.stderr.on('data', function(data) {
 		fs.appendFileSync(directory + config.log, data);

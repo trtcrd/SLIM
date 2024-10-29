@@ -11,6 +11,18 @@ class msiModule extends Module {
 		this.defineIO();
 		super.onLoad();
 		gui_file_updater.file_trigger();
+
+		var that = this;
+		var fasta = this.dom.getElementsByClassName('input_file_text')[0];
+		fasta.onchange = () => {
+			var idx = fasta.value.lastIndexOf('.');
+			if (idx <= 0)
+				return;
+			let consens = that.dom.getElementsByClassName('output_zone')[0].getElementsByTagName('input')[0];
+			consens.value = fasta.value.substr(0, fasta.value.lastIndexOf('.')) + '_consensus.fasta';
+			consens.onchange();
+		};
+
 	}
 
 	defineIO () {
@@ -43,7 +55,7 @@ class msiModule extends Module {
 
 		let runstats = 'running.stats.tsv.gz';
 		let resultsfasta = 'results.fasta.gz';
-		let sample_centroids = 'sample_centroids.tar.gz';
+		// let sample_centroids = 'sample_centroids.tar.gz';
 		// let resultstsv = 'results.tsv.gz';
 		// let binrestsv = 'binres.tsv.gz';
 		// let bintsv = 'bin.tsv.gz';
@@ -55,9 +67,9 @@ class msiModule extends Module {
 			let filename = out_files[idx];
 			that.out_area.innerHTML += that.format_output(filename);
 		}
-		that.out_area.innerHTML += '<p>centroids_of_samples_complesed' +
-			'  <a href="' + file_manager.get_download_link(sample_centroids) +
-			'" download><img src="/imgs/download.png" class="download"></a></p>';
+		// that.out_area.innerHTML += '<p>centroids_of_samples_complesed' +
+		// 	'  <a href="' + file_manager.get_download_link(sample_centroids) +
+		// 	'" download><img src="/imgs/download.png" class="download"></a></p>';
 
 		// Notify the file adds
 		var event = new Event('new_output');
