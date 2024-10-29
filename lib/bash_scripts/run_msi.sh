@@ -215,7 +215,7 @@ done
 #     output_file=$(echo ${output_file} | sed 's/_consensus.fasta//g')
 # fi
 
-tar --use-compress-program=pigz -Pcf "${output_file}" -C ${dir} ./*_consensus.fasta
+# tar --use-compress-program=pigz -Pcf "${output_file}" -C ${dir} ./*_consensus.fasta
 
 
 exit 0
