@@ -26,9 +26,9 @@ var load_modules = (log) => {
 		return;
 	}
 
-	// Reload mail address
-	document.getElementById('mail').value = log.mail;
-	delete log.mail;
+	// // Reload mail address
+	// document.getElementById('mail').value = log.mail;
+	// delete log.mail;
 
 	// For each module in the log file
 	for (let idx in log) {
