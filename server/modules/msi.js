@@ -24,32 +24,32 @@ exports.run = function (os, config, callback) {
 
 	// if options.refdb is not defined, set it to empty string
 
-function logAttributes(obj, prefix = '') {
-	for (const key in obj) {
-		if (obj.hasOwnProperty(key)) {
-			const value = obj[key];
-			const newPrefix = prefix ? `${prefix}.${key}` : key;
-			if (typeof value === 'object' && value !== null) {
-				logAttributes(value, newPrefix);
-			} else {
-				console.log(newPrefix);
+	function logAttributes(obj, prefix = '') {
+		for (const key in obj) {
+			if (obj.hasOwnProperty(key)) {
+				const value = obj[key];
+				const newPrefix = prefix ? `${prefix}.${key}` : key;
+				if (typeof value === 'object' && value !== null) {
+					logAttributes(value, newPrefix);
+				} else {
+					console.log(newPrefix);
+				}
 			}
 		}
 	}
-}
 
-// Call the function with the options object
-logAttributes(options);
-console.log('checking config');
-logAttributes(config);
+	// Call the function with the options object
+	logAttributes(options);
+	console.log('checking config');
+	logAttributes(config);
 
 
-// if (config.params.inputs.refdb === " " || config.params.inputs.refdb === "") {
-//     console.log("params.inputs.refdb is undefined");
-//     refdb_option = '';
-// } else {
-//     refdb_option = '-b ' + config.params.inputs.refdb;
-// }
+	// if (config.params.inputs.refdb === " " || config.params.inputs.refdb === "") {
+	//     console.log("params.inputs.refdb is undefined");
+	//     refdb_option = '';
+	// } else {
+	//     refdb_option = '-b ' + config.params.inputs.refdb;
+	// }
 	
 	var command = ['-i', directory, // TL_DIR
 		'-y', config.params.inputs.fastq, // FASTQ
@@ -83,6 +83,7 @@ logAttributes(config);
 	child.stdout.on('data', function(data) {
 		// fs.appendFileSync(directory + config.params.outputs.assembly, data);
 		fs.appendFileSync(directory + config.log, data);
+		// fs.appendFileSync(directory + config.params.outputs.consens, data);
 	});
 	child.stderr.on('data', function(data) {
 		fs.appendFileSync(directory + config.log, data);
