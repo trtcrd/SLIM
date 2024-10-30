@@ -164,6 +164,14 @@ EOF
 primer_f=$(sed -n '2p' ${primers})
 primer_r=$(sed -n '4p' ${primers})
 
+# check for '-' and remove them from primers
+if [[ ${primer_f} == *'-'* ]]; then
+    primer_f=$(echo ${primer_f} | sed 's/-//g')
+fi
+if [[ ${primer_r} == *'-'* ]]; then
+    primer_r=$(echo ${primer_r} | sed 's/-//g')
+fi
+
 # create metadata file
 echo -e "sample_id\tss_sample_id\tprimer_set\tprimer_f\tprimer_r\tmin_length\tmax_length\ttarget_gene\tbarcode_name" > metadata.tsv
 i=1
@@ -177,11 +185,14 @@ do
     i=$((i+1))
 
     # cutadapt -g ${primer_f} -o ${dir2}${sample_id}_with_pattern.fastq --untrimmed-output ${dir2}${sample_id}_without_pattern.fastq ${file}
-    cutadapt -g ${primer_f} --action=none -o ${dir2}${sample_id}_correct_dir.fastq --discard-untrimmed ${file}
-    cutadapt -g ${primer_r} --action=none -o ${dir2}${sample_id}_incorrect_dir.fastq --discard-untrimmed ${file}
+    # cutadapt -g ${primer_f} --action=none -o ${dir2}${sample_id}_correct_dir.fastq --discard-untrimmed ${file}
+    # cutadapt -g ${primer_r} --action=none -o ${dir2}${sample_id}_incorrect_dir.fastq --discard-untrimmed ${file}
+    # cutadapt -g ${primer_f} --action=none -o ${dir2}${sample_id}_correct_dir.fastq --untrimmed-output ${dir2}${sample_id}_first_discard.fastq ${file}
+    # cutadapt -g ${primer_r} --action=none -o ${dir2}${sample_id}_incorrect_dir.fastq --discard-untrimmed ${dir2}${sample_id}_first_discard.fastq
 
-    /app/lib/msi/seqtk/seqtk seq -r ${dir2}${sample_id}_incorrect_dir.fastq > ${dir2}${sample_id}_incorrect_dir_rc.fastq
-    cat ${dir2}${sample_id}_correct_dir.fastq ${dir2}${sample_id}_incorrect_dir_rc.fastq > ${dir2}${sample_id}.fastq
+    # /app/lib/msi/seqtk/seqtk seq -r ${dir2}${sample_id}_incorrect_dir.fastq > ${dir2}${sample_id}_incorrect_dir_rc.fastq
+    # cat ${dir2}${sample_id}_correct_dir.fastq ${dir2}${sample_id}_incorrect_dir_rc.fastq > ${dir2}${sample_id}.fastq
+    cp ${file} ${dir2}${sample_id}.fastq
 done
 
 
