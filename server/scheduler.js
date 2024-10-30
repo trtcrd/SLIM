@@ -257,7 +257,7 @@ var run_job = (params, callback) => {
 	}
 
 	var token = params.token;
-	var mail = params.mail;
+	// var mail = params.mail;
 	delete params.token;
 
 	// Verification of the existance of the token
