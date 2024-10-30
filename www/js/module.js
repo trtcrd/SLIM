@@ -114,7 +114,7 @@ class Module {
 				let input = in_files_text[in_id];
 
 				if (this.params.inputs[input.name] != undefined)
-					input.value = this.params.inputs[input.name].replace('$', '*');
+					input.value = this.params.inputs[input.name].replace('€', '*');
 			}
 
 			// Reload input lists
