@@ -59,7 +59,7 @@ if [[ ${primer_r} == *'-'* ]]; then
     primer_r=$(echo ${primer_r} | sed 's/-//g')
 fi
 
-echo -e "fwd_id,fwd_seq,rev_id,rev_seq" > primers.tsv
+echo -e "fwd_id,fwd_seq,rev_id,rev_seq" > primers.csv
 echo -e "${primer_f_name},${primer_f},${primer_r_name},${primer_r}" >> primers.csv
 
 config_file="config.json"
