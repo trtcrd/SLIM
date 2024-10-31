@@ -1,7 +1,7 @@
 
 class ashureModule extends Module {
 	constructor (params) {
-		super ("ashure", "https://github.com/BBaloglu/ASHURE/blob/master/README.md");
+		super ("ashure", "https://github.com/adriantich/SLIM/wiki/ASHURE");
 
 		this.params = params;
 	}

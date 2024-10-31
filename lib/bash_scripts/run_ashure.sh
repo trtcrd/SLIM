@@ -43,6 +43,25 @@ source activate ashure
 
 cd ${directory}
 
+primer_f_name=$(sed -n '1p' ${primers})
+primer_f=$(sed -n '2p' ${primers})
+primer_r_name=$(sed -n '3p' ${primers})
+primer_r=$(sed -n '4p' ${primers})
+
+primer_f_name=$(echo ${primer_f_name} | sed 's/>//g')
+primer_r_name=$(echo ${primer_r_name} | sed 's/>//g')
+
+# check for '-' and remove them from primers
+if [[ ${primer_f} == *'-'* ]]; then
+    primer_f=$(echo ${primer_f} | sed 's/-//g')
+fi
+if [[ ${primer_r} == *'-'* ]]; then
+    primer_r=$(echo ${primer_r} | sed 's/-//g')
+fi
+
+echo -e "fwd_id,fwd_seq,rev_id,rev_seq" > primers.tsv
+echo -e "${primer_f_name},${primer_f},${primer_r_name},${primer_r}" >> primers.csv
+
 config_file="config.json"
 
 # Create the configuration file using a heredoc
@@ -53,7 +72,7 @@ cat <<EOF > "$config_file"
   "low_mem": false,
   "fastq": [],
   "exclude": [],
-  "primer_file": "${primers}",
+  "primer_file": "primers.csv",
   "db_file": "pseudodb.csv",
   "workspace": "./workspace/",
   "cons_file": "${cons_file}",
@@ -95,6 +114,8 @@ EOF
 mkdir -p fastq_dir
 cp ${fastq_files} fastq_dir/.
 python3 /app/lib/ASHURE/src/ashure.py run -fq fastq_dir/* -c ${config_file} 
+
+exit 0
 # S1.1 Pseudo reference database generation
 # The following alignment parameters are used in minimap2 to find primer sequences:
 # minimap2 -k5 -w1 -s 20 -P primers.fa reads.fa > output.paf
