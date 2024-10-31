@@ -1,7 +1,7 @@
 
 class msiModule extends Module {
 	constructor (params) {
-		super ("msi", "https://github.com/nunofonseca/msi?tab=readme-ov-file#Overview");
+		super ("msi", "https://github.com/adriantich/SLIM/wiki/MSI");
 
 		this.params = params;
 	}
