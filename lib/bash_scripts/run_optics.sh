@@ -45,7 +45,7 @@ mkdir -p ft_dir_tmp
 cp ${fasta_files} ft_dir_tmp/.
 
 mkdir -p concat_dir_tmp
-if [[ ${fasta_files} == *.f*q* ]]; then
+if [[ ${fasta_files} == *'.f'*'q'* ]]; then
     cat ft_dir_tmp/* >concat_dir_tmp/concatenated.fastq
     concatenated=${directory}/concat_dir_tmp/concatenated.fastq
 else
@@ -108,13 +108,35 @@ python3 /app/lib/ASHURE/src/ashure.py run -c ${config_file} -r clst
 
 mkdir -p fasta_dir_tmp
 
-for file in ft_dir_tmp/*; do
-    /app/lib/vsearch/bin/vsearch --fastq_filter ${directory}/${file} --fastaout ${directory}/fasta_dir_tmp/$(basename ${file} | cut -f1 -d '.').fasta --threads 8 --fastq_qmax 60
-done
+
+if [[ ${fasta_files} == *.f*q* ]]; then
+    for file in ft_dir_tmp/*; do
+        /app/lib/vsearch/bin/vsearch --fastq_filter ${directory}/${file} --fastaout ${directory}/fasta_dir_tmp/$(basename ${file} | cut -f1 -d '.').fasta --threads 8 --fastq_qmax 60
+    done
+else
+    for file in ft_dir_tmp/*; do
+        cp ${directory}/${file} ${directory}/fasta_dir_tmp/$(basename ${file})
+    done
+fi
+# for file in ft_dir_tmp/*; do
+#     /app/lib/vsearch/bin/vsearch --fastq_filter ${directory}/${file} --fastaout ${directory}/fasta_dir_tmp/$(basename ${file} | cut -f1 -d '.').fasta --threads 8 --fastq_qmax 60
+# done
 
 sed -i "s/\t/;/g" ${directory}/fasta_dir_tmp/*
+# remove also the tags after the first ;size= and the ; after the size
+sed -i 's/\(;size=[0-9]*\);.*/\1/g' ${directory}/fasta_dir_tmp/*
 
 python3 /app/lib/python_scripts/optics.py -dir ${directory} -fasta_path "fasta_dir_tmp/*" -centers centers.csv -otu_table ${otutab} -fasta_out ${fasta_out} -sim_thr ${sim_thr} 
 
 rm -r ft_dir_tmp concat_dir_tmp centers.csv ashure.log
+
+# check if there are empty files
+# if empty don't remove the folder to debug manually
+if [ ! -s ${otutab} ]; then
+    echo "OTU tab is empty"
+    exit 1 # There are empty files
+else
+    rm -r ${dir2}
+    exit 0
+fi
 exit 0
