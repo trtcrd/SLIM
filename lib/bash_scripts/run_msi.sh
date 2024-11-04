@@ -72,16 +72,21 @@ SKIP_BLAST="Y"
 if [[ ${input_file} == *'€'* ]]; then
     echo "more than one fastq file"
     # change the $ to a space
+    output_file=$(echo ${output_file} | sed 's/\*/\€/g')
+    output_sufix=${output_file/${input_file/.fastq/}/}
     input_file=$(echo ${input_file} | sed 's/\€/\*/g')
+else
+    output_sufix=${output_file/${input_file/.fastq/}/}
 fi
-# check if fastq_files has '$' in it
-if [[ ${output_file} == *'€'* ]]; then
-    echo "more than one fastq file"
-    # change the $ to a space
-    output_file=$(echo ${output_file} | sed 's/\€/\*/g')
-fi
+# # check if fastq_files has '$' in it
+# if [[ ${output_file} == *'€'* ]]; then
+#     echo "more than one fastq file"
+#     # change the $ to a space
+#     output_file=$(echo ${output_file} | sed 's/\€/\*/g')
+# fi
 
-output_sufix=${output_file/${input_file/.fastq/}/}
+# output_sufix=${output_file/${input_file/.fastq/}/}
+echo "output_sufix: ${output_sufix}"
 
 source activate msi
 source /app/lib/msi/metabinkit_env.sh
