@@ -81,6 +81,8 @@ if [[ ${output_file} == *'€'* ]]; then
     output_file=$(echo ${output_file} | sed 's/\€/\*/g')
 fi
 
+output_sufix=${output_file/${input_file/.fastq/}/}
+
 source activate msi
 source /app/lib/msi/metabinkit_env.sh
 export PATH=$PATH:/root/.local/bin/
@@ -218,12 +220,12 @@ there_are_empty_files='N'
 for file in $(ls ${input_file})
 do
     sample_id=${file/.fastq/}
-    cp ${dir}${sample_id}/${sample_id}.centroids.fasta ${dir}${sample_id}_consensus.fasta
-    sed -i 's/:\([^=]*=\)/;\1/g' ${dir}${sample_id}_consensus.fasta
+    cp ${dir}${sample_id}/${sample_id}.centroids.fasta ${dir}${sample_id}${output_sufix}
+    sed -i 's/:\([^=]*=\)/;\1/g' ${dir}${sample_id}${output_sufix}
     
     # Check if the file is empty and print a message if it is
     # if empty don't remove the folder to debug manually
-    if [ ! -s ${dir}${sample_id}_consensus.fasta ]; then
+    if [ ! -s ${dir}${sample_id}${output_sufix} ]; then
         empty_files="${empty_files} ${sample_id}"
         there_are_empty_files='Y'
     else
