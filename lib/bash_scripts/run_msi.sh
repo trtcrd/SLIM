@@ -212,11 +212,20 @@ msi -c ${config_file} -i ${dir}input_msi
 
 # also in order to run optics the centroids must be renamed for eac sample to *.consensus.fasta
 # also check that the format is correct for the optics script
+
+empty_files=''
+there_are_empty_files='N'
 for file in $(ls ${input_file})
 do
     sample_id=${file/.fastq/}
     cp ${dir}${sample_id}/${sample_id}.centroids.fasta ${dir}${sample_id}_consensus.fasta
     sed -i 's/:\([^=]*=\)/;\1/g' ${dir}${sample_id}_consensus.fasta
+    
+    # Check if the file is empty and print a message if it is
+    if [ ! -s ${dir}${sample_id}_consensus.fasta ]; then
+        empty_files="${empty_files} ${sample_id}"
+        there_are_empty_files='Y'
+    fi
 done
 
 # # check if output_file has "_consensus.fasta" in it
@@ -228,5 +237,10 @@ done
 
 # tar --use-compress-program=pigz -Pcf "${output_file}" -C ${dir} ./*_consensus.fasta
 
-
-exit 0
+if [ $there_are_empty_files == 'Y' ]; then
+    echo "The following files are empty: ${empty_files}"
+    exit 1 # There are empty files
+else
+    echo "All files are non-empty"
+    exit 0
+fi
