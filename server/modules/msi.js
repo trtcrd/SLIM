@@ -92,6 +92,6 @@ exports.run = function (os, config, callback) {
 		if (code == 0) {
 			callback(os, null);
 		} else
-			callback(os, "msi terminate on code " + code);
+			callback(os, "msi terminate on code " + code + "\n some of the final files may be empty");
 	});
 };

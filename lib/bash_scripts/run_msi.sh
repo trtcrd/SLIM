@@ -222,9 +222,12 @@ do
     sed -i 's/:\([^=]*=\)/;\1/g' ${dir}${sample_id}_consensus.fasta
     
     # Check if the file is empty and print a message if it is
+    # if empty don't remove the folder to debug manually
     if [ ! -s ${dir}${sample_id}_consensus.fasta ]; then
         empty_files="${empty_files} ${sample_id}"
         there_are_empty_files='Y'
+    else
+        rm -r ${dir}${sample_id}
     fi
 done
 
@@ -237,10 +240,12 @@ done
 
 # tar --use-compress-program=pigz -Pcf "${output_file}" -C ${dir} ./*_consensus.fasta
 
+# check if there are empty files
+# if empty don't remove the folder to debug manually
 if [ $there_are_empty_files == 'Y' ]; then
     echo "The following files are empty: ${empty_files}"
     exit 1 # There are empty files
 else
-    echo "All files are non-empty"
+    rm -r ${dir2}
     exit 0
 fi
