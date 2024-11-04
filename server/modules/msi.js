@@ -59,7 +59,8 @@ exports.run = function (os, config, callback) {
 		'-p', config.params.inputs.primerfile, // primerfile
 		// '-g', options.target_gene, // target_gene
 		'-C', options.clusterminreads, // CLUSTER_MIN_READS
-		'-a', options.cdhitclusterthr, // CD_HIT_CLUSTER_THRESHOLD
+		// '-a', options.cdhitclusterthr, // CD_HIT_CLUSTER_THRESHOLD
+		'-a', '1', // CD_HIT_CLUSTER_THRESHOLD
 		'-A', options.primermaxerror, // PRIMER_MAX_ERROR
 		'-m', options.minlength, // MIN_LEN
 		'-M', options.maxlength, // MAX_LEN
