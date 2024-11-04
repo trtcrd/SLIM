@@ -15,43 +15,70 @@
 
 
 <div class="options">
-	<!-- <p class="blastdb">
-		Blast refdb (fasta file; if not provided blast will not be run): 
-		<input type="text" name="refdb" class="input_file fasta">
-	</p> -->
-	<p class="clusterminreads">
-		Cluster min reads: 
-		<input type="text" name="clusterminreads" class="integer number param_value" value="1">
+	<!-- MIN_QUAL -->
+	<!-- Used in line 693 in process_fastq in cutadapt. This seems to be the first cutadapt. The option used is -q $MIN_QUAL,$MIN_QUAL
+	In cutadapt says:  
+	Trim low-quality bases from 5' and/or 3' ends of each read before adapter
+	removal. Applied to both reads if data is paired. If one value is given, only
+	the 3' end is trimmed. If two comma-separated cutoffs are given, the 5' end is
+	trimmed with the first cutoff, the 3' end with the second.-->
+	<!-- The quality is calculated using FASTQ_QC -->
+	<p class="minqual">
+		<p>Minimum phred score per nucleotide:</p> 
+		<input type="text" name="minqual" class="integer number param_value" value="9">
 	</p>
-	<!-- <p class="target_gene">
-		Cluster min reads: 
-		<input type="text" name="target_gene" class="text number param_value" value="">
-	</p> -->
-	<p class="cdhitclusterthr">
-		Cd hit cluster threshold: 
-		<input type="text" name="cdhitclusterthr" class="integer number param_value" value="1">
-	</p>
-	<p class="primermaxerror">
-		primer max error: 
-		<input type="text" name="primermaxerror" class="integer number param_value" value="1">
-	</p>
+	<!-- MIN_LEN & MAX_LEN -->
+	<!-- Used in line 693 in process_fastq in cutadapt. This seems to be the first cutadapt though in which the samples are also 
+	 filtered by quality -->
 	<div class="msilength">
 		<p>Reads length:</p>
 		<p>Min: <input type="text" name="minlength" class="integer number param_value" value="1">
 		Max: <input type="text" name="maxlength" class="integer number param_value" value="2147483647"></p>
 	</div>
-	<p class="minqual">
-		<p>Minimum phred score:</p> 
-		<input type="text" name="minqual" class="integer number param_value" value="9">
-	</p>
+	<!-- CLUST_MAPPED_THRESHOLD -->
+	<!-- Used in line 760 in process_fastq in isONclust. from isONclust is the --mapped_threshold option. 
+	Minmum mapped fraction of read to be included in cluster. The density of minimizers to classify a region as mapped depends on quality of the read.
+                        (default: 0.7)-->
 	<p class="minmap">
 		<p>Minimum mapped fraction of read to be included in cluster:</p> 
 		<input type="text" name="minmap" class="integer number param_value" value="0.7">
 	</p>
+	<!-- CLUST_ALIGNED_THRESHOLD -->
+	<!-- Used in line 760 in process_fastq in isONclust. from isONclust is the --mapped_threshold option. 
+	Minmum aligned fraction of read to be included in cluster. Aligned identity depends on the quality of the read. (default: 0.4)-->
 	<p class="minaligned">
 		<p>Minimum aligned fraction of read to be included in cluster:</p> 
 		<input type="text" name="minaligned" class="integer number param_value" value="0.4">
 	</p>
+	<!-- CLUSTER_MIN_READS -->
+	<!-- this is used to go from .tmp4 to .tmp5. This is a filtering step after clustering 2 with cdhit-->
+	<!-- It is used in the line 810 in process_fastq of msi script and it is the final step before having the final files -->
+	<p class="clusterminreads">
+		Cluster min reads: 
+		<input type="text" name="clusterminreads" class="integer number param_value" value="1">
+	</p>
+	<!-- PRIMER_MAX_ERROR -->
+	<!-- Used by cutadapt in line 570 in remove_split_by_primer that runs on line842 of process_fastq of msi script. -->
+	<!-- option -e of cutadapt -->
+	<!-- Maximum allowed error rate (if 0 <= E < 1), or absolute number of errors for
+	full-length adapter match (if E is an integer >= 1). Error rate = no. of errors
+	divided by length of matching region. -->
+	<p class="primermaxerror">
+		primer max error: 
+		<input type="text" name="primermaxerror" class="integer number param_value" value="1">
+	</p>
+	<!-- <p class="blastdb">
+		Blast refdb (fasta file; if not provided blast will not be run): 
+		<input type="text" name="refdb" class="input_file fasta">
+	</p> -->
+	<!-- <p class="target_gene">
+		Cluster min reads: 
+		<input type="text" name="target_gene" class="text number param_value" value="">
+	</p> -->
+	<!-- <p class="cdhitclusterthr">
+		Cd hit cluster threshold: 
+		<input type="text" name="cdhitclusterthr" class="integer number param_value" value="1">
+	</p> -->
 </div>
 
 <!--
