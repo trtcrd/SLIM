@@ -2,16 +2,22 @@
 <p>(By default, it assumes that runs after msi module)</p>
 <input type="text" name="fasta" class='input_file_text fasta agregate' value="*_consensus.fasta">
 
-
-<p>Cluster center sequences output file</p>
+<p>OTU table output file</p>
 <span class="output_zone">
-	<input type="text" name="fasta_out" value='consensus_seqs.fasta' />
+	<input type="text" name="otutab" value='otus-optics.tsv' />
 	<a href="" download><img src="/imgs/download.png" class="download"/></a>
 </span>
 
-<p>OTU table output file</p>
+
+<p>Cluster center sequences output file</p>
 <span class="output_zone">
-	<input type="text" name="otutab" value='otu_table.csv' />
+	<input type="text" name="fasta_out" value='representative-optics.fasta' />
+	<a href="" download><img src="/imgs/download.png" class="download"/></a>
+</span>
+
+<p>Information of the merging proces</p>
+<span class="output_zone">
+	<input type="text" name="merged_out" value='clustered-reads-optics.tsv' />
 	<a href="" download><img src="/imgs/download.png" class="download"/></a>
 </span>
 

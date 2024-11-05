@@ -51,6 +51,7 @@ exports.run = function (os, config, callback) {
 		'-i', options.clst_N_iter, // clst_N_iter
 		'-S', options.sim_thr, // sim_thr
 		'-c', config.params.outputs.fasta_out, // fasta_out
+		'-m', config.params.outputs.merged_out, // merged_out
 		'-o', config.params.outputs.otutab]; // otutab
 
 

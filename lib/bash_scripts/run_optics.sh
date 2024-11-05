@@ -3,7 +3,7 @@
 # this script will run the optics algorithm from ashure
 
 
-while getopts f:d:s:t:T:N:i:S:c:o: flag
+while getopts f:d:s:t:T:N:i:S:c:m:o: flag
 do
     case "${flag}" in
 	f) fasta_files="${OPTARG}";;
@@ -15,8 +15,9 @@ do
     i) clst_N_iter="${OPTARG}";;
     S) sim_thr="${OPTARG}";;
     c) fasta_out="${OPTARG}";;
+    m) merged_out="${OPTARG}";;
     o) otutab="${OPTARG}";;
-	\?) echo "usage: bash run_optics.sh [-f|d|s|t|T|N|i|S|c|o]"; exit;;
+	\?) echo "usage: bash run_optics.sh [-f|d|s|t|T|N|i|S|c|m|o]"; exit;;
     esac
 done
 
@@ -126,7 +127,7 @@ sed -i "s/\t/;/g" ${directory}/fasta_dir_tmp/*
 # remove also the tags after the first ;size= and the ; after the size
 sed -i 's/\(;size=[0-9]*\);.*/\1/g' ${directory}/fasta_dir_tmp/*
 
-python3 /app/lib/python_scripts/optics.py -dir ${directory} -fasta_path "fasta_dir_tmp/*" -centers centers.csv -otu_table ${otutab} -fasta_out ${fasta_out} -sim_thr ${sim_thr} 
+python3 /app/lib/python_scripts/optics.py -dir ${directory} -fasta_path "fasta_dir_tmp/*" -centers centers.csv -otu_table ${otutab} -fasta_out ${fasta_out} -sim_thr ${sim_thr} -merged_out ${merged_out}
 
 rm -r ft_dir_tmp concat_dir_tmp centers.csv ashure.log
 
