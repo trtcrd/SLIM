@@ -45,13 +45,13 @@ mkdir -p ft_dir_tmp
 cp ${fasta_files} ft_dir_tmp/.
 
 mkdir -p concat_dir_tmp
-if [[ ${fasta_files} == *'.f'*'q'* ]]; then
-    cat ft_dir_tmp/* >concat_dir_tmp/concatenated.fastq
-    concatenated=${directory}/concat_dir_tmp/concatenated.fastq
-else
-    cat ft_dir_tmp/* >concat_dir_tmp/concatenated.fasta
-    concatenated=${directory}/concat_dir_tmp/concatenated.fasta
-fi
+# if [[ ${fasta_files} == *'.f'*'q'* ]]; then
+#     cat ft_dir_tmp/* >concat_dir_tmp/concatenated.fastq
+#     concatenated=${directory}/concat_dir_tmp/concatenated.fastq
+# else
+cat ft_dir_tmp/* >concat_dir_tmp/concatenated.fasta
+concatenated=${directory}/concat_dir_tmp/concatenated.fasta
+# fi
 
 config_file="config.json"
 
@@ -109,15 +109,15 @@ python3 /app/lib/ASHURE/src/ashure.py run -c ${config_file} -r clst
 mkdir -p fasta_dir_tmp
 
 
-if [[ ${fasta_files} == *.f*q* ]]; then
-    for file in ft_dir_tmp/*; do
-        /app/lib/vsearch/bin/vsearch --fastq_filter ${directory}/${file} --fastaout ${directory}/fasta_dir_tmp/$(basename ${file} | cut -f1 -d '.').fasta --threads 8 --fastq_qmax 60
-    done
-else
-    for file in ft_dir_tmp/*; do
-        cp ${directory}/${file} ${directory}/fasta_dir_tmp/$(basename ${file})
-    done
-fi
+# if [[ ${fasta_files} == *.f*q* ]]; then
+#     for file in ft_dir_tmp/*; do
+#         /app/lib/vsearch/bin/vsearch --fastq_filter ${directory}/${file} --fastaout ${directory}/fasta_dir_tmp/$(basename ${file} | cut -f1 -d '.').fasta --threads 8 --fastq_qmax 60
+#     done
+# else
+for file in ft_dir_tmp/*; do
+    cp ${directory}/${file} ${directory}/fasta_dir_tmp/$(basename ${file})
+done
+# fi
 # for file in ft_dir_tmp/*; do
 #     /app/lib/vsearch/bin/vsearch --fastq_filter ${directory}/${file} --fastaout ${directory}/fasta_dir_tmp/$(basename ${file} | cut -f1 -d '.').fasta --threads 8 --fastq_qmax 60
 # done
