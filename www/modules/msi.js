@@ -19,7 +19,7 @@ class msiModule extends Module {
 			if (idx <= 0)
 				return;
 			let output_file = that.dom.getElementsByClassName('output_zone')[0].getElementsByTagName('input')[0];
-			output_file.value = fasta.value.substr(0, fasta.value.lastIndexOf('.')) + '_consensus.fasta';
+			output_file.value = fasta.value.substr(0, fasta.value.lastIndexOf('.')) + '_consensus-msi.fasta';
 			// this.out_files = [consens.value];
 			output_file.onchange();
 		};
