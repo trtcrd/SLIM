@@ -54,7 +54,7 @@ def main():
     config['sim_thr']=0.8
     parser.add_argument('-sim_thr', dest='sim_thr', type=float, help='simmilarity threshold to allow the aggregation of reads to the centers')
     config['merged_out']='merged_out.tsv'
-    parser.add_argument('-merged_out', dest='merged_out', type=float, help='output file with the information of the reads mapped to the centers')
+    parser.add_argument('-merged_out', dest='merged_out', type=str, help='output file with the information of the reads mapped to the centers')
     
     args = parser.parse_args()
 
