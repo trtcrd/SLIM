@@ -49,8 +49,16 @@ exports.expose_modules = (app) => {
 			menu[category].push(name);
 		}
 
+		// Sort the categories alphanumerically
+		var sortedMenu = {};
+		var sortedCategories = Object.keys(menu).sort();
+		for (let category of sortedCategories) {
+			sortedMenu[category] = menu[category];
+		}
+
 		// Send back the software menu
-		res.send(JSON.stringify(menu));
+		// res.send(JSON.stringify(menu));
+		res.send(JSON.stringify(sortedMenu));
 	});
 };
 
