@@ -8,31 +8,19 @@ class ChopperModule extends Module {
 
 	onLoad () {
 		super.onLoad();
-		// var that = this;
+		gui_file_updater.file_trigger();
 
-		// // --- Inputs ---
-		// var inputs = this.dom.getElementsByClassName('input_file');
-		// this.fwd = inputs[0]; this.rev = inputs[1];
-		// this.fwd.onchange = this.rev.onchange = () => {that.input_change()};
+		var that = this;
+		var fastq = this.dom.getElementsByClassName('input_file_text')[0];
+		fastq.onchange = () => {
+			var idx = fastq.value.lastIndexOf('.');
+			if (idx <= 0)
+				return;
+			let output_file = that.dom.getElementsByClassName('output_zone')[0].getElementsByTagName('input')[0];
+			output_file.value = fastq.value.substr(0, fastq.value.lastIndexOf('.')) + '_filtered-chopper.fastq';
+			output_file.onchange();
+		};
 	}
-
-	// input_change () {
-	// 	// If the names are standards
-	// 	if (this.fwd.value.includes('_fwd.fastq') && this.rev.value.includes('_rev.fastq')) {
-	// 		// Get the main name
-	// 		var i1 = this.fwd.value.indexOf('_fwd.fastq');
-	// 		var sub1 = this.fwd.value.substring(0, i1);
-	// 		var i2 = this.rev.value.indexOf('_rev.fastq');
-	// 		var sub2 = this.rev.value.substring(0, i2);
-
-	// 		if (sub2 == sub1) {
-	// 			let output_file = this.dom.getElementsByClassName('output_zone')[0];
-	// 			output_file = output_file.getElementsByTagName('input')[0];
-	// 			output_file.value = sub1 + '_panda.fasta';
-	// 			output_file.onchange();
-	// 		}
-	// 	}
-	// }
 };
 
 

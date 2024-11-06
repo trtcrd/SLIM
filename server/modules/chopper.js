@@ -33,14 +33,14 @@ exports.run = function (os, config, callback) {
 	// else
 	// 	project = project.substr(0, project.lastIndexOf('_panda'));
 
-	var command = ['--input', directory + config.params.inputs.fastq,
-		'--quality', options.threshold,
-		'--headcrop', options.headcrop,
-		'--tailcrop', options.tailcrop,
-		'--minlength', options.minlength,
-		'--maxlength', options.maxlength,
-		'--threads', os.cores,
-		'--output', directory + config.params.outputs.assembly];
+	var command = ['-i', directory + config.params.inputs.fastq,
+		'-q', options.threshold,
+		'-h', options.headcrop,
+		'-t', options.tailcrop,
+		'-m', options.minlength,
+		'-M', options.maxlength,
+		'-c', os.cores,
+		'-o', directory + config.params.outputs.assembly];
 
 
 	// Joining
