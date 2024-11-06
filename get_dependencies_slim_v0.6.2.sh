@@ -206,7 +206,7 @@ fi
 if [ ! -d "miniforge3" ]; then
 	mkdir miniforge3
 	cd miniforge3
-	wget wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh 
+	curl -OL https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh 
 	mv Miniforge3-Linux-x86_64.sh miniforge3.sh
 	cd ..
 else
