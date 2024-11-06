@@ -6,7 +6,7 @@ const tools = require('../toolbox.js');
 
 exports.name = 'msi';
 exports.multicore = true;
-exports.category = 'Full pipeline';
+exports.category = '07. Nanopore Pipelines';
 
 exports.run = function (os, config, callback) {
 	let token = os.token;
