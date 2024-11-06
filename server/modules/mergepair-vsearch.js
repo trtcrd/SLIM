@@ -7,7 +7,7 @@ const derep = require('./dereplication.js');
 
 exports.name = 'mergepair-vsearch';
 exports.multicore = true;
-exports.category = 'Paired-end joiner';
+exports.category = '02. Paired-end joiner';
 
 
 exports.run = function (os, config, callback) {
