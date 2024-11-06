@@ -6,7 +6,7 @@ const fs = require('fs');
 
 exports.name = 'joker-creator';
 exports.multicore = true;
-exports.category = 'Utils';
+exports.category = '01. Demultiplexing / sample grouping';
 
 exports.run = function (os, config, callback) {
 	let token = os.token;
