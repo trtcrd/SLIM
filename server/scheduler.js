@@ -448,7 +448,7 @@ var computeSoftwareOrder = function (params, token) {
 		for (let id in soft.params.inputs) {
 			let file = soft.params.inputs[id];
 			file = file.replace('$', '*');
-			// file = file.replace('€', '*');
+			file = file.replace('€', '*');
 
 			if (dependencies[file] == undefined)
 				dependencies[file] = [];
