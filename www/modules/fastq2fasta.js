@@ -12,7 +12,7 @@ class Fastq2FastaModule extends Module {
 		let fastq = this.dom.getElementsByClassName('input_file')[0];
 		let fasta = this.dom.getElementsByClassName('output_zone')[0].getElementsByTagName('input')[0];
 		fastq.onchange = () => {
-			var idx = fasta.value.lastIndexOf('.');
+			var idx = fastq.value.lastIndexOf('.');
 			if (idx <= 0)
 				return;
 			fasta.value = fastq.value.substr(0, fastq.value.lastIndexOf('.')) + '.fasta';
