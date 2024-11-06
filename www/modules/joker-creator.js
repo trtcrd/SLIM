@@ -46,14 +46,23 @@ class jokercreatorModule extends Module {
 			
 
 			filenames = filenames.filter(function (filename) {
+				console.log(filename)
 				if (suggest.value.includes('*')) {
 					var begin = suggest.value.indexOf('*');
+					var beforeAsterisk = suggest.value.substring(0, begin);
 					var end = suggest.value.lastIndexOf('*');
+					var afterAsterisk = suggest.value.substring(end + 1);
+					console.log(beforeAsterisk + ' & ' + afterAsterisk)
+					if (filename.includes(beforeAsterisk)){
+						// remove the first match in the filename with begin
+						filename = filename.replace(beforeAsterisk, '');
+						return filename.includes(afterAsterisk)					
+					} else {
+						return false
+					}
 				} else {
-					var begin = suggest.value;
-					var end = suggest.value;
+					return filename.includes(suggest.value);
 				}
-				return filename.includes(begin, end);
 				// filename = filename.includes(end);
 				// return filename.includes(suggest.value);
 				// return filename;
