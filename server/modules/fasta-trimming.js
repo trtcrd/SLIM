@@ -4,7 +4,7 @@ const fs = require('fs');
 
 exports.name = 'fasta-trimming';
 exports.multicore = false;
-exports.category = 'Utils';
+exports.category = '08. Utils';
 
 exports.run = (os, config, callback) => {
 	var token = os.token;

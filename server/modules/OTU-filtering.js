@@ -4,7 +4,7 @@ const fs = require('fs');
 
 exports.name = 'asv-otu-filtering';
 exports.multicore = false;
-exports.category = 'Utils';
+exports.category = '08. Utils';
 
 exports.run = function (os, config, callback) {
 	let token = os.token;

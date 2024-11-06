@@ -7,7 +7,7 @@ const tools = require('../toolbox.js');
 
 exports.name = 'chopper';
 exports.multicore = true;
-exports.category = 'Utils';
+exports.category = '08. Utils';
 
 // var algorithms = {
 // 	bayesian: 'simple_bayesian',
