@@ -8,7 +8,7 @@ const merging = require('./fasta-merging.js');
 
 exports.name = 'swarm3';
 exports.multicore = true;
-exports.category = 'ASVs inference / OTUs clustering';
+exports.category = '04. ASVs inference / OTUs clustering';
 
 
 exports.run = function (os, config, callback) {

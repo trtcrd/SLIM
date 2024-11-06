@@ -6,7 +6,7 @@ const fs = require('fs');
 
 exports.name = 'optics';
 exports.multicore = true;
-exports.category = 'ASVs inference / OTUs clustering';
+exports.category = '04. ASVs inference / OTUs clustering';
 
 exports.run = function (os, config, callback) {
 	let token = os.token;
