@@ -1,3 +1,5 @@
+# ASHURE
+
 This module integrates the full ASHURE pipeline. 
 
 This pipeline is designed to run data obtained from rolling circle amplification in which, within the same sequence, the fragment is repeated many times (concatamers) allowing to obtain a consensus sequence from the copies of the exact same original DNA string.
