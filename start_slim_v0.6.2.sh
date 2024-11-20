@@ -13,20 +13,20 @@ Help()
     echo
     echo "Syntax: start_slim_v0.6.2.sh [-h] [-p] [-P] [port]"
     echo "options:"
-    echo "-h --help		Print this Help."
+    echo "-h --help     Print this Help."
     echo ""
-    echo "-d --docker	Use docker instead of podman"
+    echo "-d --docker   Use docker instead of podman"
     echo ""
-    echo "-P --port	  	<numeric:numeric> Specify the port that has to be opened for the container. 8080:80 by default"
+    echo "-P --port     <numeric:numeric> Specify the port that has to be opened for the container. 8080:80 by default"
     echo ""
 }
 
-while getopts hpP: flag
+while getopts hdP: flag
 do
     case "${flag}" in
         h) Help
         exit;;
-        p) podman=false;;
+        d) podman=false;;
         P) port="${OPTARG}";;
         \?) echo "usage: bash start_slim_v0.6.2.sh [-h|p|P]"
         # \?) echo "usage: bash start_slim_v0.6.2.sh [-h|P]"
