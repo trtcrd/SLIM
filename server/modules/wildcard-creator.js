@@ -24,24 +24,24 @@ exports.run = function (os, config, callback) {
 
 	// if options.refdb is not defined, set it to empty string
 
-	function logAttributes(obj, prefix = '') {
-		for (const key in obj) {
-			if (obj.hasOwnProperty(key)) {
-				const value = obj[key];
-				const newPrefix = prefix ? `${prefix}.${key}` : key;
-				if (typeof value === 'object' && value !== null) {
-					logAttributes(value, newPrefix);
-				} else {
-					console.log(newPrefix);
-				}
-			}
-		}
-	}
+	// function logAttributes(obj, prefix = '') {
+	// 	for (const key in obj) {
+	// 		if (obj.hasOwnProperty(key)) {
+	// 			const value = obj[key];
+	// 			const newPrefix = prefix ? `${prefix}.${key}` : key;
+	// 			if (typeof value === 'object' && value !== null) {
+	// 				logAttributes(value, newPrefix);
+	// 			} else {
+	// 				console.log(newPrefix);
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	// Call the function with the options object
-	logAttributes(options);
-	console.log('checking config');
-	logAttributes(config);
+	// logAttributes(options);
+	// console.log('checking config');
+	// logAttributes(config);
 	var command = ['creating', 'wildcard'];
 	// Joining
 	console.log('Creating wildcard');

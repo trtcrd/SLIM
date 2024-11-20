@@ -19,8 +19,7 @@ class wildcardcreatorModule extends Module {
 			var input_lists = document.getElementsByClassName('input_list_suggest');
 			var output_file = that.dom.getElementsByClassName('output_zone')[0].getElementsByTagName('input')[0];
 			
-
-			console.log("wildcardcreator.js: suggest.onchange");
+			// console.log("wildcardcreator.js: suggest.onchange");
 
 			// for (let id_list=0 ; id_list<input_lists.length ; id_list++) {
 				// let input_list = input_lists[id_list];
@@ -46,13 +45,13 @@ class wildcardcreatorModule extends Module {
 			
 
 			filenames = filenames.filter(function (filename) {
-				console.log(filename)
+				// console.log(filename)
 				if (suggest.value.includes('*')) {
 					var begin = suggest.value.indexOf('*');
 					var beforeAsterisk = suggest.value.substring(0, begin);
 					var end = suggest.value.lastIndexOf('*');
 					var afterAsterisk = suggest.value.substring(end + 1);
-					console.log(beforeAsterisk + ' & ' + afterAsterisk)
+					// console.log(beforeAsterisk + ' & ' + afterAsterisk)
 					if (filename.includes(beforeAsterisk)){
 						// remove the first match in the filename with begin
 						filename = filename.replace(beforeAsterisk, '');
@@ -70,10 +69,10 @@ class wildcardcreatorModule extends Module {
 			var html = '';
 			for (let file_id in filenames) {
 				let filename = filenames[file_id];
-				console.log("filename");
-				console.log(filename);
-				console.log("output_file");
-				console.log(output_file.value);
+				// console.log("filename");
+				// console.log(filename);
+				// console.log("output_file");
+				// console.log(output_file.value);
 				if (filename != output_file.value) {
 					// html += '<p><input type="checkbox" name="' + filename + '" class="checklist"'
 					// 	+ (checked.includes(filename) ? ' checked' : '') + '> ' + filename + '</p>';
@@ -135,7 +134,7 @@ class wildcardcreatorModule extends Module {
 				});
 			}
 			const commonPattern = findCommonPattern(filenames);
-			console.log(commonPattern);
+			// console.log(commonPattern);
 
 			output_file.value = commonPattern[0];
 			// // this.out_files = [consens.value];
@@ -146,7 +145,7 @@ class wildcardcreatorModule extends Module {
 	update_input_lists () {
 		var input_lists = document.getElementsByClassName('input_list_suggest');
 
-		console.log("wildcardcreator.js: update_input_lists_suggest");
+		// console.log("wildcardcreator.js: update_input_lists_suggest");
 
 		for (let id_list=0 ; id_list<input_lists.length ; id_list++) {
 			let input_list = input_lists[id_list];
