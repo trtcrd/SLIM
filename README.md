@@ -207,11 +207,11 @@ For more details on the app, you can refer to the [wiki pages](https://github.co
 # Creating your own module
 
 To contribute by adding new softwares, you will have to know a little bit of HTML and javascript.
-Please refer to the Man pages to learn [how to create a module](https://github.com/adriantich/SLIM/blob/master/man/README.md).
+Please refer to the Man pages to learn [how to create a module](https://github.com/adriantich/SLIM/blob/master/man/README.md#tutorials).
 
 # Current modules by category
 
-In the [manual](https://github.com/adriantich/SLIM/blob/master/man/README.md) page you can find a list of the different modules implemented and their help pages.
+In the [manual](https://github.com/adriantich/SLIM/blob/master/man/README.md#list-of-the-modules) page you can find a list of the different modules implemented and their help pages.
 
 # Version history
 
