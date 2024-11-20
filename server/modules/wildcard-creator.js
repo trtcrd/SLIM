@@ -4,7 +4,7 @@ const fs = require('fs');
 // const derep = require('./dereplication.js');
 // const tools = require('../toolbox.js');
 
-exports.name = 'joker-creator';
+exports.name = 'wildcard-creator';
 exports.multicore = true;
 exports.category = '01. Demultiplexing / sample grouping';
 
@@ -42,10 +42,10 @@ exports.run = function (os, config, callback) {
 	logAttributes(options);
 	console.log('checking config');
 	logAttributes(config);
-	var command = ['creating', 'joker'];
+	var command = ['creating', 'wildcard'];
 	// Joining
-	console.log('Creating joker');
-	fs.appendFileSync(directory + config.log, '--- Joker creation ---\n');
+	console.log('Creating wildcard');
+	fs.appendFileSync(directory + config.log, '--- wildcard creation ---\n');
 	var child = exec('echo', command);
 
 
@@ -59,6 +59,6 @@ exports.run = function (os, config, callback) {
 		if (code == 0) {
 			callback(os, null);
 		} else
-			callback(os, "create joker terminate on code " + code);
+			callback(os, "create wildcard terminate on code " + code);
 	});
 };

@@ -1,8 +1,8 @@
 
 
-class jokercreatorModule extends Module {
+class wildcardcreatorModule extends Module {
 	constructor (params) {
-		super ("joker-creator", "");
+		super ("wildcard-creator", "");
 
 		this.params = params;
 	}
@@ -20,7 +20,7 @@ class jokercreatorModule extends Module {
 			var output_file = that.dom.getElementsByClassName('output_zone')[0].getElementsByTagName('input')[0];
 			
 
-			console.log("jokercreator.js: suggest.onchange");
+			console.log("wildcardcreator.js: suggest.onchange");
 
 			// for (let id_list=0 ; id_list<input_lists.length ; id_list++) {
 				// let input_list = input_lists[id_list];
@@ -146,7 +146,7 @@ class jokercreatorModule extends Module {
 	update_input_lists () {
 		var input_lists = document.getElementsByClassName('input_list_suggest');
 
-		console.log("jokercreator.js: update_input_lists_suggest");
+		console.log("wildcardcreator.js: update_input_lists_suggest");
 
 		for (let id_list=0 ; id_list<input_lists.length ; id_list++) {
 			let input_list = input_lists[id_list];
@@ -188,15 +188,15 @@ class jokercreatorModule extends Module {
 
 	getConfiguration () {
 		var config = super.getConfiguration();
-		console.log("jokercreator.js: getConfiguration");
-		console.log(config);
+		// console.log("wildcardcreator.js: getConfiguration");
+		// console.log(config);
 		config.inputs.filechecked = file_manager.getFiles()[0];
 
 		config.inputs.suggestion = config.outputs.joker;
 		config.outputs.joker = undefined;
 		// config.outputs.joker= config.outputs.joker.replace('*','$');
-		console.log("jokercreator.js: getConfiguration2");
-		console.log(config);
+		// console.log("wildcardcreator.js: getConfiguration2");
+		// console.log(config);
 
 		return config;
 	}
@@ -206,7 +206,7 @@ class jokercreatorModule extends Module {
 };
 
 
-module_manager.moduleCreators['joker-creator'] = (params) => {
-	return new jokercreatorModule(params);
+module_manager.moduleCreators['wildcard-creator'] = (params) => {
+	return new wildcardcreatorModule(params);
 };
 
