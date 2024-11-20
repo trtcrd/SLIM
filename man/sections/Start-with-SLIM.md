@@ -5,7 +5,7 @@ Welcome to SLIM.
 SLIM is a platform that allows you to run genomics pipelines with a Graphical User Interface (GUI). This documentation is addressed to the user that wants to analyse the data with the available modules but also to the developers and IT people that wants to install the container and/or develop new modules to expand the platform.
 
 # Disclaimer:
-Before starting, SLIM is build in a docker/podman container. The installation and construction of this container can be time consuming and errors derived from requirements in some specific company certificates requires medium to advanced knowledge in IT. Even though, we encourage everybody to try to play with the program and report the issues and bugs found.
+Before starting, SLIM is build in a podman container. The installation and construction of this container can be time consuming and errors derived from requirements in some specific company certificates requires medium to advanced knowledge in IT. Even though, we encourage everybody to try to play with the program and report the issues and bugs found.
 Also remember that this new version has been updated and documented by a Biologist playing bioinformatics. Terminology, explanations and the software itself can be improved. Feel free to open an issue if something is not clear or things can be upgraded. Thus, be awared that this is a documentation from Biologists to Biologists and will try to remain User friendly as possible.
 
 # What is SLIM and how it works.
