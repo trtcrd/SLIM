@@ -1,7 +1,7 @@
 class AssignOtuIdTaxaModule extends Module {
   constructor (params) {
   // lien de la doc
-  super ("assignment-table-IDTAXA", "https://github.com/adriantich/SLIM/wiki/OTU---IDTAXA-classifier");
+  super ("assignment-table-IDTAXA", "https://github.com/adriantich/SLIM/blob/master/man/sections/OTU-IDTAXA-classifier.md");
 
   this.params = params;
   }

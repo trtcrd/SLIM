@@ -1,7 +1,7 @@
 
 class Swarm3Module extends Module {
 	constructor (params) {
-		super ("swarm3", "https://github.com/adriantich/SLIM/wiki/Swarm-module");
+		super ("swarm3", "https://github.com/adriantich/SLIM/blob/master/man/sections/SWARM3-Module.md");
 
 		this.params = params;
 	}

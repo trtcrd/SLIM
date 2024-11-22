@@ -1,7 +1,7 @@
 
 class DemultiplexerModule extends Module {
 	constructor (params) {
-		super ("demultiplexer", "https://github.com/adriantich/SLIM/wiki/Double-Tag-Demultiplexing-(DTD)");
+		super ("demultiplexer", "https://github.com/adriantich/SLIM/blob/master/man/sections/DTD.md");
 
 		this.out_files = [];
 		this.params = params;

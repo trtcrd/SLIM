@@ -1,7 +1,7 @@
 
 class ChopperModule extends Module {
 	constructor (params) {
-		super ("chopper", "https://github.com/wdecoster/chopper/tree/master");
+		super ("chopper", "https://github.com/adriantich/SLIM/blob/master/man/sections/CHOPPER.md");
 
 		this.params = params;
 	}

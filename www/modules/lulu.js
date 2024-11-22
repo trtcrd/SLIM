@@ -1,7 +1,7 @@
 
 class LuluModule extends Module {
 	constructor (params) {
-		super ("lulu", "https://github.com/adriantich/SLIM/wiki/LULU-post-clustering-module");
+		super ("lulu", "https://github.com/adriantich/SLIM/blob/master/man/sections/LULU-post-clustering-module.md");
 
 		this.params = params;
 	}

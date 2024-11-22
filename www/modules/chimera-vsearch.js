@@ -1,7 +1,7 @@
 
 class ChimeraModule extends Module {
 	constructor (params) {
-		super ("chimera-vsearch", "https://github.com/adriantich/SLIM/wiki/Chimera-Vsearch");
+		super ("chimera-vsearch", "https://github.com/adriantich/SLIM/blob/master/man/sections/Chimera-Vsearch.md");
 
 		this.params = params;
 		this.filtered_value = "";

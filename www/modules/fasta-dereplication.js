@@ -1,7 +1,7 @@
 
 class DereplicationModule extends Module {
 	constructor (params) {
-		super ("fasta-dereplication", 'https://github.com/adriantich/SLIM/wiki/Fasta-dereplication');
+		super ("fasta-dereplication", 'https://github.com/adriantich/SLIM/blob/master/man/sections/Fasta-dereplication.md');
 
 		this.params = params;
 	}

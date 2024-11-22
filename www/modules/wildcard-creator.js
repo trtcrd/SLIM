@@ -2,7 +2,7 @@
 
 class wildcardcreatorModule extends Module {
 	constructor (params) {
-		super ("wildcard-creator", "");
+		super ("wildcard-creator", "https://github.com/adriantich/SLIM/blob/master/man/sections/wildcard_creator.md");
 
 		this.params = params;
 	}
