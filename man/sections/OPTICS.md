@@ -1,12 +1,11 @@
 # OPTICS
 
-This module integrates the clustering submodule (clst) from the ASHURE pipeline.
-It runs the following steps:
+This module integrates the clustering submodule (clst) from the [ASHURE](https://github.com/adriantich/SLIM/blob/master/man/sections/ASHURE.md) pipeline.
 
 ## Module interactions
 
 ### Main inputs
-* The fastq files to process. To be able to select multiple fastq at the same time, the shared pattern is needed. However, to have create such option, upload a tar.gz file with all the fasta files to process compressed in it.
+* The fastq files to process. To be able to select multiple fastq at the same time, the shared pattern is needed, the wildcard. See [wildcard creator](https://github.com/adriantich/SLIM/blob/master/man/sections/wildcard_creator.md) module for more information.
 
 #### Optional inputs
 * Minimum cluster size: Number of sequences from the centroid for multi-alignment (integer)
@@ -22,9 +21,12 @@ It runs the following steps:
 * Simmilarity threshold for sequence reads to be merged into the center sequence (from 0 to 1)
 
 ### Main outputs
-* Consensus sequences
 
 * OTU table output file
+
+* Consensus sequences
+
+* Information of which sequence has been clustered to which consensus.
 
 ## References
 
