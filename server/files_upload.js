@@ -3,7 +3,7 @@ const formidable = require('formidable');
 const path = require('path');
 const exec = require('child_process').spawn;
 
-const mailer = require('./mail_manager.js');
+// const mailer = require('./mail_manager.js');
 
 exports.jokers = {};
 exports.deletions = {};
@@ -57,7 +57,7 @@ exports.upload = function (app) {
 		// specify that we want to allow the user to upload multiple files in a single request
 		form.multiples = true;
 		// specify th emaximum upload allowed
-		form.maxFileSize = 10 * 1024 * 1024 * 1024;
+		form.maxFileSize = 60 * 1024 * 1024 * 1024;
 
 		// set upload directory corresponding to the token send
 		var token = null;
@@ -267,13 +267,13 @@ var proccess_file = (token, file, upload_dir) => {
 
 exports.trigger_job_end = (token) => {
 	// End mail
-	mailer.send_end_mail (token);
+	// mailer.send_end_mail (token);
 
 	// Reminder
-	setTimeout (
-		() => {mailer.send_delete_reminder(token)},
-		1000 * 3600 * 21
-	);
+	// setTimeout (
+	// 	() => {mailer.send_delete_reminder(token)},
+	// 	1000 * 3600 * 21
+	// );
 
 	// Delete environment 24h15 after the process end
 	setTimeout (

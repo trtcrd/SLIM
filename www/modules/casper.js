@@ -1,7 +1,7 @@
 
 class CasperModule extends Module {
 	constructor (params) {
-		super ('casper', 'https://github.com/yoann-dufresne/amplicon_pipeline/wiki/Casper');
+		super ('casper', 'https://github.com/adriantich/SLIM/blob/master/man/sections/Casper.md');
 
 		this.params = params;
 	}

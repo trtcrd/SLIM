@@ -16,10 +16,16 @@ class FastqNoPrimerModule extends Module {
 		let out_rev = this.dom.getElementsByClassName('output_zone')[1].getElementsByTagName('input')[0];
 
 		fwd.onchange = () => {
+			var idx = fwd.value.lastIndexOf('.');
+			if (idx <= 0)
+				return;
 			out_fwd.value = fwd.value.substr(0, fwd.value.lastIndexOf('.')) + '_noPrimers.fastq';
 			out_fwd.onchange();
 		};
 		rev.onchange = () => {
+			var idx = rev.value.lastIndexOf('.');
+			if (idx <= 0)
+				return;
 			out_rev.value = rev.value.substr(0, rev.value.lastIndexOf('.')) + '_noPrimers.fastq';
 			out_rev.onchange();
 		};

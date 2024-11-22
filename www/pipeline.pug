@@ -17,46 +17,59 @@ head
 //p #{name}'s Pug source code!
 
 body
-	div#slim_logo
+	// Managed in css/pipeline.css
+	div#slim_logo 
 		img.image(src='/imgs/slim_logo.svg')
+	// Managed in css/pipeline.css
 	div#main_frame
+		// Managed in css/pipeline.css
 		div#configuration
 			p Configuration
+			// Managed in js/global.js
 			button#down_conf Save
+			// Managed in js/global.js
 			button#up_conf Load
+			// Managed in js/global.js
 			button#reset_conf Reset
+			// Managed in js/global.js
 			input#up_conf_hidden(type='file', name='uploaded', hidden)
 
 		div#uploader.module
 			h2 Files uploader
 			div#up_list.file_list
+			// the up_forms leaves space above the buttons but I can't see where it is definned.
 			form#up_form
 				p Add files:
+				// up_files will run in www/js/upload.js
 				input#up_files(type='file', name='uploaded' multiple)
-				button#up_submit Upload
+				// up_submit will run in www/js/upload.js
+				button#up_submit Upload 
+				p (Max 60Gb at the same time)
 				div.progress
 					div.progress-bar(role="progressbar")
-
-		script(src='/js/upload.js')
-
+				
 		div.gui_warnings
-
+		// Managed in js/module.js and js/run_pipeline.js
 		div#modules
 		
+		// Managed in css/pipeline.css
 		div#module_managment
 			h3 Add a new module
+			// Managed in css/pipeline.css
 			div#add_area
+				// Managed in js/module.js and js/run_pipeline.js
 				select#module_list
+				// Managed in css/pipeline.css and js/run_pipeline.js
 				button#add_module +
-
+		// Managed in css/pipeline.css and js/run_pipeline.js
 		div.gui_warnings
+		// Managed in css/pipeline.css
 		div#start_area
-			input(type='text', value='Your email address')#mail
+			// input(type='text', value='Your email address')#mail
 			button#start Start analysis
 
+	script(src='/js/upload.js')
 	script(src='/js/module.js')
-
-	// Main scripts
 	script(src='/js/run_pipeline.js')
 	script(src='/js/global.js')
 

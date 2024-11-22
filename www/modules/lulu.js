@@ -1,7 +1,7 @@
 
 class LuluModule extends Module {
 	constructor (params) {
-		super ("lulu", "https://github.com/trtcrd/SLIM/wiki/LULU-post-clustering-module");
+		super ("lulu", "https://github.com/adriantich/SLIM/blob/master/man/sections/LULU-post-clustering-module.md");
 
 		this.params = params;
 	}
@@ -16,6 +16,9 @@ class LuluModule extends Module {
 		let cooccurence = this.dom.getElementsByClassName('param_value')[1]
 
 		otus_table.onchange = () => {
+			var idx = otus_table.value.lastIndexOf('.');
+			if (idx <= 0)
+				return;
 			otus_lulu.value = otus_table.value.substr(0, otus_table.value.lastIndexOf('.')) + '_lulu.tsv';
 			otus_lulu.onchange();
 		};

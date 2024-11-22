@@ -7,7 +7,7 @@ const derep = require('./dereplication.js');
 
 exports.name = 'fasta-merging';
 exports.multicore = true;
-exports.category = 'Utils';
+exports.category = '08. Utils';
 
 exports.run = (os, config, callback) => {
 	let token = os.token;
@@ -17,7 +17,7 @@ exports.run = (os, config, callback) => {
 	var merged = tools.tmp_filename();
 	var origins = directory + config.params.outputs.origins;
 	var fastas = Object.values(config.params.inputs);
-	fastas = fastas.map((fasta) => {return directory + fasta})
+	fastas = fastas.map((fasta) => {return directory + fasta});
 	
 	var command = ['/app/lib/python_scripts/fasta_merging.py', '-out', directory+merged, '-ori', origins].concat(fastas);
 

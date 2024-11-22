@@ -1,7 +1,7 @@
 class AssignOtuIdTaxaModule extends Module {
   constructor (params) {
   // lien de la doc
-  super ("assignment-table-IDTAXA", "https://github.com/trtcrd/SLIM/wiki/OTU---IDTAXA-classifier");
+  super ("assignment-table-IDTAXA", "https://github.com/adriantich/SLIM/blob/master/man/sections/OTU-IDTAXA-classifier.md");
 
   this.params = params;
   }
@@ -17,6 +17,9 @@ class AssignOtuIdTaxaModule extends Module {
     let threshold = this.dom.getElementsByClassName('param_value')[0];
 
     otu_table.onchange = () => {
+      var idx = otu_table.value.lastIndexOf('.');
+			if (idx <= 0)
+				return;
       assignIdTaxa.value = otu_table.value.substr(0,otu_table.value.lastIndexOf('.'))+ '_assigned-idtaxa.tsv';
       assignIdTaxa.onchange();
     };

@@ -3,17 +3,74 @@
   <img src="https://github.com/yoann-dufresne/SLIM/blob/master/www/imgs/slim_logo.svg" alt="SLIM logo" width="250px"/>
 </p>
 
-SLIM is a node.js web app providing an easy Graphical User Interface (GUI) to wrap bioinformatics tools for amplicon sequencing data analysis (from illumina paired-end FASTQ to annotated ASV/OTU matrix).
-The application is embedded in a [docker](https://www.docker.com/).
+SLIM is a node.js web app providing an easy Graphical User Interface (GUI) to wrap bioinformatics tools for amplicon sequencing data analysis (from illumina paired-end or nanopore FASTQ to annotated ASV/OTU matrix).
+The application is embedded in a [podman](https://podman.io/).
 
 # Install and deploy the web app
 
-See below for full instructions
+First of all, podman needs to be installed on the machine. You can find instructions here :
+* [podman for Ubuntu](https://podman.io/docs/installation#ubuntu)
+* [podman for Debian](https://podman.io/docs/installation#debian)
+* [podman for macOS](https://podman.io/docs/installation#macos)
+
+To install SLIM, get the last stable release [here](https://github.com/trtcrd/SLIM/archive/v0.6.2.tar.gz) or, using terminal :
+```bash
+sudo apt-get update && apt-get install git curl
+curl -OL https://github.com/trtcrd/SLIM/archive/v0.6.2.tar.gz
+tar -xzvf v0.6.2.tar.gz
+cd SLIM-0.6.2
+```
+
+<!-- Before deploying SLIM, you need to configure the mailing account that will be used for mailing service.
+We advise to use gmail, as it is already set in the 'server/config.js' file.
+This file need to be updated with your 'user' and 'pass' credentials on the server:
+
+```
+exports.mailer = {
+	host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // true for 465, false for other ports
+    auth: {
+        user: 'username',
+        pass: 'password'
+    }
+}
+``` -->
+
+
+As soon as podman is installed and running and the SLIM archive downloaded, it can be deployed by using the two scripts `get_dependencies_slim_v0.6.2.sh` and `start_slim_v0.6.2.sh`.
+* `get_dependencies_slim_v0.6.2.sh` fetches all the bioinformatics tools needed from their respective repositories.
+* `start_slim_v0.6.2.sh` destroys the current running webserver to replace it with a new one. **/!\\** All the files previously uploaded and the results of analysis will be detroyed during the process.
+
+```bash
+bash get_dependencies_slim_v0.6.2.sh
+bash start_slim_v0.6.2.sh
+```
+
+The server is configured to use up to 8 CPU cores per job. The amount of available cores will determine the amount of job that can be executed in parallel (1-8 -> 1 job, 16 -> 2 jobs, etc.). The number of cores is defined in the [scheduler.js](https://github.com/adriantich/SLIM/blob/master/server/scheduler.js) script in the line:
+```javascript
+const CORES_BY_RUN = 8;
+```
+
 
 # Accessing the webserver
 
 The execution of the `start_slim_v0.6.2.sh` script deploys and start the webserver.
-By default, the webserver is accessible on the 8080 port.
+By default, the webserver is accessible on the 8080 port but can be modified using the -P option:
+```
+> bash start_slim_v0.6.2.sh -h
+start_slim_v0.6.2.sh destroys the current running webserver to replace it with a new one. 
+/!\ All the files previously uploaded and the results of analysis will be detroyed during the process.
+
+Syntax: start_slim_v0.6.2.sh [-h] [-p] [-P] [port]
+options:
+-h --help       Print this Help.
+
+-d --docker     Use docker instead of podman
+
+-P --port       <numeric:numeric> Specify the port that has to be opened for the container. 8080:80 by default
+```
+
 
 * To access it on a remote server from your machine, type the server IP address followed by ":8080" (for example `156.241.0.12:8080`) from an internet browser (prefer Firefox and Google Chrome).
 * If SLIM is deployed on your own machine, type `localhost:8080/`
@@ -86,7 +143,9 @@ CTT
 
 # Analyse your data
 
-Usually, a typical workflow would include:
+## Metabarcoding
+
+Usually, a typical Metabarcoding workflow would include:
 1. Demultiplexing the libraries (if each library corresponds to a single sample, adapt your tag-to-sample file accordingly, and proceed to the joining step)
 2. Joining the paired-end reads
 3. Chimera removal
@@ -100,7 +159,9 @@ Pick one and hit the "+" button. This will add the module at the bottom of the f
 
 The chaining between module is made through the files names used as input / output. To avoid having to select mannually all the samples to be included in an analysis, wildcards '*' (meaning 'all') are generated and used by the application.
 Such wildcards are generated from the compressed libraries fastq files (tar.gz) and by the tag-to-sample file.
-**Users cannot type on their own wildcards in the file names**. Instead, the application has an autocompletion feature and will make wildcards suggestions for the user to select within the GUI.
+**Users cannot type on their own wildcards in the file names of some modules**. Instead, the application has an autocompletion feature and will make wildcards suggestions for the user to select within the GUI.
+
+However, when working with demultiplexed libraries, the demultiplexing step is not needed and in substitution we need to create this wildcard pattern to proced thoughout the different steps. To do so, we have created the module [wildcard-creator](https://github.com/adriantich/SLIM/blob/master/man/sections/wildcard_creator.md).
 
 To point to a set of samples (all samples from the tag-to-sample, or all the samples from the library_1 for instance), there will be a '*', and the application adds the processing step as a suffix incrementaly:
 - all samples from the tag-to-sample file that have been demultiplexed: 'tag_to_sample*_fwd.fastq' and 'tag_to_sample*_rev.fastq'
@@ -142,80 +203,15 @@ Each module status is displayed besides its names:
 
 For more details on the app, you can refer to the [wiki pages](https://github.com/yoann-dufresne/SLIM/wiki)
 
-# Install, deploy and manage the web app
-
-First of all, docker needs to be installed on the machine. You can find instructions here :
-* [docker for Debian](https://docs.docker.com/install/linux/docker-ce/debian/)
-* [docker for Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
-* [docker for macOS](https://docs.docker.com/docker-for-mac/install/)
-
-To install SLIM, get the last stable release [here](https://github.com/trtcrd/SLIM/archive/v0.6.2.tar.gz) or, using terminal :
-```bash
-sudo apt-get update && apt-get install git curl
-curl -OL https://github.com/trtcrd/SLIM/archive/v0.6.2.tar.gz
-tar -xzvf v0.6.2.tar.gz
-cd SLIM-0.6.2
-```
-
-Before deploying SLIM, you need to configure the mailing account that will be used for mailing service.
-We advise to use gmail, as it is already set in the 'server/config.js' file.
-This file need to be updated with your 'user' and 'pass' credentials on the server:
-
-```
-exports.mailer = {
-	host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // true for 465, false for other ports
-    auth: {
-        user: 'username',
-        pass: 'password'
-    }
-}
-```
-
-
-As soon as docker is installed and running, the SLIM archive downloaded and the mailing account set, it can be deployed by using the two scripts `get_dependencies_slim_v0.6.2.sh` and `start_slim_v0.6.2.sh` as **super user**.
-* `get_dependencies_slim_v0.6.2.sh` fetches all the bioinformatics tools needed from their respective repositories.
-* `start_slim_v0.6.2.sh` destroys the current running webserver to replace it with a new one. **/!\\** All the files previously uploaded and the results of analysis will be detroyed during the process.
-
-```bash
-sudo bash get_dependencies_slim_v0.6.2.sh
-sudo bash start_slim_v0.6.2.sh
-```
-
-The server is configured to use up to 8 CPU cores per job. The amount of available cores will determine the amount of job that can be executed in parallel (1-8 -> 1 job, 16 -> 2 jobs, etc.). To admin and access SLIM logs, please refer to the docker command line [documentation](https://docs.docker.com/engine/reference/commandline/docker/).
-
 
 # Creating your own module
 
 To contribute by adding new softwares, you will have to know a little bit of HTML and javascript.
-Please refer to the wiki pages to learn [how to create a module](https://github.com/yoann-dufresne/SLIM/wiki/How-to-write-a-new-module).
+Please refer to the Man pages to learn [how to create a module](https://github.com/adriantich/SLIM/blob/master/man/README.md#tutorials).
 
 # Current modules by category
 
-## Demultiplexing
-* [DTD](https://github.com/yoann-dufresne/DoubleTagDemultiplexer): Demultiplex libraries from illumina outputs
-
-## Paired-end read joiner
-* [Pandaseq](https://github.com/neufeld/pandaseq)
-* [vsearch](https://github.com/torognes/vsearch) mergepair
-* [CASPER](http://best.snu.ac.kr/casper/)
-
-## Chimera detection
-* [vsearch](https://github.com/torognes/vsearch) uchime
-
-## ASVs inference / OTUs clustering
-* [DADA2](https://github.com/benjjneb/dada2)
-* [vsearch](https://github.com/torognes/vsearch) uclust
-* [swarm](https://github.com/torognes/swarm)
-
-## Sequence assignment
-* [vsearch](https://github.com/torognes/vsearch) usearch
-* [IDTAXA](http://www2.decipher.codes/Documentation/Documentation-ClassifySequences.html)
-
-## Post-clustering
-* [LULU](https://github.com/tobiasgf/lulu)
-
+In the [manual](https://github.com/adriantich/SLIM/blob/master/man/README.md#list-of-the-modules) page you can find a list of the different modules implemented and their help pages.
 
 # Version history
 

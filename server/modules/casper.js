@@ -4,7 +4,7 @@ const fs = require('fs');
 
 exports.name = 'casper';
 exports.multicore = true;
-exports.category = 'Paired-end joiner';
+exports.category = '02. Paired-end joiner';
 
 exports.run = function (os, config, callback) {
 	let token = os.token;

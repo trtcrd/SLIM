@@ -5,7 +5,7 @@ const tools = require('../toolbox.js');
 
 exports.name = 'lulu';
 exports.multicore = false;
-exports.category = 'Post-processing';
+exports.category = '06. Post-processing';
 
 exports.run = function (os, config, callback) {
 	let token = os.token;

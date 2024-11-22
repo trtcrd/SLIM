@@ -7,7 +7,7 @@ const tools = require('../toolbox.js');
 
 exports.name = 'pandaseq';
 exports.multicore = true;
-exports.category = 'Paired-end joiner';
+exports.category = '02. Paired-end joiner';
 
 var algorithms = {
 	bayesian: 'simple_bayesian',

@@ -1,0 +1,98 @@
+<p>Input fastq files</p>
+<!-- <p>(must be uploaded as compressed .tar.gz, and contain the fastq files)</p> -->
+<input type="text" name="fastq" class='input_file_text fastq agregate'>
+
+<p>Primers fasta file</p>
+<p>(First sequence is the forward and second is the reverse)</p>
+<input type="text" name="primers" class="input_file fasta">
+
+<!-- for the prfg module -->
+<!-- for the fgs module -->
+<!-- for the msa module -->
+<!-- cons_file csv file for consensus sequences-->
+<p>Consensus sequences output file</p>
+<span class="output_zone">
+	<input type="text" name="cons_file" value='consensus_seqs.csv' />
+	<a href="" download><img src="/imgs/download.png" class="download"/></a>
+</span>
+
+<!-- for the fpmr module -->
+<!-- cin_file csv file containing trimmed consensus reads-->
+<p>Trimmed Consensus sequences output file</p>
+<span class="output_zone">
+	<input type="text" name="cin_file" value='trimmed_consensus_seqs.csv' />
+	<a href="" download><img src="/imgs/download.png" class="download"/></a>
+</span>
+<!-- for the clst module -->
+<!-- cout_file output csv file for cluster center sequences-->
+<p>Cluster center sequences output file</p>
+<span class="output_zone">
+	<input type="text" name="cout_file" value='cluster_center_seqs.csv' />
+	<a href="" download><img src="/imgs/download.png" class="download"/></a>
+</span>
+
+<div class="options">
+	<!-- for the prfg module -->
+	<!-- prfg_fs fastq read size ranges to search for primers-->
+	<div class="ashurelength">
+		<p>Reads length:</p>
+		<p>Min: <input type="text" name="minlength" class="integer number param_value" value="1">
+		Max: <input type="text" name="maxlength" class="integer number param_value" value="2147483647"></p>
+	</div>
+	<!-- for the fgs module -->
+	<!-- for the msa module -->
+	<!-- for the fpmr module -->
+	<!-- for the clst module -->
+		<!-- clst_csize min cluster size (20 default) -->
+	<p class="clst_csize">
+		<p>Minimum cluster size:</p> 
+		<input type="text" name="clst_csize" class="integer number param_value" value="20">
+	</p>
+		<!-- clst_th_m threshold for marking clusters to merge -->
+	<p class="clst_th_m">
+		<p>Threshold for marking clusters to merge:</p> 
+		<input type="text" name="clst_th_m" class="integer number param_value" value="0.9">
+	</p>
+		<!-- clst_th_s partitions to split the sequences for sweep -->
+	<p class="clst_th_s">
+		<p>Partitions to split the sequences for sweep:</p>  
+		<input type="text" name="clst_th_s" class="integer number param_value" value="4">
+	</p>
+		<!-- clst_N size of sequence subsample -->
+	<p class="clst_N">
+		<p>Size of sequence subsample:</p>  
+		<input type="text" name="clst_N" class="integer number param_value" value="2000">
+	</p>
+		<!-- clst_N_iter iterations to run clustering -->
+	<p class="clst_N_iter">
+		<p>Iterations to run clustering:</p>  
+		<input type="text" name="clst_N_iter" class="integer number param_value" value="10">
+	</p>
+</div>
+<!-- for the prfg module -->
+	<!-- prfg_fs fastq read size ranges to search for primers-->
+<!-- outputs:
+	db_file output csv file of pseudo reference sequences-->
+
+<!-- for the fgs module -->
+<!-- outputs:
+	frag_folder folder where frags csv files are stored-->
+
+<!-- for the msa module -->
+<!-- outputs:
+	msa_folder folder where msa input and output files are saved
+	cons_file csv file for consensus sequences-->
+
+<!-- for the fpmr module -->
+<!-- outputs:
+	pmatch_file csv file containing primer match information
+	cin_file csv file containing trimmed consensus reads-->
+
+<!-- for the clst module -->
+	<!-- clst_csize min cluster size (20 default) -->
+	<!-- clst_th_m threshold for marking clusters to merge -->
+	<!-- clst_th_s partitions to split the sequences for sweep -->
+	<!-- clst_N size of sequence subsample -->
+	<!-- clst_N_iter iterations to run clustering -->
+<!-- outputs:
+	cout_file output csv file for cluster center sequences-->

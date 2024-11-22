@@ -7,7 +7,7 @@ const tools = require('../toolbox.js');
 
 exports.name = 'assignment-fasta-vsearch';
 exports.multicore = true;
-exports.category = 'Assignment';
+exports.category = '05. Assignment';
 
 exports.run = function (os, config, callback) {
 	let directory = '/app/data/' + os.token + '/';

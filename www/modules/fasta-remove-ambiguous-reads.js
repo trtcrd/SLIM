@@ -13,6 +13,9 @@ class NremoverModule extends Module {
 		let cleaned_fasta = this.dom.getElementsByClassName('output_zone')[0].getElementsByTagName('input')[0];
 
 		fasta.onchange = () => {
+			var idx = fasta.value.lastIndexOf('.');
+			if (idx <= 0)
+				return;
 			cleaned_fasta.value = fasta.value.substr(0, fasta.value.lastIndexOf('.')) + '_noN.fasta';
 			cleaned_fasta.onchange();
 		};

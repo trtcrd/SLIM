@@ -7,7 +7,7 @@ const derep = require('./dereplication.js');
 
 exports.name = 'fastq2fasta';
 exports.multicore = true;
-exports.category = 'Utils';
+exports.category = '08. Utils';
 
 
 exports.run = function (os, config, callback) {
@@ -16,7 +16,8 @@ exports.run = function (os, config, callback) {
 	var tmp_fasta = toolbox.tmp_filename() + '.fasta';
 	var options = ['--fastq_filter', directory + config.params.inputs.fastq,
 		'--fastaout', directory + tmp_fasta,
-		'--threads', os.cores];
+		'--threads', os.cores,
+		'--fastq_qmax', '100'];
 
 	console.log("Running fastq to fasta with the command line:");
 	console.log('/app/lib/vsearch/bin/vsearch', options.join(' '));

@@ -5,7 +5,7 @@ const csv = require('csv-parser');
 
 exports.name = 'demultiplexer';
 exports.multicore = false;
-exports.category = 'Demultiplexing';
+exports.category = '01. Demultiplexing / sample grouping';
 
 exports.run = function (os, config, callback) {
 	let token = os.token;

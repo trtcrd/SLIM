@@ -13,6 +13,9 @@ class TrimmingModule extends Module {
 		let trimmed_fasta = this.dom.getElementsByClassName('output_zone')[0].getElementsByTagName('input')[0];
 
 		fasta.onchange = () => {
+			var idx = fasta.value.lastIndexOf('.');
+			if (idx <= 0)
+				return;
 			trimmed_fasta.value = fasta.value.substr(0, fasta.value.lastIndexOf('.')) + '_trimmed.fasta';
 			trimmed_fasta.onchange();
 		};

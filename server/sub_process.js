@@ -49,8 +49,16 @@ exports.expose_modules = (app) => {
 			menu[category].push(name);
 		}
 
+		// Sort the categories alphanumerically
+		var sortedMenu = {};
+		var sortedCategories = Object.keys(menu).sort();
+		for (let category of sortedCategories) {
+			sortedMenu[category] = menu[category];
+		}
+
 		// Send back the software menu
-		res.send(JSON.stringify(menu));
+		// res.send(JSON.stringify(menu));
+		res.send(JSON.stringify(sortedMenu));
 	});
 };
 
@@ -156,6 +164,8 @@ exports.compress_outputs = (token, jokers) => {
 				var options = ['--use-compress-program=pigz',
 					'-Pcf', '/app/data/' + token + '/' + joker + '.tar.gz',
 					'-C', '/app/data/' + token + '/'].concat(files);
+				console.log('Compressing files:');
+				console.log('tar ' + options);
 				var child = exec('tar', options);
 				child.on('close', () => {});
 

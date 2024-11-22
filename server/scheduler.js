@@ -5,7 +5,7 @@ const formidable = require('formidable');
 
 const sub_process = require('./sub_process.js');
 const uploads = require('./files_upload.js');
-const mailer = require('./mail_manager.js');
+// const mailer = require('./mail_manager.js');
 const accounts = require('./accounts.js');
 const config_module = require('./config.js');
 
@@ -181,7 +181,7 @@ var sub_process_start = (tok, configs_array) => {
 			console.log(err);
 			job.status = 'aborted';
 			fs.writeFileSync('/app/data/' + token + '/exec.log', JSON.stringify(job));
-			mailer.send_crash_email(token);
+			// mailer.send_crash_email(token);
 			delete running_jobs[token]
 		}
 };
@@ -257,7 +257,7 @@ var run_job = (params, callback) => {
 	}
 
 	var token = params.token;
-	var mail = params.mail;
+	// var mail = params.mail;
 	delete params.token;
 
 	// Verification of the existance of the token
@@ -266,17 +266,17 @@ var run_job = (params, callback) => {
 		return;
 	}
 	// Save URL and mail address
-	mailer.mails[token] = mail;
+	// mailer.mails[token] = mail;
 
 	// Send a mail and cancel the directory removal
 	if (uploads.deletions[token])
 			clearTimeout(uploads.deletions[token]);
-	mailer.send_address(token);
+	// mailer.send_address(token);
 
 	// Save the conf and return message
 	fs.writeFileSync('/app/data/' + token + '/pipeline.conf', JSON.stringify(params));
 	console.log(token + ': configuration saved!');
-	delete params.mail;
+	// delete params.mail;
 
 	// Create the execution log file
 	var logFile = '/app/data/' + token + '/exec.log';
@@ -323,9 +323,9 @@ var run_job = (params, callback) => {
 exports.expose_status = function (app) {
 	app.get('/status', function (req, res) {
 		messages = []
-		if (config_module.mailer.auth.user == "username") {
-			messages.push("No mail address configured for the server<br/>You will not receive updates by email for your job.");
-		}
+		// if (config_module.mailer.auth.user == "username") {
+		// 	messages.push("No mail address configured for the server<br/>You will not receive updates by email for your job.");
+		// }
 
 		// If no token, send back a general status
 		if (req.query.token == undefined) {
@@ -448,6 +448,7 @@ var computeSoftwareOrder = function (params, token) {
 		for (let id in soft.params.inputs) {
 			let file = soft.params.inputs[id];
 			file = file.replace('$', '*');
+			file = file.replace('€', '*');
 
 			if (dependencies[file] == undefined)
 				dependencies[file] = [];
@@ -520,6 +521,8 @@ var expand_parameters = (token, params, no_joker_files, order) => {
 		// * demultiplexing
 		var dev_params = demux_executions(token, params, soft_id, no_joker_files);
 		// Copy soft parameters
+
+		console.log("checkpoint after demux_executions");
 		params[soft_id] = dev_params[soft_id];
 		// Add jokers
 		for (var id in dev_params.out_jokers)
@@ -567,6 +570,22 @@ var demux_files = (inputs, files) => {
 
 // From one entry, generate multiple exactutions
 var demux_executions = (token, params, soft_id, no_joker_files) => {
+	function logAttributes(obj, prefix = '') {
+		for (const key in obj) {
+			if (obj.hasOwnProperty(key)) {
+				const value = obj[key];
+				const newPrefix = prefix ? `${prefix}.${key}` : key;
+				if (typeof value === 'object' && value !== null) {
+					logAttributes(value, newPrefix);
+				} else {
+					console.log(newPrefix);
+				}
+			}
+		}
+	}
+
+	console.log("checkpoint start demux_executions");
+	logAttributes(params[soft_id]);
 	var inputs = params[soft_id].params.inputs;
 	var outputs = params[soft_id].params.outputs;
 
@@ -618,7 +637,8 @@ var demux_executions = (token, params, soft_id, no_joker_files) => {
 		config.new_files = {};
 		for (out_id in config.params.outputs) {
 			let filename = config.params.outputs[out_id];
-
+			console.log(filename);
+			console.log("checkpoint outputs");
 			if (filename.includes('*')) {
 				// Replace the * by the complete name
 				config.params.outputs[out_id] = filename.replace('\*', id);
@@ -633,10 +653,63 @@ var demux_executions = (token, params, soft_id, no_joker_files) => {
 	}
 	// Update if no joker
 	if (conf_array.length == 0) {
+		console.log("checkpoint new files 1");
 		conf_array.push(params[soft_id]);
-		if (Object.keys(out_jokers).length > 0)
+		if (Object.keys(out_jokers).length > 0) {
 			conf_array[0].out_jokers = out_jokers;
+		}
+		// add new_files if the filename contains "€"
+		console.log("checkpoint new files 2");
+		console.log(conf_array[0].params.inputs);
+		console.log(conf_array[0].params.inputs.length);
+		console.log(conf_array[0].params.outputs);
+		console.log(conf_array[0].params.outputs.length);
+		var inputs_from_conf = conf_array[0].params.inputs; 
+		console.log(inputs_from_conf);
+		var outputs_from_conf = conf_array[0].params.outputs;
+		console.log(outputs_from_conf);
+		
+		for (var in_id in inputs_from_conf) {
+			var filename_input = conf_array[0].params.inputs[in_id];
+			console.log(filename_input);
+			console.log("checkpoint new files 2.2");
+			console.log(in_id);
+			if (filename_input.includes('€')) {
+				for (var out_id in outputs_from_conf) {
+					let filename_output = outputs_from_conf[out_id];
+					console.log(filename_output);
+					if (filename_output.includes('*')) {
+						console.log("checkpoint new files 3");
+						conf_array[0].new_files = {};
+						filename_input = filename_input.replace('€', '*');
+			
+						let files = get_joker_files(token, filename_input, no_joker_files);
+			
+						let prefix = filename_input.substring(0, filename_input.indexOf('*'));
+						let suffix = filename_input.substring(filename_input.indexOf('*')+1);
+			
+			
+						// Look for corresponding files
+						for (var idx=0 ; idx<files.length ; idx++) {
+							let file = files[idx];
+							let core = file.substr(prefix.length);
+							core = core.substr(0, core.length-suffix.length);
+			
+							new_id = filename_output.replace('\*', core);
+							
+							conf_array[0].new_files[new_id] = new_id;
+							
+							no_joker_files.push(conf_array[0].new_files[new_id]);
+						}
+					}
+				}
+			}
+		}
 	}
+
+	console.log("checkpoint finish demux_executions");
+	console.log(conf_array);
+	logAttributes(conf_array);
 
 	params[soft_id] = conf_array;
 	return params;

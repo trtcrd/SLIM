@@ -4,7 +4,7 @@ const toolbox = require('../toolbox.js');
 
 exports.name = 'fastq-primers-filtering';
 exports.multicore = false;
-exports.category = 'Utils';
+exports.category = '08. Utils';
 
 exports.run = function (os, config, callback) {
 	let token = os.token;

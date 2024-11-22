@@ -1,0 +1,25 @@
+<p>Fastq file</p>
+<input type="text" name="fastq" class='input_file_text fastq agregate'>
+
+<p>Output file</p>
+<span class="output_zone">
+	<input type="text" name="assembly" value='filtered-chopper.fastq' />
+	<a href="" download><img src="/imgs/download.png" class="download"/></a>
+</span>
+
+<div class="options">
+	<p class="chopperQuality">
+		Quality threshold: 
+		<input type="text" name="threshold" class="integer number param_value" value="0">
+	</p>
+	<div class="choppertrim">
+		<p>Nucleotides to trim from:</p>
+		<p>Start: <input type="text" name="headcrop" class="integer number param_value" value="0">
+		End: <input type="text" name="tailcrop" class="integer number param_value" value="0"></p>
+	</div>
+	<div class="chopperlength">
+		<p>Reads length:</p>
+		<p>Min: <input type="text" name="minlength" class="integer number param_value" value="1">
+		Max: <input type="text" name="maxlength" class="integer number param_value" value="2147483647"></p>
+	</div>
+</div>
