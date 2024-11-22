@@ -19,18 +19,7 @@ This steps are mentioned in Optional inputs as to which they are referred to.
 ## Module interactions
 
 ### Main inputs
-* Input fastq file. If multiple fastq files are about to be run, type manually the shared pattern among the file names changing the unique part of the name with an \*.
-```
-i.e. for the files 
-
-sample_001.fastq sample_002.fastq 
-
-you can use:
-
-sample_00*.fastq or sample*.fastq or sample_0*.fastq
-
-but keep always the file extension (.fastq)
-```
+* The fastq files to process. To be able to select multiple fastq at the same time, the shared pattern is needed, the wildcard. See [wildcard creator](https://github.com/adriantich/SLIM/blob/master/man/sections/wildcard_creator.md) module for more information.
 
 
 * Primers file. This fasta file requires the first sequence \*\*\* to be the forward primer and the second the reverse as follows:
@@ -44,22 +33,20 @@ GGTGATCCTTCTGCAGGTTCACCTAC
 
 #### Optional inputs
 
-* Cluster minimum reads. (C)
-
-* Cd-hit cluster threshold. (C)
-
-* Primer max error. (D)
+* Minimum phred score. (A)
 
 * Reads lengths. (A)
-
-* Minimum phred score. (A)
 
 * Minimum mapped fraction of reads to be included in cluster. (C)
 
 * Minimum aligned fraction of read to be included in cluster. (C)
 
+* Cluster minimum reads. (C)
+
+* Primer max error. (D)
+
 ### Output
-* consensus. One fasta file for each sample with the consensus sequences.
+* Consensus. One fasta file for each sample with the consensus sequences.
 
 ## References
 * MSI repository: https://github.com/nunofonseca/msi?tab=readme-ov-file

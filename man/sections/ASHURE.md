@@ -21,16 +21,18 @@ It runs the following steps:
 ## Module interactions
 
 ### Main inputs
-* The fastq files to process. To be able to select multiple fastq at the same time, the shared pattern is needed. However, to have create such option, upload a tar.gz file with all the fasta files to process compressed in it.
+* The fastq files to process. To be able to select multiple fastq at the same time, the shared pattern is needed, the wildcard. See [wildcard creator](https://github.com/adriantich/SLIM/blob/master/man/sections/wildcard_creator.md) module for more information.
 
-* [Primers file](https://github.com/BBaloglu/ASHURE/blob/master/demo/primers.csv) (csv file). The expected structure of the primer csv must have the following columns:
 
-    [fwd_id,fwd_seq,rev_id,rev_seq]
+* Primers file. This fasta file requires the first sequence \*\*\* to be the forward primer and the second the reverse as follows:
+```
+>forward_primer
+GAACCTGGTTGATCCTGCCAGT
+>reverse_primer
+GGTGATCCTTCTGCAGGTTCACCTAC
+```
+\*\*\*Only IUPAC characters are allowed.
 
-    fwd_id  = name of forward primer; 
-    fwd_seq = sequence of forward primer; 
-    rev_id = name of reverse primer; 
-    rev_seq = sequence of reverse primer
 #### Optional inputs
 * Reads length (prfg module): Min and max size allowed
 
