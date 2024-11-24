@@ -231,13 +231,13 @@ In the [manual](https://github.com/adriantich/SLIM/blob/master/man/README.md#lis
 
 ### v1.0.0
 
-Moved to podman container by default (docker kept as an option)
-Added modules for processing nanopore amplicon data (CHOPPER, MSI, ASHURE, OPTICS)
-Added module to create wildcard grouping of files
-Added SWARM3 module
-Emailing service hidden, until a viable option is identified
-Documentation moved from the wiki to the tutos folder.
-Various interface bug fixes
+- Moved to podman container by default (docker kept as an option)
+- Added modules for processing nanopore amplicon data (CHOPPER, MSI, ASHURE, OPTICS)
+- Added module to create wildcard grouping of files
+- Added SWARM3 module
+- Emailing service hidden, until a viable option is identified
+- Documentation moved from the wiki to the tutos folder.
+- Various interface bug fixes
 
 ### v0.6.2
 
