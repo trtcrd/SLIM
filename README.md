@@ -3,8 +3,14 @@
   <img src="https://github.com/yoann-dufresne/SLIM/blob/master/www/imgs/slim_logo.svg" alt="SLIM logo" width="250px"/>
 </p>
 
-SLIM is a node.js web app providing an easy Graphical User Interface (GUI) to wrap bioinformatics tools for amplicon sequencing data analysis (from illumina paired-end or nanopore FASTQ to annotated ASV/OTU matrix).
+**What is it?**
+
+SLIM is a web application that aims to facilitate the access to state-of-art bioinfirmatic tools to non-specialist and to command-line reluctant for the processing of raw amplicon sequencing data, i.e. DNA metabarcoding, from illumina paired-end or nanopore FASTQ to annotated ASV/OTU matrix.
+
+SLIM is based on the node.js framework, and provide a Graphical User Interface (GUI) to interact with bioinformatic softwares. It simplifies the creation and deployment of a processing pipeline and is accessible within an internet browser over the internet. It is maintened by [Adrià Antich](mailto:a.antich@ceab.csic.es) and [Tristan Cordier](mailto:tristan.cordier@gmail.com).
 The application is embedded in a [podman](https://podman.io/).
+
+The full documentation is available [here](https://github.com/adriantich/SLIM/blob/master/man/README.md#tutorials).
 
 # Install and deploy the web app
 
@@ -13,12 +19,12 @@ First of all, podman needs to be installed on the machine. You can find instruct
 * [podman for Debian](https://podman.io/docs/installation#debian)
 * [podman for macOS](https://podman.io/docs/installation#macos)
 
-To install SLIM, get the last stable release [here](https://github.com/trtcrd/SLIM/archive/v0.6.2.tar.gz) or, using terminal :
+To install SLIM, get the last stable release [here](https://github.com/trtcrd/SLIM/archive/v1.0.0.tar.gz) or, using terminal :
 ```bash
 sudo apt-get update && apt-get install git curl
-curl -OL https://github.com/trtcrd/SLIM/archive/v0.6.2.tar.gz
-tar -xzvf v0.6.2.tar.gz
-cd SLIM-0.6.2
+curl -OL https://github.com/trtcrd/SLIM/archive/v1.0.0.tar.gz
+tar -xzvf v1.0.0.tar.gz
+cd SLIM-1.0.0
 ```
 
 <!-- Before deploying SLIM, you need to configure the mailing account that will be used for mailing service.
@@ -38,13 +44,13 @@ exports.mailer = {
 ``` -->
 
 
-As soon as podman is installed and running and the SLIM archive downloaded, it can be deployed by using the two scripts `get_dependencies_slim_v0.6.2.sh` and `start_slim_v0.6.2.sh`.
-* `get_dependencies_slim_v0.6.2.sh` fetches all the bioinformatics tools needed from their respective repositories.
-* `start_slim_v0.6.2.sh` destroys the current running webserver to replace it with a new one. **/!\\** All the files previously uploaded and the results of analysis will be detroyed during the process.
+As soon as podman is installed and running and the SLIM archive downloaded, it can be deployed by using the two scripts `get_dependencies_slim_v1.0.0.sh` and `start_slim_v1.0.0.sh`.
+* `get_dependencies_slim_v1.0.0.sh` fetches all the bioinformatics tools needed from their respective repositories.
+* `start_slim_v1.0.0.sh` destroys the current running webserver to replace it with a new one. **/!\\** All the files previously uploaded and the results of analysis will be detroyed during the process.
 
 ```bash
-bash get_dependencies_slim_v0.6.2.sh
-bash start_slim_v0.6.2.sh
+bash get_dependencies_slim_v1.0.0.sh
+bash start_slim_v1.0.0.sh
 ```
 
 The server is configured to use up to 8 CPU cores per job. The amount of available cores will determine the amount of job that can be executed in parallel (1-8 -> 1 job, 16 -> 2 jobs, etc.). The number of cores is defined in the [scheduler.js](https://github.com/adriantich/SLIM/blob/master/server/scheduler.js) script in the line:
@@ -55,14 +61,14 @@ const CORES_BY_RUN = 8;
 
 # Accessing the webserver
 
-The execution of the `start_slim_v0.6.2.sh` script deploys and start the webserver.
+The execution of the `start_slim_v1.0.0.sh` script deploys and start the webserver.
 By default, the webserver is accessible on the 8080 port but can be modified using the -P option:
 ```
-> bash start_slim_v0.6.2.sh -h
-start_slim_v0.6.2.sh destroys the current running webserver to replace it with a new one. 
+> bash start_slim_v1.0.0.sh -h
+start_slim_v1.0.0.sh destroys the current running webserver to replace it with a new one.
 /!\ All the files previously uploaded and the results of analysis will be detroyed during the process.
 
-Syntax: start_slim_v0.6.2.sh [-h] [-p] [-P] [port]
+Syntax: start_slim_v1.0.0.sh [-h] [-p] [-P] [port]
 options:
 -h --help       Print this Help.
 
@@ -83,9 +89,15 @@ If the server is correctly set, you should see this:
 
 # Prepare and upload your data
 
+You may check by yourself the files and their required format:
+- download an illimina [toy dataset](https://github.com/trtcrd/SLIM/blob/gh-pages/assets/tuto/exemple_tuto.zip).
+- download an nanopore [toy dataset](https://github.com/trtcrd/SLIM/blob/gh-pages/assets/tuto/nanopore_tuto.zip).
+
+
 The "file uploader" section allows you to upload all the required files. Usually it consists of:
-- one (or multiple) pair(s) of FASTQ files corresponding to the library(ies) (can be zipped)
+- one (or multiple) pair(s) of FASTQ files corresponding to the multiplexed library(ies) (can be zipped)
 - a CSV (Comma-separated values) file containing the correspondance between library, tagged-primers pairs and samples (the so-called tag-to-sample file, see below for an example)
+- alternatively, a list of fastq files that each correspond to a sample (nanopore or illumina)
 - a FASTA file containing the tagged primers sequences and name (see below for an example)
 - a FASTA file containing sequence reference database (see below for an example)
 
@@ -146,7 +158,7 @@ CTT
 ## Metabarcoding
 
 Usually, a typical Metabarcoding workflow would include:
-1. Demultiplexing the libraries (if each library corresponds to a single sample, adapt your tag-to-sample file accordingly, and proceed to the joining step)
+1. Demultiplexing the libraries (if each file corresponds to a single sample, use the wildcard-creator module, and proceed to the joining step)
 2. Joining the paired-end reads
 3. Chimera removal
 4. ASVs inference / OTUs clustering
@@ -157,11 +169,11 @@ Pick one and hit the "+" button. This will add the module at the bottom of the f
 
 **The use of wildcard '*' for file pointing**
 
-The chaining between module is made through the files names used as input / output. To avoid having to select mannually all the samples to be included in an analysis, wildcards '*' (meaning 'all') are generated and used by the application.
+The chaining between module is made through the files names used as input / output. To avoid having to select mannually all the samples to be included in an analysis, wildcards '*' (meaning 'all') are generated during demultiplexing (or by using the wildcard-creator module, see below) and used by the application.
 Such wildcards are generated from the compressed libraries fastq files (tar.gz) and by the tag-to-sample file.
-**Users cannot type on their own wildcards in the file names of some modules**. Instead, the application has an autocompletion feature and will make wildcards suggestions for the user to select within the GUI.
+**Users cannot type on their own wildcards in the file names of modules**. Instead, the application has an autocompletion feature and will make wildcards suggestions for the user to select within the GUI.
 
-However, when working with demultiplexed libraries, the demultiplexing step is not needed and in substitution we need to create this wildcard pattern to proced thoughout the different steps. To do so, we have created the module [wildcard-creator](https://github.com/adriantich/SLIM/blob/master/man/sections/wildcard_creator.md).
+However, when uploading demultiplexed libraries (each fastq correspond to a single sample), the demultiplexing step is not needed and in substitution we need to create this wildcard pattern to proceed throughout the different processing steps. To do so, we have created the module [wildcard-creator](https://github.com/adriantich/SLIM/blob/master/man/sections/wildcard_creator.md).
 
 To point to a set of samples (all samples from the tag-to-sample, or all the samples from the library_1 for instance), there will be a '*', and the application adds the processing step as a suffix incrementaly:
 - all samples from the tag-to-sample file that have been demultiplexed: 'tag_to_sample*_fwd.fastq' and 'tag_to_sample*_rev.fastq'
@@ -185,14 +197,16 @@ and below for an OTU clustering using vsearch and taxonomic assignement
 </p>
 
 
-Once your workflow is set, please fill the email field and click on the start button.
+<!-- Once your workflow is set, please fill the email field and click on the start button.
 Your job will automatically be scheduled on the server.
 You will receive an email when your job starts, if you job aborted and when your job is over.
-This email contains a direct link to your job so that the internet browser tab can be closed once the execution started.
+This email contains a direct link to your job so that the internet browser tab can be closed once the execution started. -->
+
+Once your workflow is set, click on the start button, and bookmark the url to allow returning to the job.
 
 When the job is over, you will have small icons of download on the right of each output field.
 All the uploaded, intermediate and results files are available to download.
-Your files will remain available on the server during 24h, after what they will be removed for disk usage optimisation
+Your files will remain available on the server during 24h, after what they will be removed for storage optimisation
 
 Each module status is displayed besides its names:
 - waiting: the execution started, the module is waiting for files input.
@@ -214,6 +228,16 @@ Please refer to the Man pages to learn [how to create a module](https://github.c
 In the [manual](https://github.com/adriantich/SLIM/blob/master/man/README.md#list-of-the-modules) page you can find a list of the different modules implemented and their help pages.
 
 # Version history
+
+### v1.0.0
+
+Moved to podman container by default (docker kept as an option)
+Added modules for processing nanopore amplicon data (CHOPPER, MSI, ASHURE, OPTICS)
+Added module to create wildcard grouping of files
+Added SWARM3 module
+Emailing service hidden, until a viable option is identified
+Documentation moved from the wiki to the tutos folder.
+Various interface bug fixes
 
 ### v0.6.2
 
