@@ -5,60 +5,88 @@ const fs = require('fs');
 // const tools = require('../toolbox.js');
 
 exports.name = 'wildcard-creator';
-exports.multicore = true;
+exports.multicore = false;
 exports.category = '01. Demultiplexing / sample grouping';
 
 exports.run = function (os, config, callback) {
 	let token = os.token;
-	var options = config.params.params;
-	var directory = '/app/data/' + token + '/';
-	// var tmp_outfile = tools.tmp_filename() + '.fastq';
-	// var algo_name = config.params.params.algorithm;
+	let directory = '/app/data/' + token + '/';
+	let joker = config.params.archive_joker;
 
-	// Define the project name regarding the output filename
-	// var project = config.params.outputs.assembly;
-	// if (project.lastIndexOf('_panda') == -1)
-	// 	project = project.substr(0, project.lastIndexOf('.'));
-	// else
-	// 	project = project.substr(0, project.lastIndexOf('_panda'));
+	if (!joker || !joker.includes('*')) {
+		fs.appendFileSync(directory + config.log, 'No wildcard archive requested.\n');
+		callback(os, null);
+		return;
+	}
 
-	// if options.refdb is not defined, set it to empty string
+	fs.readdir(directory, function (err, items) {
+		if (err) {
+			callback(os, err.toString());
+			return;
+		}
 
-	// function logAttributes(obj, prefix = '') {
-	// 	for (const key in obj) {
-	// 		if (obj.hasOwnProperty(key)) {
-	// 			const value = obj[key];
-	// 			const newPrefix = prefix ? `${prefix}.${key}` : key;
-	// 			if (typeof value === 'object' && value !== null) {
-	// 				logAttributes(value, newPrefix);
-	// 			} else {
-	// 				console.log(newPrefix);
-	// 			}
-	// 		}
-	// 	}
-	// }
+		let begin = joker.substring(0, joker.indexOf('*'));
+		let end = joker.substring(joker.indexOf('*') + 1);
+		let files = [];
 
-	// Call the function with the options object
-	// logAttributes(options);
-	// console.log('checking config');
-	// logAttributes(config);
-	var command = ['creating', 'wildcard'];
-	// Joining
-	console.log('Creating wildcard');
-	fs.appendFileSync(directory + config.log, '--- wildcard creation ---\n');
-	var child = exec('echo', command);
+		fs.appendFileSync(directory + config.log, '--- Wildcard creator ---\n');
+		fs.appendFileSync(directory + config.log, 'Wildcard: ' + joker + '\n');
+		fs.appendFileSync(directory + config.log, 'Prefix: ' + begin + '\n');
+		fs.appendFileSync(directory + config.log, 'Suffix: ' + end + '\n');
 
+		for (let idx = 0; idx < items.length; idx++) {
+			let filename = items[idx];
 
-	child.stdout.on('data', function(data) {
-		fs.appendFileSync(directory + config.log, data);
-	});
-	child.stderr.on('data', function(data) {
-		fs.appendFileSync(directory + config.log, data);
-	});
-	child.on('close', function(code) {
-		if (code == 0) {
-			callback(os, null);
-		} else
-			callback(os, "create wildcard terminate on code " + code);
+			if (filename.includes('*'))
+				continue;
+
+			if (filename.endsWith('.tar.gz'))
+				continue;
+
+			if (filename.startsWith(begin) && filename.endsWith(end))
+				files.push(filename);
+		}
+
+		if (files.length === 0) {
+			fs.appendFileSync(directory + config.log, 'No files matched wildcard: ' + joker + '\n');
+			callback(os, 'No files matched wildcard: ' + joker);
+			return;
+		}
+
+		let archive = directory + joker + '.tar.gz';
+
+		fs.appendFileSync(directory + config.log, 'Matched files:\n');
+		for (let idx = 0; idx < files.length; idx++) {
+			fs.appendFileSync(directory + config.log, files[idx] + '\n');
+		}
+
+		let options = [
+			'--use-compress-program=pigz',
+			'-Pcf',
+			archive,
+			'-C',
+			directory
+		].concat(files);
+
+		console.log('Creating wildcard archive:');
+		console.log('tar', options.join(' '));
+
+		let child = exec('tar', options);
+
+		child.stdout.on('data', function (data) {
+			fs.appendFileSync(directory + config.log, data);
+		});
+
+		child.stderr.on('data', function (data) {
+			fs.appendFileSync(directory + config.log, data);
+		});
+
+		child.on('close', function (code) {
+			if (code === 0) {
+				callback(os, null);
+			} else {
+				callback(os, 'tar terminated with code ' + code);
+			}
+		});
 	});
 };

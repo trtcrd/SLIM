@@ -20,7 +20,7 @@ exports.run = function (os, config, callback) {
 		'--fastq_qmin', config.params.params.min_qual,
 		'--fastq_qmax', config.params.params.max_qual,
 		'--fastq_minovlen', config.params.params.min_overlap,
-		'--maxdiffs', config.params.params.max_diff,
+		'--fastq_maxdiffs', config.params.params.max_diff,
 		'--fastq_minmergelen', config.params.params.min_size,
 		'--fastq_maxmergelen', config.params.params.max_size,
 		'--threads', os.cores];

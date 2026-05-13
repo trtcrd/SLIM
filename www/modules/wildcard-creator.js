@@ -13,17 +13,17 @@ class wildcardcreatorModule extends Module {
 		var that = this;
 		that.update_input_lists();
 		
-		var that = this;
 		var suggest = this.dom.getElementsByClassName('input_text_suggest')[0];
 		suggest.onchange = () => {
-			var input_lists = document.getElementsByClassName('input_list_suggest');
+			var input_list = that.dom.getElementsByClassName('input_list_suggest')[0];
 			var output_file = that.dom.getElementsByClassName('output_zone')[0].getElementsByTagName('input')[0];
 			
 			// console.log("wildcardcreator.js: suggest.onchange");
 
-			// for (let id_list=0 ; id_list<input_lists.length ; id_list++) {
-				// let input_list = input_lists[id_list];
-			let input_list = input_lists[0];
+			if (!input_list) {
+				return;
+			}
+
 			let checked = [];
 			
 			// Save checked files
@@ -136,14 +136,14 @@ class wildcardcreatorModule extends Module {
 			const commonPattern = findCommonPattern(filenames);
 			// console.log(commonPattern);
 
-			output_file.value = commonPattern[0];
+			output_file.value = commonPattern[0] ? commonPattern[0] : '';
 			// // this.out_files = [consens.value];
 			output_file.onchange();
 		};
 
 	}
 	update_input_lists () {
-		var input_lists = document.getElementsByClassName('input_list_suggest');
+		var input_lists = this.dom.getElementsByClassName('input_list_suggest');
 
 		// console.log("wildcardcreator.js: update_input_lists_suggest");
 
@@ -187,18 +187,21 @@ class wildcardcreatorModule extends Module {
 
 	getConfiguration () {
 		var config = super.getConfiguration();
-		// console.log("wildcardcreator.js: getConfiguration");
-		// console.log(config);
-		config.inputs.filechecked = file_manager.getFiles()[0];
 
-		config.inputs.suggestion = config.outputs.joker;
-		config.outputs.joker = undefined;
-		// config.outputs.joker= config.outputs.joker.replace('*','$');
-		// console.log("wildcardcreator.js: getConfiguration2");
-		// console.log(config);
+		if (config.outputs && config.outputs.joker) {
+			if (!config.params) {
+				config.params = {};
+			}
+
+			config.params.archive_joker = config.outputs.joker;
+		}
+
+		config.inputs = {};
 
 		return config;
 	}
+
+
 
 	
 
@@ -208,4 +211,3 @@ class wildcardcreatorModule extends Module {
 module_manager.moduleCreators['wildcard-creator'] = (params) => {
 	return new wildcardcreatorModule(params);
 };
-

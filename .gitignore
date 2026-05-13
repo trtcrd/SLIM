@@ -58,4 +58,7 @@ lib/miniconda/
 lib/DECIPHER/
 lib/ASHURE/
 lib/miniforge3
-
+# SingleM database / metapackages are large runtime data
+lib/singleM/db/
+lib/singleM/**/*.smpkg
+lib/singleM/**/*.smpkg.zb

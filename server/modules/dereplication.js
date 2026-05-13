@@ -17,9 +17,9 @@ exports.run = (os, config, callback) => {
 	console.log ('Dereplication for file ' + filename);
 
 	// Minimum quantity for the presence of a read
-	var threshold = 0;
+	var threshold = 1;
 	if (config && config.params.params && config.params.params.threshold)
-		threshold = parseInt(config.params.params.threshold);
+    	threshold = Math.max(1, parseInt(config.params.params.threshold));
 
 	// Command line
 	var options = ['--derep_fulllength', filename,

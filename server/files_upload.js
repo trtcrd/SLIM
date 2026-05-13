@@ -56,8 +56,10 @@ exports.upload = function (app) {
 
 		// specify that we want to allow the user to upload multiple files in a single request
 		form.multiples = true;
-		// specify th emaximum upload allowed
+		// specify th emaximum upload allowed // here 60 Go
 		form.maxFileSize = 60 * 1024 * 1024 * 1024;
+		// Added this for formidable v3
+		// form.maxTotalFileSize = 60 * 1024 * 1024 * 1024;
 
 		// set upload directory corresponding to the token send
 		var token = null;

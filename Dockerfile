@@ -1,29 +1,6 @@
 # ----- Basic docker constructions -----
 
-FROM ubuntu:20.04
-
-# Set the working directory to /app
-RUN mkdir /app
-WORKDIR /app
-COPY jranke.asc /app
-
-RUN mkdir /app/lib
-
-# Add the CRAN repos sources for install latest version of R
-RUN apt-get update && apt-get install -y dirmngr gnupg apt-transport-https ca-certificates software-properties-common
-RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
-RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/'
-#RUN sh -c 'echo "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/" >> /etc/apt/sources.list'
-#RUN apt-key add /app/jranke.asc
-#RUN apt-key adv --keyserver keys.gnupg.net --recv-key 'E19F5F87128899B192B1A2C2AD5F960A256A04AF'
-
-# ----- install conda ----- #
-# RUN curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-COPY lib/miniforge3 /app/lib/miniforge3
-RUN bash /app/lib/miniforge3/miniforge3.sh -b
-# RUN rm Miniconda3-latest-Linux-x86_64.sh
-ENV PATH="/root/miniforge3/bin:${PATH}"
-# RUN conda update conda
+FROM ubuntu:24.04
 
 # Install packages needed for tools
 RUN apt-get update && apt-get install -y \
@@ -33,6 +10,12 @@ RUN apt-get update && apt-get install -y \
 	libxml2-dev \
 	libssl-dev \
 	build-essential \
+	gcc \
+	g++ \
+	make \
+	cmake \
+	autoconf \
+	automake \
 	libtool \
 	automake \
 	zlib1g-dev \
@@ -47,8 +30,12 @@ RUN apt-get update && apt-get install -y \
 
 RUN apt-get install -y \
 	r-base-core r-recommended r-base-html r-base r-base-dev \
-	libfontconfig1-dev
-
+	ca-certificates \
+    curl \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    && update-ca-certificates
 
 ## solving locales issue for biopython
 RUN apt-get install -y locales locales-all
@@ -59,57 +46,94 @@ RUN dpkg -l locales
 ENV CXXFLAGS="-std=c++11"
 
 
+RUN apt-get install -y --reinstall \
+    ca-certificates curl libcurl4-openssl-dev && \
+    update-ca-certificates --fresh
+    
+
+# ---- R packages (CRAN) ----
+RUN R -e 'install.packages(c( \
+"dplyr", \
+"seqinr", \
+"ggplot2", \
+"reshape2", \
+"RcppParallel", \
+"memoise", \
+"rmarkdown", \
+"pkgload", \
+"fs", \
+"htmlwidgets", \
+"RSQLite", \
+"BiocManager" \
+), dependencies=TRUE, repos="https://cran.rstudio.com")'
+
+# ---- Bioconductor ----
+RUN R -e 'BiocManager::install(c( \
+"BiocGenerics", \
+"IRanges", \
+"XVector", \
+"Biostrings", \
+"ShortRead" \
+), ask=FALSE, update=FALSE)'
+
+
+# Set the working directory to /app
+RUN mkdir /app
+WORKDIR /app
+COPY jranke.asc /app
+
+RUN mkdir /app/lib
+
+# Add the CRAN repos sources for install latest version of R
+RUN apt-get update && apt-get install -y dirmngr gnupg apt-transport-https ca-certificates software-properties-common
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu noble-cran40/'
+#RUN sh -c 'echo "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/" >> /etc/apt/sources.list'
+#RUN apt-key add /app/jranke.asc
+#RUN apt-key adv --keyserver keys.gnupg.net --recv-key 'E19F5F87128899B192B1A2C2AD5F960A256A04AF'
+
+# ----- install conda ----- #
+COPY lib/miniforge3 /app/lib/miniforge3
+RUN bash /app/lib/miniforge3/miniforge3.sh -b
+ENV PATH="/root/miniforge3/bin:${PATH}"
+# RUN conda update conda
+
+
 # ----- Libraries deployments -----
 
 # install app dependencies
-RUN apt-get install curl -y
-RUN curl -sL https://deb.nodesource.com/setup_18.x | bash -
-RUN apt install nodejs -y
-COPY package.json /app
-RUN npm install
+RUN apt-get install -y nodejs npm
 
 # Copy libraries
 COPY lib/DTD /app/lib/DTD
 COPY lib/pandaseq /app/lib/pandaseq
 COPY lib/vsearch /app/lib/vsearch
 COPY lib/casper /app/lib/casper
-COPY lib/swarm2 /app/lib/swarm2
+# COPY lib/swarm2 /app/lib/swarm2
 COPY lib/swarm3 /app/lib/swarm3
 # COPY lib/sratoolkit /app/lib/sratoolkit
 
 # Compile DTD
-RUN cd /app/lib/DTD && make && cd /app
+RUN sed -i '1i #include <cstdint>' /app/lib/DTD/edit.cpp
+RUN cd /app/lib/DTD && make -j$(nproc) && cd /app
 # Compile pandaseq
-RUN cd /app/lib/pandaseq && ./autogen.sh && ./configure && make && cd /app
+# RUN cd /app/lib/pandaseq && ./autogen.sh && ./configure && make -j$(nproc) && cd /app
 # Compile vsearch
-RUN cd /app/lib/vsearch && ./autogen.sh && ./configure && make && cd /app
+RUN cd /app/lib/vsearch && ./autogen.sh && ./configure && make -j$(nproc) && cd /app
 # Compile casper
-RUN cd /app/lib/casper/casper_v0.8.2 && make && cd /app
+RUN cd /app/lib/casper/casper_v0.8.2 && make -j$(nproc) && cd /app
 # Compile swarm2
-RUN cd /app/lib/swarm2/src && make && cd /app
+# RUN cd /app/lib/swarm2/src && make -j$(nproc) && cd /app
 # Compile swarm3
-RUN cd /app/lib/swarm3/src && make && cd /app
+RUN cd /app/lib/swarm3/src && make -j$(nproc) && cd /app
 
 # ----- R dependancies -----
 
 COPY lib/lulu /app/lib/lulu
 COPY lib/dada2 /app/lib/dada2
-
-RUN R -e 'install.packages("dplyr", repos="https://stat.ethz.ch/CRAN/")'
-RUN R -e 'install.packages("seqinr", repos="https://stat.ethz.ch/CRAN/")'
-RUN R -e 'install.packages("/app/lib/lulu",repos=NULL)'
-RUN R -e 'install.packages("BiocManager",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
-RUN R -e 'install.packages("ggplot2",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
-RUN R -e 'install.packages("reshape2",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
-RUN R -e 'install.packages("RcppParallel",dependencies=TRUE)'
-RUN R -e 'install.packages("IRanges",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
-RUN R -e 'install.packages("XVector",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
-RUN R -e 'install.packages("BiocGenerics",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
-RUN R -e 'BiocManager::install("Biostrings")'
-RUN R -e 'BiocManager::install("ShortRead")'
-RUN R -e 'install.packages("/app/lib/dada2",repos=NULL, dependencies = TRUE)'
 COPY lib/DECIPHER /app/lib/DECIPHER
-RUN R -e 'install.packages("RSQLite",dependencies=TRUE,repos="https://stat.ethz.ch/CRAN/")'
+
+RUN R -e 'install.packages("/app/lib/dada2",repos=NULL, dependencies = TRUE)'
 RUN R -e 'install.packages("/app/lib/DECIPHER",repos=NULL, dependencies = TRUE)'
 
 # ----- install conda dependencies ----- #
@@ -131,77 +155,97 @@ RUN /bin/bash -c "source activate chopper && \
 	conda update -c conda-forge zlib -y && \
 	conda install -c bioconda chopper=0.8.0 -y "
 
+
 # ----- install msi ----- #
 COPY lib/msi /app/lib/msi
-RUN conda create -n msi python=3.9 -y
-RUN /bin/bash -c "source activate msi && \
-	apt-get update && \
-	apt-get install emboss -y && \
-	apt-get install time -y && \
-	conda install cmake -y && \
-	conda install -c conda-forge git -y && \
-	conda install -c conda-forge wget -y && \
-	conda install -c bioconda java-jdk -y"
-# Update and install GCC and G++
-RUN apt-get update && apt-get install -y software-properties-common
-RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y
-RUN apt-get update && apt-get install -y \
-    gcc-10 \
-    g++-10
-# Set GCC and G++ to the new versions
-RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 \
-    && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 100
-# # Install the latest libstdc++6
-RUN apt-get install -y libstdc++6
-# # Verify the installation
-RUN gcc --version && g++ --version
-# # Check the installed versions of libstdc++
-RUN strings /usr/lib/x86_64-linux-gnu/libstdc++.so.6 | grep GLIBCXX
-RUN /bin/bash -c "source activate msi && \
-	conda install -c conda-forge r-base=4.1.0 -y"
-# the path used to install BiocManager in metabinkit is not available.
-# this is solved if we install BiocManager in the msi environment and
-# in the specified path
-RUN /bin/bash -c "source activate msi && \
-	mkdir -p /app/lib/msi/Rlibs && \
-	R -e \"install.packages('BiocManager',dependencies=TRUE,repos='https://stat.ethz.ch/CRAN/',lib='/app/lib/msi/Rlibs')\""
-# RUN /bin/bash -c "source activate msi && \
-# 	R -e \"!requireNamespace('BiocManager', quietly = TRUE)\""
-RUN /bin/bash -c "source activate msi && \
-	/app/lib/msi/scripts/msi_install.sh -i /app/lib/msi"
 
+# --- system dependencies (DO NOT put inside conda) --- #
+RUN apt-get install -y \
+    emboss \
+    time \
+    software-properties-common \
+    libstdc++6 \
+    build-essential \
+    wget \
+    git \
+    cmake \
+    default-jdk
+
+# --- create conda environment --- #
+RUN conda create -n msi python=3.9 -y
+
+# --- install conda packages (no system compilation here) --- #
+RUN conda install -y -n msi \
+    -c conda-forge \
+    -c bioconda \
+        cmake \
+        git \
+        wget \
+        openjdk
+
+# --- install R inside conda --- #
+RUN conda run -n msi conda install -c conda-forge r-base=4.1.0 -y
+
+# --- fix BiocManager path issue --- #
+RUN conda run -n msi bash -c "\
+    mkdir -p /app/lib/msi/Rlibs && \
+    R -e \"install.packages('BiocManager', dependencies=TRUE, repos='https://cran.rstudio.com', lib='/app/lib/msi/Rlibs')\""
+
+# --- build MSI (CRITICAL: outside conda, force system compiler) --- #
+RUN CC=/usr/bin/gcc CXX=/usr/bin/g++ \
+    /app/lib/msi/scripts/msi_install.sh -i /app/lib/msi
+    
+# ----- correction on msi source code -----
+RUN sed -i 's/\/dev\/stderr/stderr_msi/g' /app/lib/msi/bin/bam_annotate.sh /app/lib/msi/bin/fastq2bam /app/lib/msi/bin/fastq_validator.sh /app/lib/msi/*/msi /app/lib/msi/exe/metabinkit_blastgendb 
+# RUN sed -i 's/ nmembers / \$nmembers /g' /app/lib/msi/bin/msi_clustr_add_size.pl /app/lib/msi/scripts/msi_clustr_add_size.pl
+RUN cd /app/lib/msi/seqtk && make && cd /app
+    
 # ----- install ASHURE ----- #
 COPY lib/ASHURE /app/lib/ASHURE
+
+# Create ASHURE environment with a Python version compatible with pandas 1.3.x.
 RUN conda create -n ashure python=3.9 -y
-# minimap2 has been installed with msi and its located at /app/lib/msi/bin/minimap2
-# RUN /bin/bash -c "source activate ashure && \
-# 	/app/lib/msi/bin/minimap2"
-# install cmake and git in ashure environment
-RUN /bin/bash -c "source activate ashure && \
-conda install -c conda-forge cmake git -y"
-# install spoa
-RUN /bin/bash -c "source activate ashure && \
-	cd /app/lib/ASHURE/spoa && \
-	cmake -B build -DCMAKE_BUILD_TYPE=Release && \
-	make -C build && cd /app"
-# install python modules for ASHURE
-	# due to a deprecation error, pandas need to be previous to 1.4.0
-RUN /bin/bash -c "source activate ashure && \
-	pip install pandas==1.3.3 && \
-	pip install scikit-learn && \
-	pip install hdbscan &&\
-	pip install numpy==1.26.4"
-# install ashure
-RUN /bin/bash -c "source activate ashure && \
-	cd /app/lib/ASHURE && \
-	chmod +x src/ashure.py && \
-	src/ashure.py run -h && cd /app"
-# check if ashure commands are working
-RUN /bin/bash -c "source activate ashure && \
-	/app/lib/ASHURE/src/ashure.py prfg -h && \
-	/app/lib/ASHURE/src/ashure.py fgs -h && \
-	/app/lib/ASHURE/src/ashure.py msa -h && \
-	/app/lib/ASHURE/src/ashure.py fpmr -h"
+
+# Install compiled dependencies via conda, and keep CMake below 4 for old spoa/googletest.
+RUN conda run -n ashure conda install -y -c conda-forge \
+    "cmake<4" \
+    git \
+    numpy=1.26.4 \
+    pandas=1.3.3 \
+    scikit-learn \
+    hdbscan
+
+# Build spoa.
+RUN cd /app/lib/ASHURE/spoa && \
+    conda run -n ashure cmake -B build -DCMAKE_BUILD_TYPE=Release && \
+    conda run -n ashure make -C build
+
+# Install/check ASHURE.
+RUN cd /app/lib/ASHURE && \
+    chmod +x src/ashure.py && \
+    conda run -n ashure ./src/ashure.py run -h
+
+# Check ASHURE commands.
+RUN conda run -n ashure /app/lib/ASHURE/src/ashure.py prfg -h && \
+    conda run -n ashure /app/lib/ASHURE/src/ashure.py fgs -h && \
+    conda run -n ashure /app/lib/ASHURE/src/ashure.py msa -h && \
+    conda run -n ashure /app/lib/ASHURE/src/ashure.py fpmr -h
+
+
+# ----- install SingleM ----- #
+RUN conda create -y \
+    -c conda-forge \
+    -c bioconda \
+    --override-channels \
+    --name singlem \
+    "singlem>=0.20.3" \
+    pip
+
+RUN conda run -n singlem python -m pip uninstall -y polars && \
+    conda run -n singlem python -m pip install polars-lts-cpu
+
+ENV SINGLEM_METAPACKAGE_PATH=/app/lib/singleM/db/S5.4.0.GTDB_r226.metapackage_20250331.smpkg.zb
+ENV PATH=/root/miniforge3/envs/singlem/bin:$PATH
 
 # ----- copy python_scripts -----
 COPY lib/python_scripts /app/lib/python_scripts
@@ -213,16 +257,10 @@ COPY lib/R_scripts /app/lib/R_scripts
 COPY lib/bash_scripts /app/lib/bash_scripts
 RUN chmod +x /app/lib/bash_scripts/*
 
-# ----- correction on msi source code -----
-RUN sed -i 's/\/dev\/stderr/stderr_msi/g' /app/lib/msi/bin/bam_annotate.sh /app/lib/msi/bin/fastq2bam /app/lib/msi/bin/fastq_validator.sh /app/lib/msi/*/msi /app/lib/msi/exe/metabinkit_blastgendb 
-# RUN sed -i 's/ nmembers / \$nmembers /g' /app/lib/msi/bin/msi_clustr_add_size.pl /app/lib/msi/scripts/msi_clustr_add_size.pl
-RUN cd /app/lib/msi/seqtk && make && cd /app
-
 # updates on biopython
 RUN python3 -m pip install biopython --upgrade
 
 # ----- Webserver -----
-
 # prepare the web server
 COPY server /app
 COPY www/ /app/www/
@@ -230,6 +268,9 @@ COPY ssl/ /app/ssl/
 EXPOSE 80
 
 # copy npm libraries
+COPY package.json /app
+RUN npm install
+
 # jquery
 RUN cp node_modules/jquery/dist/jquery.js /app/www/js/jquery.js
 COPY lib/jquery-autocomplete/dist/jquery.autocomplete.js /app/www/js/jquery.autocomplete.js
@@ -241,8 +282,8 @@ COPY lib/papa/papaparse.js /app/www/js/papaparse.js
 # prepare data folder
 RUN mkdir /app/data
 
-RUN apt update --fix-missing 
-RUN apt install vim -y
+#RUN apt update --fix-missing 
+#RUN apt install vim -y
 
 
 # commamd executed to run the server

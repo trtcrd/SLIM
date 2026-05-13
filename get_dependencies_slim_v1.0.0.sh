@@ -71,9 +71,9 @@ if [ ! -d "vsearch" ]; then
 	mkdir vsearch
 	# git clone https://github.com/torognes/vsearch.git vsearch/
 	cd vsearch
-	curl -OL https://github.com/torognes/vsearch/archive/v2.8.0.tar.gz
-	tar -xzvf v2.8.0.tar.gz
-	mv vsearch-2.8.0/* .
+	curl -OL https://github.com/torognes/vsearch/archive/v2.31.0.tar.gz
+	tar -xzvf v2.31.0.tar.gz
+	mv vsearch-2.31.0/* .
 	# git pull
 	cd ..
 else
@@ -112,9 +112,9 @@ if [ ! -d "swarm3" ]; then
 	# git clone https://github.com/torognes/swarm.git swarm/
 	cd swarm3
 	#git pull
-	curl -OL https://github.com/torognes/swarm/archive/v3.1.4.tar.gz
-	tar -xzvf v3.1.4.tar.gz
-	mv swarm-3.1.4/* .
+	curl -OL https://github.com/torognes/swarm/archive/v3.1.6.tar.gz
+	tar -xzvf v3.1.6.tar.gz
+	mv swarm-3.1.6/* .
 	cd ..
 else
 	echo "SWARM3 is already there..."
@@ -132,9 +132,9 @@ fi
 if [ ! -d "dada2" ]; then
 	mkdir dada2
 	cd dada2
-	curl -OL https://github.com/benjjneb/dada2/archive/refs/tags/v1.16.tar.gz
-	tar -xzvf v1.16.tar.gz
-	mv dada2-1.16/* .
+	curl -OL https://github.com/benjjneb/dada2/archive/refs/tags/v1.26.tar.gz
+	tar -xzvf v1.26.tar.gz
+	mv dada2-1.26/* .
 	cd ..
 else
 	echo "dada2 is already there..."
@@ -204,13 +204,46 @@ fi
 
 # miniconda
 if [ ! -d "miniforge3" ]; then
-	mkdir miniforge3
-	cd miniforge3
-	curl -OL https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh 
-	mv Miniforge3-Linux-x86_64.sh miniforge3.sh
-	cd ..
+    mkdir miniforge3
+    cd miniforge3
+
+    ARCH=$(uname -m)
+
+    case "$ARCH" in
+        x86_64)
+            INSTALLER="Miniforge3-Linux-x86_64.sh"
+            ;;
+        aarch64|arm64)
+            INSTALLER="Miniforge3-Linux-aarch64.sh"
+            ;;
+        *)
+            echo "Unsupported architecture: $ARCH"
+            exit 1
+            ;;
+    esac
+
+    echo "Detected architecture: $ARCH"
+    echo "Downloading $INSTALLER..."
+
+    curl -LO "https://github.com/conda-forge/miniforge/releases/latest/download/${INSTALLER}"
+    mv "$INSTALLER" miniforge3.sh
+
+    cd ..
 else
-	echo "miniforge3 is already there..."
+    echo "miniforge3 is already there..."
 fi
 
 
+# SingleM database directory.
+# The actual database is downloaded by start_slim.sh after the image is built,
+# using the SingleM version installed inside the container.
+if [ ! -d "singleM/db" ]; then
+    mkdir -p singleM/db
+fi
+
+if find singleM/db -maxdepth 1 \( -name "*.smpkg" -o -name "*.smpkg.zb" \) | grep -q .; then
+    echo "SingleM database already present..."
+else
+    echo "SingleM database directory prepared at lib/singleM/db"
+    echo "The database will be downloaded by start_slim.sh after building the image."
+fi

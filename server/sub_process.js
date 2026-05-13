@@ -140,42 +140,58 @@ exports.run = function (token, config, callback) {
 
 
 exports.compress_outputs = (token, jokers) => {
-	fs.readdir("/app/data/" + token, (err, items) => {
-		var nbThreads = jokers.length;
-		
-		// Compress
-		for (var id in jokers) {
-			var joker = jokers[id];
-			var begin = joker.substring(0, joker.indexOf('*'));
-			var end = joker.substring(joker.indexOf('*') + 1);
+    fs.readdir("/app/data/" + token, (err, items) => {
+        if (err) {
+            console.log("compress_outputs error:", err);
+            return;
+        }
 
-			// Get all the files linked to the joker
-			var files = [];
-			for (var filename_idx=0 ; filename_idx<items.length ; filename_idx++) {
-				var filename = items[filename_idx];
-				if (filename.startsWith(begin) && filename.endsWith(end)) {
-					if (! filename.includes('*'))
-						files.push(filename);
-				}
-			}
+        for (var id in jokers) {
+            var joker = jokers[id];
 
-			// Start the compression
-			if (files.length > 0) {
-				var options = ['--use-compress-program=pigz',
-					'-Pcf', '/app/data/' + token + '/' + joker + '.tar.gz',
-					'-C', '/app/data/' + token + '/'].concat(files);
-				console.log('Compressing files:');
-				console.log('tar ' + options);
-				var child = exec('tar', options);
-				child.on('close', () => {});
+            if (!joker || !joker.includes('*'))
+                continue;
 
-				child.stderr.on('data', function(data) {
-					console.log('compress err', data.toString());
-				});
-			}
-		}
-	});
-}
+            var begin = joker.substring(0, joker.indexOf('*'));
+            var end = joker.substring(joker.indexOf('*') + 1);
+
+            var files = [];
+            for (var filename_idx = 0; filename_idx < items.length; filename_idx++) {
+                var filename = items[filename_idx];
+
+                if (filename.startsWith(begin) && filename.endsWith(end)) {
+                    if (!filename.includes('*') && !filename.endsWith('.tar.gz'))
+                        files.push(filename);
+                }
+            }
+
+            if (files.length > 0) {
+                var archive = "/app/data/" + token + "/" + joker + ".tar.gz";
+
+                console.log("Compressing wildcard archive:");
+                console.log("archive:", archive);
+                console.log("files:", files.join(" "));
+
+                var options = [
+                    "--use-compress-program=pigz",
+                    "-Pcf",
+                    archive,
+                    "-C",
+                    "/app/data/" + token + "/"
+                ].concat(files);
+
+                var child = exec("tar", options);
+
+                child.stderr.on("data", function(data) {
+                    console.log("compress err", data.toString());
+                });
+            } else {
+                console.log("No files matched joker:", joker);
+            }
+        }
+    });
+};
+
 
 
 
