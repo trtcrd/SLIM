@@ -9,6 +9,10 @@ const uploads = require('./files_upload.js');
 const accounts = require('./accounts.js');
 const config_module = require('./config.js');
 
+var get_uploaded_file_path = (file) => {
+	return file.filepath || file.path;
+};
+
 
 var waiting_jobs = [];
 var running_jobs = {};
@@ -195,7 +199,10 @@ exports.listen_commands = function (app) {
 	app.post('/run', function (req, res) {
 		var params = req.body;
 
-		var form = new formidable.IncomingForm();
+		var form = new formidable.IncomingForm({
+			maxFileSize: 10 * 1024 * 1024,
+			maxTotalFileSize: 10 * 1024 * 1024
+		});
 		let token = null;
 		let file = null;
 
@@ -228,7 +235,7 @@ exports.listen_commands = function (app) {
 				fs.unlinkSync(filename);
 
 			// Parse config
-			fs.renameSync(file.path, filename);
+			fs.renameSync(get_uploaded_file_path(file), filename);
 			let txt = fs.readFileSync(filename, 'utf8');
 			let params = {};
 			try {

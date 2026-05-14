@@ -39,6 +39,16 @@ exports.exposeDir = function (app) {
 
 let files_to_process = {};
 
+var normalize_uploaded_file = (file) => {
+	let file_path = file.filepath || file.path;
+	let file_name = file.originalFilename || file.name || file.newFilename || (file_path ? path.basename(file_path) : 'upload');
+
+	return Object.assign({}, file, {
+		name: file_name,
+		path: file_path
+	});
+};
+
 exports.upload = function (app) {
 	app.get('/convertion', function(req, res) {
 		var token = req.query.token;
@@ -52,14 +62,17 @@ exports.upload = function (app) {
 	// Uploading files service
 	app.post('/upload', function(req, res) {
 		// create an incoming form object
-		var form = new formidable.IncomingForm();
+		var form = new formidable.IncomingForm({
+			multiples: true,
+			maxFileSize: 60 * 1024 * 1024 * 1024,
+			maxTotalFileSize: 60 * 1024 * 1024 * 1024
+		});
 
 		// specify that we want to allow the user to upload multiple files in a single request
 		form.multiples = true;
 		// specify th emaximum upload allowed // here 60 Go
 		form.maxFileSize = 60 * 1024 * 1024 * 1024;
-		// Added this for formidable v3
-		// form.maxTotalFileSize = 60 * 1024 * 1024 * 1024;
+		form.maxTotalFileSize = 60 * 1024 * 1024 * 1024;
 
 		// set upload directory corresponding to the token send
 		var token = null;
@@ -84,6 +97,8 @@ exports.upload = function (app) {
 		form.on('file', function(field, file) {
 			if (onError)
 				return;
+
+			file = normalize_uploaded_file(file);
 
 			if (token == null)
 				fs.unlink(file.path, function(){})

@@ -268,8 +268,8 @@ COPY ssl/ /app/ssl/
 EXPOSE 80
 
 # copy npm libraries
-COPY package.json /app
-RUN npm install
+COPY package*.json /app/
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 # jquery
 RUN cp node_modules/jquery/dist/jquery.js /app/www/js/jquery.js

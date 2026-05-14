@@ -8,14 +8,14 @@
     "start": "node server.js"
   },
   "dependencies": {
-  	"express": "^4.13.3",
-    "pug": "^2.0.0-rc.1",
-    "jquery": "^3.2.1",
-    "formidable": "^1.1.1",
-    "body-parser": "^1.17.1",
-    "csv-parser": "^1.11.0",
+    "body-parser": "^1.20.3",
+    "csv-parser": "^3.0.0",
+    "express": "^4.21.2",
+    "formidable": "^3.5.4",
+    "jquery": "^3.7.1",
     "line-reader": "^0.4.0",
-    "systeminformation": "^4.27.11",
-    "nodemailer": "^4.1.0"
+    "nodemailer": "^6.9.16",
+    "pug": "^3.0.3",
+    "systeminformation": "^5.23.0"
   }
 }
