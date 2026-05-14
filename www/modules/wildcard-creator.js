@@ -14,6 +14,15 @@ class wildcardcreatorModule extends Module {
 		that.update_input_lists();
 		
 		var suggest = this.dom.getElementsByClassName('input_text_suggest')[0];
+
+		if (this.params && this.params.params && this.params.params.suggestion !== undefined) {
+			suggest.value = this.params.params.suggestion;
+		} else if (this.params && this.params.suggestion !== undefined) {
+			suggest.value = this.params.suggestion;
+		} else if (suggest.value == "undefined") {
+			suggest.value = "";
+		}
+
 		suggest.onchange = () => {
 			var input_list = that.dom.getElementsByClassName('input_list_suggest')[0];
 			var output_file = that.dom.getElementsByClassName('output_zone')[0].getElementsByTagName('input')[0];
@@ -39,7 +48,7 @@ class wildcardcreatorModule extends Module {
 			input_list.innerHTML = "";
 
 			let classes = input_list.classList;
-			let filenames = file_manager.getFiles(classes);
+			let filenames = file_manager.getFilesBeforeElement(classes, that.dom);
 			// from filenames keep those that contain the suggest value
 
 			
@@ -136,10 +145,36 @@ class wildcardcreatorModule extends Module {
 			const commonPattern = findCommonPattern(filenames);
 			// console.log(commonPattern);
 
-			output_file.value = commonPattern[0] ? commonPattern[0] : '';
-			// // this.out_files = [consens.value];
-			output_file.onchange();
+			var output_value = commonPattern[0] ? commonPattern[0] : '';
+			if (output_file.value != output_value) {
+				output_file.value = output_value;
+				// // this.out_files = [consens.value];
+				output_file.onchange();
+			}
+
+			if (typeof gui_file_updater != "undefined") {
+				gui_file_updater.file_trigger();
+			}
 		};
+		suggest.oninput = suggest.onchange;
+
+		if (suggest.value) {
+			suggest.onchange();
+		}
+
+		setTimeout(() => {
+			if (suggest.value) {
+				suggest.onchange();
+			} else {
+				that.update_input_lists();
+			}
+		}, 0);
+
+		file_manager.register_observer(() => {
+			if (suggest.value) {
+				suggest.onchange();
+			}
+		});
 
 	}
 	update_input_lists () {
@@ -164,7 +199,7 @@ class wildcardcreatorModule extends Module {
 			input_list.innerHTML = "";
 
 			let classes = input_list.classList;
-			let filenames = file_manager.getFiles(classes);
+			let filenames = file_manager.getFilesBeforeElement(classes, this.dom);
 			var html = '';
 			for (let file_id in filenames) {
 				let filename = filenames[file_id];
@@ -187,12 +222,17 @@ class wildcardcreatorModule extends Module {
 
 	getConfiguration () {
 		var config = super.getConfiguration();
+		var suggest = this.dom.getElementsByClassName('input_text_suggest')[0];
+
+		if (!config.params) {
+			config.params = {};
+		}
+
+		if (suggest) {
+			config.params.suggestion = suggest.value;
+		}
 
 		if (config.outputs && config.outputs.joker) {
-			if (!config.params) {
-				config.params = {};
-			}
-
 			config.params.archive_joker = config.outputs.joker;
 		}
 

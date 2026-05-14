@@ -37,7 +37,16 @@ var load_modules = (log) => {
 
 		// Create the module
 		let module = module_manager.createModule (soft.name, soft.params, soft.status);
+		if (!module && module_manager.modules[idx])
+			module = module_manager.modules[idx];
+		restore_wildcard_creator_suggestion(module, soft.params);
 	}
+
+	setTimeout(() => {
+		restore_wildcard_creator_suggestions_from_log(log);
+		if (typeof gui_file_updater != "undefined")
+			gui_file_updater.file_trigger();
+	}, 0);
 
 	// Update status
 	update_run_status(exec_token, (status)=> {
@@ -55,6 +64,42 @@ var load_modules = (log) => {
 		}
 	});
 }
+
+var restore_wildcard_creator_suggestions_from_log = (log) => {
+	let wildcard_configs = [];
+	for (let idx in log) {
+		if (log[idx].name == 'wildcard-creator')
+			wildcard_configs.push(log[idx]);
+	}
+
+	let wildcard_modules = [];
+	for (let idx in module_manager.modules) {
+		if (module_manager.modules[idx].name == 'wildcard-creator')
+			wildcard_modules.push(module_manager.modules[idx]);
+	}
+
+	for (let idx=0 ; idx<wildcard_configs.length ; idx++) {
+		restore_wildcard_creator_suggestion(wildcard_modules[idx], wildcard_configs[idx].params);
+	}
+};
+
+var restore_wildcard_creator_suggestion = (module, params) => {
+	if (!module || module.name != 'wildcard-creator')
+		return;
+
+	if (!params || !params.params || params.params.suggestion === undefined)
+		return;
+
+	let suggest = module.dom.getElementsByClassName('input_text_suggest')[0];
+
+	if (!suggest)
+		return;
+
+	suggest.value = params.params.suggestion;
+
+	if (suggest.onchange)
+		suggest.onchange();
+};
 
 
 
@@ -102,7 +147,12 @@ document.getElementById("up_conf").onclick = () => {
 // Conf download
 down_conf.onclick = () => {
 	var conf = get_config();
+	store_wildcard_creator_suggestions(conf);
 	delete conf.token;
+	console.log("pipeline.conf wildcard suggestions:",
+		Object.values(conf)
+			.filter((module) => module.name == 'wildcard-creator')
+			.map((module) => module.params.params.suggestion));
 	var data = new Blob([JSON.stringify(conf)], {type: 'text/plain'});
 	var textFile = window.URL.createObjectURL(data);
 	var link = document.createElement('a');
@@ -124,5 +174,22 @@ up_conf.onchange = () => {
 	reader.readAsText(file);
 };
 
+var store_wildcard_creator_suggestions = (conf) => {
+	for (let idx in module_manager.modules) {
+		let module = module_manager.modules[idx];
 
+		if (module.name != 'wildcard-creator' || !conf[module.id])
+			continue;
 
+		let suggest = module.dom.getElementsByClassName('input_text_suggest')[0];
+
+		if (!conf[module.id].params)
+			conf[module.id].params = {};
+		if (!conf[module.id].params.params)
+			conf[module.id].params.params = {};
+
+		conf[module.id].params.params.suggestion = suggest ? suggest.value : "";
+	}
+
+	return conf;
+};

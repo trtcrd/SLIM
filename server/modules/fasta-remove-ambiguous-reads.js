@@ -4,7 +4,7 @@ const fs = require('fs');
 
 exports.name = 'fasta-remove-ambiguous-reads';
 exports.multicore = false;
-exports.category = '08. Utils';
+exports.category = '09. Utils';
 
 exports.run = (os, config, callback) => {
 	var token = os.token;

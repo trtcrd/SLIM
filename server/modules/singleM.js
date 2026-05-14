@@ -3,7 +3,7 @@ const fs = require('fs');
 
 exports.name = 'singleM';
 exports.multicore = true;
-exports.category = '09. Shotgun metagenomics';
+exports.category = '08. Shotgun metagenomics';
 
 exports.run = function (os, config, callback) {
     const token = os.token;

@@ -54,6 +54,13 @@ if [ -z "${SINGLEM_METAPACKAGE_PATH:-}" ] || [ ! -e "${SINGLEM_METAPACKAGE_PATH}
     echo "SINGLEM_METAPACKAGE_PATH is not set or does not exist."
     exit 1
 fi
+singlem_metapackage="${SINGLEM_METAPACKAGE_PATH}"
+
+# Newer/custom SingleM metapackages must be passed explicitly with
+# --metapackage. If they are provided through SINGLEM_METAPACKAGE_PATH,
+# SingleM validates them against the default version baked into the installed
+# software and may reject newer databases.
+unset SINGLEM_METAPACKAGE_PATH
 
 echo "Forward files:"
 printf '  %s\n' "${fwd_files[@]}"
@@ -64,6 +71,7 @@ printf '  %s\n' "${rev_files[@]}"
 singlem pipe \
     -1 "${fwd_files[@]}" \
     -2 "${rev_files[@]}" \
+    --metapackage "${singlem_metapackage}" \
     --taxonomic-profile "${profile}" \
     --otu-table "${otu_table}" \
     --threads "${threads}"
@@ -72,6 +80,7 @@ relative_prefix="singleM.relative_abundance"
 
 singlem summarise \
     --input-taxonomic-profiles "${profile}" \
+    --metapackage "${singlem_metapackage}" \
     --output-species-by-site-relative-abundance-prefix "${relative_prefix}"
 
 tar -czf "${relative_abundance_archive}" ${relative_prefix}-*.tsv

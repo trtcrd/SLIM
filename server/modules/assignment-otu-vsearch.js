@@ -7,7 +7,7 @@ const tools = require('../toolbox.js');
 
 exports.name = 'assignment-table-vsearch';
 exports.multicore = true;
-exports.category = '05. Assignment';
+exports.category = '05. Taxonomic assignment';
 
 exports.run = function (os, config, callback) {
 	let directory = '/app/data/' + os.token + '/';

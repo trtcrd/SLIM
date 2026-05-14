@@ -20,10 +20,20 @@ var get_config = () => {
 	};
 	for (var idx in module_manager.modules) {
 		var module = module_manager.modules[idx];
+		var module_config = module.getConfiguration();
+
+		if (module.name == 'wildcard-creator') {
+			let suggest = module.dom.getElementsByClassName('input_text_suggest')[0];
+
+			if (!module_config.params)
+				module_config.params = {};
+
+			module_config.params.suggestion = suggest ? suggest.value : "";
+		}
 
 		config[module.id] = {
 			name: module.name,
-			params: module.getConfiguration()
+			params: module_config
 		};
 	}
 
@@ -54,6 +64,8 @@ run.onclick = function () {
 
 	// Get config
 	var config = get_config();
+	if (typeof store_wildcard_creator_suggestions != "undefined")
+		store_wildcard_creator_suggestions(config);
 	var file = new File([JSON.stringify(config)], "config.log", {
 		type: "text/plain",
 	});

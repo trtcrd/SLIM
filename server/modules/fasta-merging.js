@@ -7,7 +7,7 @@ const derep = require('./dereplication.js');
 
 exports.name = 'fasta-merging';
 exports.multicore = true;
-exports.category = '08. Utils';
+exports.category = '09. Utils';
 
 exports.run = (os, config, callback) => {
 	let token = os.token;

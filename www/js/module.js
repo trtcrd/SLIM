@@ -81,6 +81,9 @@ class Module {
 
 			// Reload parameters
 			if (this.params.params)
+				if (this.params.params[param.name] == undefined)
+					continue;
+				else
 				if (param.tagName.toUpperCase() == "INPUT") {
 					if (param.type == "checkbox") {
 						// Reload checkboxes
@@ -428,6 +431,8 @@ class ModuleManager {
 			var p_stat = module.dom.getElementsByClassName('status')[0];
 			p_stat.innerHTML = status;
 		}
+
+		return module;
 	}
 };
 var module_manager = new ModuleManager();

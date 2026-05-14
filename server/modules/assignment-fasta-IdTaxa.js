@@ -3,7 +3,7 @@ const fs = require('fs');
 const tools = require('../toolbox');
 
 exports.name = 'assignment-fasta-IDTAXA';
-exports.category = '05. Assignment';
+exports.category = '05. Taxonomic assignment';
 exports.multicore = true;
 
 exports.run = function(os,config,callback){

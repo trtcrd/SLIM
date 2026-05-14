@@ -21,6 +21,23 @@ class FileUpdater {
 		this.timeout = null;
 	}
 
+	get_autocomplete (input, query = '') {
+		let autocomplete = file_manager.getFiles(input.classList).filter((val)=>{return typeof(val) == "string"});
+		let normalized_query = query.toLowerCase().replace('€', '*');
+
+		if (normalized_query != '') {
+			autocomplete = autocomplete.filter((filename) => {
+				return filename.toLowerCase().includes(normalized_query);
+			});
+		}
+
+		for (let idx=0 ; idx<autocomplete.length ; idx++) {
+			autocomplete[idx] = {value:autocomplete[idx], data:autocomplete[idx]};
+		}
+
+		return autocomplete;
+	}
+
 	/* Function triggered when files change */
 	file_trigger () {
 		var that = this;
@@ -50,14 +67,7 @@ class FileUpdater {
 
 			for (let id_file=0 ; id_file<input_files.length ; id_file++) {
 				let input_file = input_files[id_file];
-
-				// Get all the file list for autocomplete
-				let autocomplete = file_manager.getFiles(input_file.classList).filter((val)=>{return typeof(val) == "string"});
-				
-				// Transform the file list to autocomplete format
-				for (let idx=0 ; idx<autocomplete.length ; idx++) {
-					autocomplete[idx] = {value:autocomplete[idx], data:autocomplete[idx]};
-				}
+				let autocomplete = that.get_autocomplete(input_file);
 
 				// Setup the jquery autocomplete
 				$(input_file).autocomplete({
@@ -87,14 +97,7 @@ class FileUpdater {
 
 			for (let id_file=0 ; id_file<input_files_text.length ; id_file++) {
 				let input_file_text = input_files_text[id_file];
-
-				// Get all the file list for autocomplete
-				let autocomplete = file_manager.getFiles(input_file_text.classList).filter((val)=>{return typeof(val) == "string"});
-				
-				// Transform the file list to autocomplete format
-				for (let idx=0 ; idx<autocomplete.length ; idx++) {
-					autocomplete[idx] = {value:autocomplete[idx], data:autocomplete[idx]};
-				}
+				let autocomplete = that.get_autocomplete(input_file_text);
 
 				// Setup the jquery autocomplete
 				$(input_file_text).autocomplete({

@@ -66,19 +66,131 @@ class FileManager {
 	}
 
 	getFiles (extentions = []) {
-		if (extentions.length == 0)
-			extentions = [... new Set(Object.keys(this.server_files).concat(Object.keys(this.futur_files)))];
+		extentions = Array.from(extentions);
 
-		// Construct the file object
+		var files = this.getUploadedFiles();
+		for (var futur_ext in this.futur_files) {
+			files = files.concat(this.futur_files[futur_ext]);
+		}
+
+		files = files.concat(this.getCurrentOutputFiles());
+
+		if (extentions.length == 0)
+			return Array.from(new Set(files));
+
+		files = files.filter((filename) => {
+			return this.fileMatchesExtentions(filename, extentions);
+		});
+
+		return Array.from(new Set(files));
+	}
+
+	getFilesBeforeElement (extentions = [], element) {
+		extentions = Array.from(extentions);
+
+		var files = this.getUploadedFiles();
+		files = files.concat(this.getPreviousOutputFiles(element));
+
+		if (extentions.length == 0)
+			return Array.from(new Set(files));
+
+		files = files.filter((filename) => {
+			return this.fileMatchesExtentions(filename, extentions);
+		});
+
+		return Array.from(new Set(files));
+	}
+
+	getUploadedFiles () {
 		var files = [];
-		for (var idx in extentions) {
-			if (this.server_files[extentions[idx]] != undefined)
-				files = files.concat(this.server_files[extentions[idx]]);
-			if (this.futur_files[extentions[idx]] != undefined)
-				files = files.concat(this.futur_files[extentions[idx]]);
+
+		for (var server_ext in this.server_files) {
+			files = files.concat(this.server_files[server_ext]);
 		}
 
 		return files;
+	}
+
+	getPreviousOutputFiles (element) {
+		if (typeof document == "undefined" || !element)
+			return [];
+
+		var modules = document.querySelectorAll('#modules > .module');
+		var files = [];
+
+		for (let idx=0 ; idx<modules.length ; idx++) {
+			if (modules[idx] == element)
+				break;
+
+			let outputs = modules[idx].querySelectorAll('.output_zone input');
+			for (let out_idx=0 ; out_idx<outputs.length ; out_idx++) {
+				let filename = outputs[out_idx].value;
+
+				if (filename)
+					files.push(filename);
+			}
+		}
+
+		return files;
+	}
+
+	getCurrentOutputFiles () {
+		if (typeof document == "undefined")
+			return [];
+
+		var outputs = document.querySelectorAll('.output_zone input');
+		var files = [];
+
+		for (let idx=0 ; idx<outputs.length ; idx++) {
+			let filename = outputs[idx].value;
+
+			if (filename)
+				files.push(filename);
+		}
+
+		return files;
+	}
+
+	fileMatchesExtentions (filename, extentions) {
+		var requested = extentions.map((extention) => {
+			return extention.toLowerCase();
+		});
+		var aliases = this.getFileExtentionAliases(filename);
+
+		for (let idx=0 ; idx<aliases.length ; idx++) {
+			if (requested.includes(aliases[idx].toLowerCase()))
+				return true;
+		}
+
+		return false;
+	}
+
+	getFileExtentionAliases (filename) {
+		var lower = filename.toLowerCase();
+		var aliases = [];
+
+		if (lower.endsWith('.fastq.gz')) {
+			aliases.push('fastq', 'fq', 'gz');
+		} else if (lower.endsWith('.fq.gz')) {
+			aliases.push('fastq', 'fq', 'gz');
+		} else if (lower.endsWith('.fasta.gz')) {
+			aliases.push('fasta', 'fa', 'gz');
+		} else if (lower.endsWith('.fa.gz')) {
+			aliases.push('fasta', 'fa', 'gz');
+		} else if (filename.includes('.')) {
+			aliases.push(filename.substr(filename.lastIndexOf('.') + 1));
+		}
+
+		if (aliases.includes('fq') && !aliases.includes('fastq'))
+			aliases.push('fastq');
+		if (aliases.includes('fastq') && !aliases.includes('fq'))
+			aliases.push('fq');
+		if (aliases.includes('fa') && !aliases.includes('fasta'))
+			aliases.push('fasta');
+		if (aliases.includes('fasta') && !aliases.includes('fa'))
+			aliases.push('fa');
+
+		return aliases;
 	}
 
 	register_observer (callback) {
