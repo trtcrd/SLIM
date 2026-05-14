@@ -1,23 +1,42 @@
 .git
+.git/
+**/.git/
+**/.git/**
+.github/
+**/.github/
 .gitignore
-
-node_modules
-dist
-build
-target
-coverage
-
-.venv
-venv
-__pycache__
-*.pyc
-
-tmp
-temp
-.cache
-
-*.log
-
-.env
-
+**/.gitignore
 .DS_Store
+
+# Runtime/uploaded data should never be part of the image build context.
+data/
+server/data/
+www/data/
+
+# SingleM reference data is mounted at runtime by start_slim_v1.0.0.sh.
+lib/singleM/db/
+lib/singleM/db/**
+
+# MSI taxonomy dumps are not needed when MSI BLAST/taxonomy is skipped.
+lib/msi/db/*.dmp
+lib/msi/db/*.tar
+lib/msi/db/*.tar.gz
+lib/msi/db/*.gz
+
+# Local dependency/build caches.
+node_modules/
+**/node_modules/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.Rhistory
+.RData
+.Rproj.user/
+
+# Logs and temporary files.
+*.log
+tmp/
+temp/
+

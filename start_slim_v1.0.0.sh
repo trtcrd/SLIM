@@ -172,9 +172,15 @@ cleanup_old_containers_and_images "${engine}"
 
 echo "Building SLIM image."
 if [ "${engine}" = "podman" ]; then
-    "${engine}" build --jobs 4 -t "${IMAGE_NAME}" .
+    if ! "${engine}" build --jobs 4 -t "${IMAGE_NAME}" .; then
+        echo "Error: SLIM image build failed. SingleM database download and container start were skipped."
+        exit 1
+    fi
 else
-    DOCKER_BUILDKIT=1 "${engine}" build -t "${IMAGE_NAME}" .
+    if ! DOCKER_BUILDKIT=1 "${engine}" build --progress=plain -t "${IMAGE_NAME}" .; then
+        echo "Error: SLIM image build failed. SingleM database download and container start were skipped."
+        exit 1
+    fi
 fi
 
 ensure_singlem_db "${engine}" "${IMAGE_NAME}"
