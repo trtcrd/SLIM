@@ -298,8 +298,6 @@ COPY lib/papa/papaparse.js /app/www/js/papaparse.js
 # prepare data folder
 RUN mkdir /app/data
 
-#RUN apt update --fix-missing 
-#RUN apt install vim -y
 
 
 # commamd executed to run the server

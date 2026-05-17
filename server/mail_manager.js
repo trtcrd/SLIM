@@ -1,31 +1,45 @@
 const nodemailer = require('nodemailer');
+const fs = require('fs');
 
 const config = require ('./config.js');
-const scheduler = require('./scheduler.js');
 
 
 let transporter = null
 
-if (config.mailer.auth.user == 'username') {
-	console.warn('\nWarning: Mailer not configured ! Please fill the file server/config.js with your own mailing service login.\n');
+if (!config.mailer.__enabled) {
+	console.warn('\nWarning: Mailer not configured. Set SLIM_MAIL_USER and SLIM_MAIL_PASSWORD to enable email notifications.\n');
 } else {
-	transporter = nodemailer.createTransport(config.mailer);
+	let mailer_options = Object.assign({}, config.mailer);
+	delete mailer_options.__address;
+	delete mailer_options.__enabled;
+	transporter = nodemailer.createTransport(mailer_options);
 }
+
+exports.is_configured = () => {
+	return transporter != null;
+};
 
 
 
 let send_mail = (token, subject, text, files=[]) => {
 	if (transporter == null) {
-		console.warn("Mailer not configured !!!");
+		console.warn(token + ": email not sent: mailer not configured");
 		return;
 	}
 
-	if (!exports.mails[token])
+	if (!exports.mails[token]) {
+		console.log(token + ": email not sent: no recipient registered");
 		return;
+	}
 
 	let mail = exports.mails[token];
+	if (!mail.includes('@')) {
+		console.warn(token + ": email not sent: invalid address: " + mail);
+		return;
+	}
+
 	if (mail == 'aaa') {
-		console.warn ("Please use this fake email ONLY for debug !!");
+		console.warn(token + ": email not sent: fake debug address");
 		return;
 	}
 
@@ -37,9 +51,12 @@ let send_mail = (token, subject, text, files=[]) => {
 	};
 
 	if (files.length > 0) {
-		attachments = [];
+		let attachments = [];
 		for (let idx=0 ; idx<files.length ; idx++) {
 			let name = files[idx];
+			if (!fs.existsSync(name))
+				continue;
+
 			let short_name = name.split('/');
 			short_name = short_name[short_name.length - 1]
 
@@ -49,22 +66,24 @@ let send_mail = (token, subject, text, files=[]) => {
 			});
 		}
 
-		mailOptions.attachments = attachments;
+		if (attachments.length > 0)
+			mailOptions.attachments = attachments;
 	}
 
 	// send mail with defined transport object
 	transporter.sendMail(mailOptions, (error, info) => {
 		if (error) {
-			console.log(error);
+			console.log(token + ': email failed: ' + error.message);
 			return;
 		}
 
-		console.log(token + ': email sent');
+		console.log(token + ': email sent to ' + mail + (info && info.messageId ? ' (' + info.messageId + ')' : ''));
 	});
 };
 
 
 exports.mails = {};
+exports.urls = {};
 
 
 exports.send_address = (token) => {
@@ -72,7 +91,7 @@ exports.send_address = (token) => {
 		token,
 		'Your job ' + token,
 		'Here is the link to follow the execution process.\n' +
-		scheduler.urls[token] + '\n\n' +
+		exports.urls[token] + '\n\n' +
 		'The SLIM pipeline staff',
 		['/app/data/' + token + '/pipeline.conf', '/app/versions.tsv']
 	);
@@ -84,10 +103,10 @@ exports.send_end_mail = (token) => {
 		token,
 		'Your job ' + token + ' is over',
 		'Your results are available at this address:\n' +
-		scheduler.urls[token] + '\n\n' +
+		exports.urls[token] + '\n\n' +
 		'Your session will automatically be deleted in 24h. Don\'t forget to download your results\n\n' +
 		'You can use the .conf attached file to reload all your pipeline in the future.\n' +
-		'For used software versions, please look at the attached version.tsv file.' +
+		'For used software versions, please look at the attached version.tsv file.\n\n' +
 		'The SLIM pipeline staff',
 		['/app/data/' + token + '/pipeline.conf', '/app/versions.tsv']
 	);
@@ -98,7 +117,7 @@ exports.send_crash_email = (token) => {
 		token,
 		'Your job ' + token + ' crashed :(',
 		'Your partial results are available at this address:\n' +
-		scheduler.urls[token] + '\n' +
+		exports.urls[token] + '\n' +
 		'Please check all your configuration before another submission.\n\n' +
 		'Your session will automatically be deleted in 24h.\n\n' +
 		'The SLIM pipeline staff'	
@@ -110,7 +129,7 @@ exports.send_delete_reminder = (token) => {
 		token,
 		'Your job ' + token + ' will be deleted in 3 hours',
 		'Your results are still available at this address for only 3 more hours:\n' +
-		scheduler.urls[token] + '\n\n' +
+		exports.urls[token] + '\n\n' +
 		'The SLIM pipeline staff'
 	);
 }

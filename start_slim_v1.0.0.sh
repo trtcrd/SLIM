@@ -5,6 +5,7 @@ set -u
 IMAGE_NAME="slim"
 CONTAINER_NAME="slim"
 DEFAULT_PORT="8080:80"
+MAIL_ENV_FILE="slim_mail.env"
 
 Help()
 {
@@ -167,23 +168,57 @@ ensure_singlem_db()
     echo "SingleM metapackage: ${SINGLEM_METAPACKAGE_CONTAINER}"
 }
 
+build_mail_env_args()
+{
+    MAIL_ENV_ARGS=()
+
+    if [ -f "${MAIL_ENV_FILE}" ]; then
+        MAIL_ENV_ARGS+=(--env-file "${MAIL_ENV_FILE}")
+        echo "Mail configuration loaded from ${MAIL_ENV_FILE}"
+        return
+    fi
+
+    for var_name in \
+        SLIM_MAIL_USER \
+        SLIM_MAIL_PASSWORD \
+        SLIM_MAIL_FROM \
+        SLIM_MAIL_HOST \
+        SLIM_MAIL_PORT \
+        SLIM_MAIL_SECURE \
+        GMAIL_USER \
+        GMAIL_APP_PASSWORD \
+        GMAIL_PASS
+    do
+        if [ -n "${!var_name:-}" ]; then
+            MAIL_ENV_ARGS+=(-e "${var_name}")
+        fi
+    done
+
+    if [ "${#MAIL_ENV_ARGS[@]}" -gt 0 ]; then
+        echo "Mail configuration loaded from shell environment."
+    else
+        echo "No mail configuration found. Email notifications will be disabled."
+    fi
+}
+
 stop_existing_slim_containers "${engine}"
 cleanup_old_containers_and_images "${engine}"
 
 echo "Building SLIM image."
 if [ "${engine}" = "podman" ]; then
     if ! "${engine}" build --jobs 4 -t "${IMAGE_NAME}" .; then
-        echo "Error: SLIM image build failed. SingleM database download and container start were skipped."
+        echo "Error: SLIM image build failed. Database download and container start were skipped."
         exit 1
     fi
 else
     if ! DOCKER_BUILDKIT=1 "${engine}" build --progress=plain -t "${IMAGE_NAME}" .; then
-        echo "Error: SLIM image build failed. SingleM database download and container start were skipped."
+        echo "Error: SLIM image build failed. Database download and container start were skipped."
         exit 1
     fi
 fi
 
 ensure_singlem_db "${engine}" "${IMAGE_NAME}"
+build_mail_env_args
 
 echo "Starting SLIM."
 "${engine}" run \
@@ -191,6 +226,7 @@ echo "Starting SLIM."
     -p "${port}" \
     -v "${SINGLEM_DB_HOST}:/app/lib/singleM/db:ro" \
     -e "SINGLEM_METAPACKAGE_PATH=${SINGLEM_METAPACKAGE_CONTAINER}" \
+    "${MAIL_ENV_ARGS[@]}" \
     -d "${IMAGE_NAME}"
 
 echo "SLIM is running at http://localhost:${port%%:*}"

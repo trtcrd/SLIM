@@ -5,7 +5,7 @@ const formidable = require('formidable');
 
 const sub_process = require('./sub_process.js');
 const uploads = require('./files_upload.js');
-// const mailer = require('./mail_manager.js');
+const mailer = require('./mail_manager.js');
 const accounts = require('./accounts.js');
 const config_module = require('./config.js');
 
@@ -148,6 +148,7 @@ var sub_process_start = (tok, configs_array) => {
 			if (nbAborted == configs_array.length) {
 				delete running_jobs[token]
 				job.status = 'aborted';
+				uploads.trigger_job_crash(token);
 			}
 			// Reset the status for next job
 			else {
@@ -185,7 +186,7 @@ var sub_process_start = (tok, configs_array) => {
 			console.log(err);
 			job.status = 'aborted';
 			fs.writeFileSync('/app/data/' + token + '/exec.log', JSON.stringify(job));
-			// mailer.send_crash_email(token);
+			uploads.trigger_job_crash(token);
 			delete running_jobs[token]
 		}
 };
@@ -204,11 +205,14 @@ exports.listen_commands = function (app) {
 			maxTotalFileSize: 10 * 1024 * 1024
 		});
 		let token = null;
+		let mail = null;
 		let file = null;
 
 		form.on('field', function (field, value) {
 			if (field == "token")
 				token = value;
+			if (field == "mail")
+				mail = value;
 		});
 
 		form.on('file', function(field, f) {
@@ -245,6 +249,9 @@ exports.listen_commands = function (app) {
 				res.status(400).send('JSON syntax error');
 				return;
 			}
+			if (!params.mail && mail)
+				params.mail = mail;
+			fs.writeFileSync(filename, JSON.stringify(params));
 
 			// Answer the client
 			run_job(params, (code, msg) => {
@@ -264,8 +271,22 @@ var run_job = (params, callback) => {
 	}
 
 	var token = params.token;
-	// var mail = params.mail;
+	var mail = params.mail ? String(params.mail).trim() : "";
 	delete params.token;
+	delete params.mail;
+
+	if (mail == "Your email address")
+		mail = "";
+
+	if (mail != "" && !mail.includes('@')) {
+		callback(400, 'Invalid mail address')
+		return;
+	}
+
+	if (mail != "" && !mailer.is_configured()) {
+		callback(400, 'The server mailer is not configured')
+		return;
+	}
 
 	// Verification of the existance of the token
 	if (! fs.existsSync('/app/data/' + token)){
@@ -273,17 +294,22 @@ var run_job = (params, callback) => {
 		return;
 	}
 	// Save URL and mail address
-	// mailer.mails[token] = mail;
+	if (mail != "") {
+		mailer.mails[token] = mail;
+		mailer.urls[token] = exports.urls[token];
+		console.log(token + ': email recipient registered: ' + mail);
+	} else {
+		console.log(token + ': no email recipient provided');
+	}
 
 	// Send a mail and cancel the directory removal
 	if (uploads.deletions[token])
 			clearTimeout(uploads.deletions[token]);
-	// mailer.send_address(token);
 
 	// Save the conf and return message
 	fs.writeFileSync('/app/data/' + token + '/pipeline.conf', JSON.stringify(params));
 	console.log(token + ': configuration saved!');
-	// delete params.mail;
+	mailer.send_address(token);
 
 	// Create the execution log file
 	var logFile = '/app/data/' + token + '/exec.log';
@@ -310,6 +336,7 @@ var run_job = (params, callback) => {
 		console.log("dependencies not satisfied:\n", global_dependencies[token]);
 
 		fs.writeFileSync(logFile, JSON.stringify(exe));
+		uploads.trigger_job_crash(token);
 		return;
 	}
 
@@ -330,9 +357,9 @@ var run_job = (params, callback) => {
 exports.expose_status = function (app) {
 	app.get('/status', function (req, res) {
 		messages = []
-		// if (config_module.mailer.auth.user == "username") {
-		// 	messages.push("No mail address configured for the server<br/>You will not receive updates by email for your job.");
-		// }
+		if (!config_module.mailer.__enabled) {
+			messages.push("No mail account configured for the server. Email updates are disabled.");
+		}
 
 		// If no token, send back a general status
 		if (req.query.token == undefined) {
@@ -527,8 +554,6 @@ var computeSoftwareOrder = function (params, token) {
 	}
 
 	global_dependencies[token] = dependencies;
-	console.log(global_dependencies);
-	console.log(order);
 	return order;
 }
 
@@ -544,7 +569,6 @@ var expand_parameters = (token, params, no_joker_files, order) => {
 		var dev_params = demux_executions(token, params, soft_id, no_joker_files);
 		// Copy soft parameters
 
-		console.log("checkpoint after demux_executions");
 		params[soft_id] = dev_params[soft_id];
 		// Add jokers
 		for (var id in dev_params.out_jokers)
@@ -592,22 +616,6 @@ var demux_files = (inputs, files) => {
 
 // From one entry, generate multiple exactutions
 var demux_executions = (token, params, soft_id, no_joker_files) => {
-	function logAttributes(obj, prefix = '') {
-		for (const key in obj) {
-			if (obj.hasOwnProperty(key)) {
-				const value = obj[key];
-				const newPrefix = prefix ? `${prefix}.${key}` : key;
-				if (typeof value === 'object' && value !== null) {
-					logAttributes(value, newPrefix);
-				} else {
-					console.log(newPrefix);
-				}
-			}
-		}
-	}
-
-	console.log("checkpoint start demux_executions");
-	logAttributes(params[soft_id]);
 	var inputs = params[soft_id].params.inputs;
 	var outputs = params[soft_id].params.outputs;
 
@@ -659,8 +667,6 @@ var demux_executions = (token, params, soft_id, no_joker_files) => {
 		config.new_files = {};
 		for (out_id in config.params.outputs) {
 			let filename = config.params.outputs[out_id];
-			console.log(filename);
-			console.log("checkpoint outputs");
 			if (filename.includes('*')) {
 				// Replace the * by the complete name
 				config.params.outputs[out_id] = filename.replace('\*', id);
@@ -675,33 +681,20 @@ var demux_executions = (token, params, soft_id, no_joker_files) => {
 	}
 	// Update if no joker
 	if (conf_array.length == 0) {
-		console.log("checkpoint new files 1");
 		conf_array.push(params[soft_id]);
 		if (Object.keys(out_jokers).length > 0) {
 			conf_array[0].out_jokers = out_jokers;
 		}
 		// add new_files if the filename contains "€"
-		console.log("checkpoint new files 2");
-		console.log(conf_array[0].params.inputs);
-		console.log(conf_array[0].params.inputs.length);
-		console.log(conf_array[0].params.outputs);
-		console.log(conf_array[0].params.outputs.length);
 		var inputs_from_conf = conf_array[0].params.inputs; 
-		console.log(inputs_from_conf);
 		var outputs_from_conf = conf_array[0].params.outputs;
-		console.log(outputs_from_conf);
 		
 		for (var in_id in inputs_from_conf) {
 			var filename_input = conf_array[0].params.inputs[in_id];
-			console.log(filename_input);
-			console.log("checkpoint new files 2.2");
-			console.log(in_id);
 			if (filename_input.includes('€')) {
 				for (var out_id in outputs_from_conf) {
 					let filename_output = outputs_from_conf[out_id];
-					console.log(filename_output);
 					if (filename_output.includes('*')) {
-						console.log("checkpoint new files 3");
 						conf_array[0].new_files = {};
 						filename_input = filename_input.replace('€', '*');
 			
@@ -728,10 +721,6 @@ var demux_executions = (token, params, soft_id, no_joker_files) => {
 			}
 		}
 	}
-
-	console.log("checkpoint finish demux_executions");
-	console.log(conf_array);
-	logAttributes(conf_array);
 
 	params[soft_id] = conf_array;
 	return params;

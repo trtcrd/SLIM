@@ -11,13 +11,21 @@ add_button.onclick = function () {
 
 // --- Pipeline execution ---
 var run = document.querySelector('#start');
-// var mail_area = document.getElementById('mail');
+
+var get_mail_value = () => {
+	var mail_area = document.getElementById('mail');
+	return mail_area ? mail_area.value.trim() : "";
+};
 
 var get_config = () => {
 	var config = {
-		token:exec_token //,
-		// mail: document.getElementById('mail').value
+		token:exec_token
 	};
+
+	let mail_value = get_mail_value();
+	if (mail_value != "")
+		config.mail = mail_value;
+
 	for (var idx in module_manager.modules) {
 		var module = module_manager.modules[idx];
 		var module_config = module.getConfiguration();
@@ -40,27 +48,16 @@ var get_config = () => {
 	return config;
 };
 
-// mail_area.addEventListener("focusin", () => {
-// 	if (mail_area.value == "Your email address") {
-// 		mail_area.value = "";
-// 	}
-// });
-// mail_area.addEventListener("focusout", () => {
-// 	if (mail_area.value == "") {
-// 		mail_area.value = "Your email address";
-// 	}
-// });
-
 var status_interval;
 run.onclick = function () {
 	// Verify mail address
-	// let mail_value = mail_area.value;
-	// if ((mail_value.length > 5 && mail_value.includes('@')) || mail_value == 'aaa')
-	// 	document.getElementsByClassName('gui_warnings')[1].innerHTML = '';
-	// else {
-	// 	document.getElementsByClassName('gui_warnings')[1].innerHTML = '<p>A valid mail address should be entered</p>';
-	// 	return;
-	// }
+	let mail_value = get_mail_value();
+	if (mail_value == "" || (mail_value.length > 5 && mail_value.includes('@')))
+		document.getElementsByClassName('gui_warnings')[1].innerHTML = '';
+	else {
+		document.getElementsByClassName('gui_warnings')[1].innerHTML = '<p>A valid mail address should be entered</p>';
+		return;
+	}
 
 	// Get config
 	var config = get_config();
@@ -74,10 +71,20 @@ run.onclick = function () {
 	var formData = new FormData();
 	formData.append("config", file);
 	formData.append("token", exec_token);
+	if (mail_value != "")
+		formData.append("mail", mail_value);
 
 	// Request sender
 	var request = new XMLHttpRequest();
 	request.open("POST", "/run");
+	request.onload = function () {
+		if (request.status < 200 || request.status >= 300) {
+			document.getElementsByClassName('gui_warnings')[1].innerHTML =
+				'<p>' + (request.responseText || 'Unable to start pipeline') + '</p>';
+			run.disabled = false;
+			clearInterval(status_interval);
+		}
+	};
 	request.send(formData);
 	run.disabled = true;
 	

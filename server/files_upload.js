@@ -3,10 +3,11 @@ const formidable = require('formidable');
 const path = require('path');
 const exec = require('child_process').spawn;
 
-// const mailer = require('./mail_manager.js');
+const mailer = require('./mail_manager.js');
 
 exports.jokers = {};
 exports.deletions = {};
+exports.delete_reminders = {};
 
 exports.exposeDir = function (app) {
 	// list data directory
@@ -282,18 +283,20 @@ var proccess_file = (token, file, upload_dir) => {
 
 
 
-exports.trigger_job_end = (token) => {
-	// End mail
-	// mailer.send_end_mail (token);
+var schedule_job_deletion = (token) => {
+	if (exports.deletions[token])
+		clearTimeout(exports.deletions[token]);
+	if (exports.delete_reminders[token])
+		clearTimeout(exports.delete_reminders[token]);
 
-	// Reminder
-	// setTimeout (
-	// 	() => {mailer.send_delete_reminder(token)},
-	// 	1000 * 3600 * 21
-	// );
+	// Reminder 3h before deletion.
+	exports.delete_reminders[token] = setTimeout(
+		() => {mailer.send_delete_reminder(token)},
+		1000 * 3600 * 21
+	);
 
-	// Delete environment 24h15 after the process end
-	setTimeout (
+	// Delete environment 24h15 after the process end.
+	exports.deletions[token] = setTimeout(
 		() => {require('child_process').exec('rm -rf /app/data/' + token, (err)=>{
 			if (err)
 				console.log(err);
@@ -302,4 +305,16 @@ exports.trigger_job_end = (token) => {
 		});},
 		1000 * 3600 * 24 + 15 * 60000
 	);
+};
+
+
+exports.trigger_job_end = (token) => {
+	mailer.send_end_mail(token);
+	schedule_job_deletion(token);
+};
+
+
+exports.trigger_job_crash = (token) => {
+	mailer.send_crash_email(token);
+	schedule_job_deletion(token);
 };

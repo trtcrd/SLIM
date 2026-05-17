@@ -1,8 +1,28 @@
-### SLIM v0.6.2 ###
-#Third-party software version:
-casper		0.8.2
-DTD		0.1
-Pandaseq	2.11
-vsearch		2.8
-swarm		2.2.2
-DADA2		1.16
+### SLIM v1.0.0 ###
+# Third-party software/package versions
+# Entries marked "build-time" are installed from apt/CRAN/conda/git without an exact pinned version in the Dockerfile.
+software	version	source_or_note
+Ubuntu	24.04	Docker base image
+Node.js	build-time	Ubuntu apt package
+npm	build-time	Ubuntu apt package
+R	build-time	Ubuntu/CRAN apt packages
+Biopython	build-time	pip upgrade during Docker build
+jQuery-Autocomplete	1.4.7	get_dependencies_slim_v1.0.0.sh
+PapaParse	4.4.0	get_dependencies_slim_v1.0.0.sh
+DoubleTagDemultiplexer	f687329ac846193605af97ef2b3f65d1bf5bce04	get_dependencies_slim_v1.0.0.sh
+CASPER	0.8.2	bundled source archive
+PANDAseq	2.11	get_dependencies_slim_v1.0.0.sh
+VSEARCH	2.31.0	get_dependencies_slim_v1.0.0.sh
+SWARM2	2.2.2	dependency fetched; Docker build currently uses SWARM3
+SWARM3	3.1.6	get_dependencies_slim_v1.0.0.sh
+DADA2	1.26	get_dependencies_slim_v1.0.0.sh
+DECIPHER	2.16.0	get_dependencies_slim_v1.0.0.sh
+lulu	build-time	cloned from https://github.com/tobiasgf/lulu
+chopper	0.8.0	conda/bioconda pinned
+MSI	build-time	cloned from https://github.com/adriantich/msi
+fastq_utils	build-time	cloned from https://github.com/adriantich/fastq_utils for MSI
+seqtk	build-time	cloned from https://github.com/lh3/seqtk for MSI
+ASHURE	1.0.0	get_dependencies_slim_v1.0.0.sh
+spoa	4.1.0	bundled with ASHURE build
+SingleM	0.20.3	conda/bioconda pinned
+polars-lts-cpu	build-time	pip-installed replacement for polars in SingleM environment

@@ -27,21 +27,15 @@ tar -xzvf v1.0.0.tar.gz
 cd SLIM-1.0.0
 ```
 
-<!-- Before deploying SLIM, you need to configure the mailing account that will be used for mailing service.
-We advise to use gmail, as it is already set in the 'server/config.js' file.
-This file need to be updated with your 'user' and 'pass' credentials on the server:
+Email notifications are optional. To send messages with Gmail, enable 2-Step Verification on the Gmail account and create a Gmail app password. Then create a local file named `slim_mail.env` at the root of the SLIM folder:
 
 ```
-exports.mailer = {
-	host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // true for 465, false for other ports
-    auth: {
-        user: 'username',
-        pass: 'password'
-    }
-}
-``` -->
+SLIM_MAIL_USER=your.gmail.account@gmail.com
+SLIM_MAIL_PASSWORD=your16digitapppassword
+SLIM_MAIL_FROM=your.gmail.account@gmail.com
+```
+
+The `start_slim_v1.0.0.sh` script passes this file to the container at runtime. Do not commit `slim_mail.env`.
 
 
 As soon as podman is installed and running and the SLIM archive downloaded, it can be deployed by using the two scripts `get_dependencies_slim_v1.0.0.sh` and `start_slim_v1.0.0.sh`.
@@ -197,12 +191,8 @@ and below for an OTU clustering using vsearch and taxonomic assignement
 </p>
 
 
-<!-- Once your workflow is set, please fill the email field and click on the start button.
-Your job will automatically be scheduled on the server.
-You will receive an email when your job starts, if you job aborted and when your job is over.
-This email contains a direct link to your job so that the internet browser tab can be closed once the execution started. -->
-
-Once your workflow is set, click on the start button, and bookmark the url to allow returning to the job.
+Once your workflow is set, optionally fill the email field, click on the start button, and bookmark the url to allow returning to the job.
+If the server mailer is configured, you will receive an email when your job starts, aborts, and ends.
 
 When the job is over, you will have small icons of download on the right of each output field.
 All the uploaded, intermediate and results files are available to download.
@@ -235,7 +225,7 @@ In the [manual](https://github.com/adriantich/SLIM/blob/master/man/README.md#lis
 - Added modules for processing nanopore amplicon data (CHOPPER, MSI, ASHURE, OPTICS)
 - Added module to create wildcard grouping of files
 - Added SWARM3 module
-- Emailing service hidden, until a viable option is identified
+- Emailing service restored as an optional Gmail app-password configuration
 - Documentation moved from the wiki to the tutos folder.
 - Various interface bug fixes
 

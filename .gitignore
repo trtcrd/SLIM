@@ -3,6 +3,9 @@ logs
 *.log
 npm-debug.log*
 
+# email infos
+slim_mail.env
+
 # Runtime data
 pids
 *.pid
