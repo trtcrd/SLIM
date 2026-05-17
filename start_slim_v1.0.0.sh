@@ -168,6 +168,21 @@ ensure_singlem_db()
     echo "SingleM metapackage: ${SINGLEM_METAPACKAGE_CONTAINER}"
 }
 
+ensure_kraken2_db_dir()
+{
+    KRAKEN2_DB_HOST="$(pwd)/lib/kraken2/db"
+    mkdir -p "${KRAKEN2_DB_HOST}"
+    export KRAKEN2_DB_HOST
+
+    if find "${KRAKEN2_DB_HOST}" -mindepth 2 -maxdepth 2 -name "hash.k2d" | grep -q .; then
+        echo "Kraken2 database directory: ${KRAKEN2_DB_HOST}"
+    else
+        echo "No Kraken2 database found in ${KRAKEN2_DB_HOST}"
+        echo "Kraken2-Bracken will be available after manually downloading a database, e.g.:"
+        echo "  ./download_kraken2_db.sh pluspf_16"
+    fi
+}
+
 build_mail_env_args()
 {
     MAIL_ENV_ARGS=()
@@ -218,6 +233,7 @@ else
 fi
 
 ensure_singlem_db "${engine}" "${IMAGE_NAME}"
+ensure_kraken2_db_dir
 build_mail_env_args
 
 echo "Starting SLIM."
@@ -225,7 +241,9 @@ echo "Starting SLIM."
     --name "${CONTAINER_NAME}" \
     -p "${port}" \
     -v "${SINGLEM_DB_HOST}:/app/lib/singleM/db:ro" \
+    -v "${KRAKEN2_DB_HOST}:/app/lib/kraken2/db:ro" \
     -e "SINGLEM_METAPACKAGE_PATH=${SINGLEM_METAPACKAGE_CONTAINER}" \
+    -e "KRAKEN2_DB_ROOT=/app/lib/kraken2/db" \
     "${MAIL_ENV_ARGS[@]}" \
     -d "${IMAGE_NAME}"
 

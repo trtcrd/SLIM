@@ -65,3 +65,8 @@ lib/miniforge3
 lib/singleM/db/
 lib/singleM/**/*.smpkg
 lib/singleM/**/*.smpkg.zb
+# kracken2 database
+lib/kraken2/db/*
+# Other
+data/
+node_modules/

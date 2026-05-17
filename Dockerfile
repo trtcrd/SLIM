@@ -298,7 +298,23 @@ COPY lib/papa/papaparse.js /app/www/js/papaparse.js
 # prepare data folder
 RUN mkdir /app/data
 
+#RUN apt update --fix-missing 
+#RUN apt install vim -y
 
+
+# ----- install Kraken2/Bracken ----- #
+# Kept at the end on purpose so existing Docker build cache is preserved while
+# adding the new shotgun-metagenomics module.
+RUN conda create --solver=classic -n kraken2 -y \
+    -c conda-forge \
+    -c bioconda \
+    kraken2 \
+    bracken \
+    krakentools \
+    krona && \
+    conda clean -afy
+
+ENV PATH=/root/miniforge3/envs/kraken2/bin:$PATH
 
 # commamd executed to run the server
 CMD ["npm", "start"]

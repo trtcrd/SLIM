@@ -171,6 +171,16 @@ prepare_singlem_db_dir() {
     fi
 }
 
+prepare_kraken2_db_dir() {
+    mkdir -p kraken2/db
+
+    if find kraken2/db -mindepth 2 -maxdepth 2 -name "hash.k2d" | grep -q .; then
+        mark_ok "Kraken2 database directory"
+    else
+        mark_ok "Kraken2 database directory prepared; run ./download_kraken2_db.sh pluspf_16 before using the Kraken2-Bracken module"
+    fi
+}
+
 install_miniforge_installer() {
     local name="Miniforge installer"
     local arch
@@ -396,6 +406,7 @@ prepare_msi
 prepare_ashure
 install_miniforge_installer
 prepare_singlem_db_dir
+prepare_kraken2_db_dir
 
 echo
 echo "========== Dependency summary =========="

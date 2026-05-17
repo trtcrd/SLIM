@@ -1,0 +1,85 @@
+<p>Input mode</p>
+<select name="mode" class="param_value">
+    <option value="single" selected>Single-end or already merged reads</option>
+    <option value="paired">Paired-end reads</option>
+</select>
+
+<div class="single_reads">
+    <p>Reads pattern</p>
+    <input type="text" name="reads" class="input_file_text fastq fasta agregate" value="*.fastq.gz">
+</div>
+
+<div class="paired_reads">
+    <p>Forward reads pattern</p>
+    <input type="text" name="fwd" class="input_file_text fastq agregate" value="*_R1.fastq.gz">
+
+    <p>Reverse reads pattern</p>
+    <input type="text" name="rev" class="input_file_text fastq agregate" value="*_R2.fastq.gz">
+</div>
+
+<p>Kraken2 database</p>
+<select name="database" class="param_value">
+    <option value="pluspf_16" selected>PlusPF-16 (recommended)</option>
+    <option value="pluspf_8">PlusPF-8</option>
+    <option value="standard_16">Standard-16</option>
+    <option value="standard_8">Standard-8</option>
+    <option value="viral">Viral</option>
+    <option value="custom">Custom path in /app/lib/kraken2/db/custom</option>
+</select>
+
+<p>Bracken abundance matrix</p>
+<span class="output_zone">
+    <input type="text" name="abundance_matrix" value="kraken2_bracken_abundance.tsv">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<p>Bracken relative-abundance matrix</p>
+<span class="output_zone">
+    <input type="text" name="relative_abundance_matrix" value="kraken2_bracken_relative_abundance.tsv">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<p>Kraken2/Bracken results archive</p>
+<span class="output_zone">
+    <input type="text" name="results_archive" value="kraken2_bracken_results.tar.gz">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<div class="options">
+    <p>
+        Kraken2 confidence:
+        <input type="text" name="confidence" class="number param_value" value="0.05">
+    </p>
+    <p>
+        Bracken taxonomic level:
+        <select name="tax_level" class="param_value">
+            <option value="S" selected>Species</option>
+            <option value="G">Genus</option>
+            <option value="F">Family</option>
+            <option value="O">Order</option>
+            <option value="C">Class</option>
+            <option value="P">Phylum</option>
+            <option value="D">Domain</option>
+        </select>
+    </p>
+    <p>
+        Bracken read length:
+        <select name="read_length" class="param_value">
+            <option value="300" selected>300</option>
+            <option value="250">250</option>
+            <option value="200">200</option>
+            <option value="150">150</option>
+            <option value="100">100</option>
+            <option value="75">75</option>
+            <option value="50">50</option>
+        </select>
+    </p>
+    <p>
+        Bracken minimum reads:
+        <input type="text" name="bracken_threshold" class="integer number param_value" value="10">
+    </p>
+    <p>
+        Use Kraken2 memory mapping:
+        <input type="checkbox" name="memory_mapping" class="param_value">
+    </p>
+</div>

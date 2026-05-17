@@ -37,6 +37,14 @@ SLIM_MAIL_FROM=your.gmail.account@gmail.com
 
 The `start_slim_v1.0.0.sh` script passes this file to the container at runtime. Do not commit `slim_mail.env`.
 
+Kraken2/Bracken databases are optional and are kept outside the Docker image. The Kraken2-Bracken module uses PlusPF-16 by default, which adds protozoa and fungi to the standard archaea/bacteria/viral/plasmid/human database. To download it:
+
+```bash
+./download_kraken2_db.sh pluspf_16
+```
+
+Available choices are `viral`, `standard_8`, `standard_16`, `pluspf_8`, and `pluspf_16`. The database will be stored under `lib/kraken2/db/` and mounted into the SLIM container by `start_slim_v1.0.0.sh`.
+
 
 As soon as podman is installed and running and the SLIM archive downloaded, it can be deployed by using the two scripts `get_dependencies_slim_v1.0.0.sh` and `start_slim_v1.0.0.sh`.
 * `get_dependencies_slim_v1.0.0.sh` fetches all the bioinformatics tools needed from their respective repositories.
