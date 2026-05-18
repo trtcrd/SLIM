@@ -179,8 +179,8 @@ Finally, if everything is correctly loaded and the start button is pushed, the j
 All the modules in the client file must be inheritance of the Module class www/js/module.js.
 The most important functions in modules are the constructor, the onLoad function, the getConfiguration function and the toDOMelement function.
 
-For an easy example: [dereplication module](https://github.com/yoann-dufresne/amplicon_pipeline/blob/master/www/modules/fasta-dereplication.js)  
-For a more complex one: [pandaseq module](https://github.com/yoann-dufresne/amplicon_pipeline/blob/master/www/modules/pandaseq.js)
+For an easy example: [dereplication module](/www/modules/fasta-dereplication.js)  
+For a more complex one: [wildcard creator module](/www/modules/wildcard-creator.js)
 
 ### Module constructor
 The module constructor must be called during the very beginning of your module constructor:
@@ -201,7 +201,7 @@ Normally, you shouldn't have to modify this function.
 ### The onLoad function
 onLoad is the function that will be called immediately after the HTML part loading.
 Depending on the annotation in the HTML (see mymodule.html for more details), the basic onLoad function will recognize your inputs, outputs and param, reload their previous value and setup triggers on value changes.
-If you want to add comportment on unrecognized html pieces, don't forget to call "super.onLoad()" (for an example, see the module [pandaseq](https://github.com/yoann-dufresne/amplicon_pipeline/blob/master/www/modules/pandaseq.js)).
+If you want to add comportment on unrecognized html pieces, don't forget to call "super.onLoad()" (for an example, see the module [wildcard creator](/www/modules/wildcard-creator.js)).
 
 ### the getConfiguration function
 getConfiguration will transform the values in the HTML to the configuration object that will be send to the server.
@@ -265,7 +265,6 @@ This button show all the hidden options.
 	<p>Similarity: <input type="text" name="similarity" value="0.97"></p>
 </div>
 ```
-
 
 
 

@@ -359,14 +359,6 @@ download_zip \
     "edit.cpp"
 
 download_tar_gz \
-    "PANDAseq" \
-    "pandaseq" \
-    "https://github.com/neufeld/pandaseq/archive/v2.11.tar.gz" \
-    "v2.11.tar.gz" \
-    "pandaseq-2.11" \
-    "README.md"
-
-download_tar_gz \
     "VSEARCH" \
     "vsearch" \
     "https://github.com/torognes/vsearch/archive/v2.31.0.tar.gz" \
@@ -375,14 +367,6 @@ download_tar_gz \
     "src/vsearch.cc"
 
 prepare_casper
-
-download_tar_gz \
-    "SWARM2" \
-    "swarm2" \
-    "https://github.com/torognes/swarm/archive/v2.2.2.tar.gz" \
-    "v2.2.2.tar.gz" \
-    "swarm-2.2.2" \
-    "src/Makefile"
 
 download_tar_gz \
     "SWARM3" \

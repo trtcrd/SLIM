@@ -11,9 +11,7 @@ jQuery-Autocomplete	1.4.7	get_dependencies_slim_v1.0.0.sh
 PapaParse	4.4.0	get_dependencies_slim_v1.0.0.sh
 DoubleTagDemultiplexer	f687329ac846193605af97ef2b3f65d1bf5bce04	get_dependencies_slim_v1.0.0.sh
 CASPER	0.8.2	bundled source archive
-PANDAseq	2.11	get_dependencies_slim_v1.0.0.sh
 VSEARCH	2.31.0	get_dependencies_slim_v1.0.0.sh
-SWARM2	2.2.2	dependency fetched; Docker build currently uses SWARM3
 SWARM3	3.1.6	get_dependencies_slim_v1.0.0.sh
 DADA2	1.26	get_dependencies_slim_v1.0.0.sh
 DECIPHER	2.16.0	get_dependencies_slim_v1.0.0.sh

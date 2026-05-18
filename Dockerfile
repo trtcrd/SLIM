@@ -27,7 +27,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	python3-pip python3-dev python3-numpy python3-biopython \
 	libc6 && \
     rm -rf /var/lib/apt/lists/*
-# libcurl4-openssl-dev
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	r-base-core r-recommended r-base-html r-base r-base-dev \
@@ -108,7 +107,6 @@ RUN bash /tmp/miniforge3.sh -b && \
     /root/miniforge3/bin/conda clean -afy
 ENV PATH="/root/miniforge3/bin:${PATH}"
 ENV CONDA_NO_PLUGINS=true
-# RUN conda update conda
 
 
 # ----- Libraries deployments -----
@@ -119,24 +117,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm && \
 
 # Copy libraries
 COPY lib/DTD /app/lib/DTD
-COPY lib/pandaseq /app/lib/pandaseq
 COPY lib/vsearch /app/lib/vsearch
 COPY lib/casper /app/lib/casper
-# COPY lib/swarm2 /app/lib/swarm2
 COPY lib/swarm3 /app/lib/swarm3
-# COPY lib/sratoolkit /app/lib/sratoolkit
 
 # Compile DTD
 RUN sed -i '1i #include <cstdint>' /app/lib/DTD/edit.cpp
 RUN cd /app/lib/DTD && make -j$(nproc) && cd /app
-# Compile pandaseq
-# RUN cd /app/lib/pandaseq && ./autogen.sh && ./configure && make -j$(nproc) && cd /app
 # Compile vsearch
 RUN cd /app/lib/vsearch && ./autogen.sh && ./configure && make -j$(nproc) && cd /app
 # Compile casper
 RUN cd /app/lib/casper/casper_v0.8.2 && make -j$(nproc) && cd /app
-# Compile swarm2
-# RUN cd /app/lib/swarm2/src && make -j$(nproc) && cd /app
 # Compile swarm3
 RUN cd /app/lib/swarm3/src && make -j$(nproc) && cd /app
 
@@ -349,9 +340,6 @@ COPY lib/papa/papaparse.js /app/www/js/papaparse.js
 
 # prepare data folder
 RUN mkdir /app/data
-
-#RUN apt update --fix-missing 
-#RUN apt install vim -y
 
 # command executed to run the server
 CMD ["bash", "/app/start_slim_server.sh"]
