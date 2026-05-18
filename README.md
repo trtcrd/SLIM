@@ -47,10 +47,18 @@ Available choices are `viral`, `standard_8`, `standard_16`, `pluspf_8`, and `plu
 
 The SingleM module can also trim paired-end FASTQ files with fastp before profiling. This option is enabled by default and produces a small fastp reports archive.
 
+The mOTUs module is another shotgun metagenomics profiler. Its marker-gene database is kept outside the Docker image and is downloaded by `start_slim_v1.0.0.sh` after the image is built and before the webserver is started. The standalone downloader also uses the `motus` executable inside the built SLIM image, so it is only useful after the image exists. To download it manually after a build:
+
+```bash
+./download_motus_db.sh
+```
+
+The database is stored under `lib/mOTUs/db/` and mounted into the container at runtime. The mOTUs module can also trim FASTQ files with fastp before profiling; this option is enabled by default.
+
 
 As soon as podman is installed and running and the SLIM archive downloaded, it can be deployed by using the two scripts `get_dependencies_slim_v1.0.0.sh` and `start_slim_v1.0.0.sh`.
 * `get_dependencies_slim_v1.0.0.sh` fetches all the bioinformatics tools needed from their respective repositories.
-* `start_slim_v1.0.0.sh` destroys the current running webserver to replace it with a new one. **/!\\** All the files previously uploaded and the results of analysis will be detroyed during the process.
+* `start_slim_v1.0.0.sh` builds the SLIM image, downloads missing external databases such as SingleM and mOTUs, mounts those databases into the container, and destroys the current running webserver to replace it with a new one. **/!\\** All the files previously uploaded and the results of analysis will be detroyed during the process.
 
 ```bash
 bash get_dependencies_slim_v1.0.0.sh

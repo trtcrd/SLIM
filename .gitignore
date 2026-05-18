@@ -67,6 +67,8 @@ lib/singleM/**/*.smpkg
 lib/singleM/**/*.smpkg.zb
 # kracken2 database
 lib/kraken2/db/*
+# mOTUs database
+lib/mOTUs/db/*
 # Other
 data/
 node_modules/

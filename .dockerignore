@@ -22,6 +22,10 @@ lib/singleM/db/**
 lib/kraken2/db/
 lib/kraken2/db/**
 
+# mOTUs reference data is mounted at runtime by start_slim_v1.0.0.sh.
+lib/mOTUs/db/
+lib/mOTUs/db/**
+
 # MSI taxonomy dumps are not needed when MSI BLAST/taxonomy is skipped.
 lib/msi/db/*.dmp
 lib/msi/db/*.tar

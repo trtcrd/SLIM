@@ -89,11 +89,9 @@ document.querySelector("#up_submit").onclick = function (event) {
 		{
 			clear_upload_processing_interval();
 			if(typeof data.error === 'undefined') {
-				var event = new Event('new_file');
-				event.files = up_filenames;
-				document.dispatchEvent(event);
 				set_upload_message('Done');
 				document.querySelector('#start').disabled = false;
+				file_manager.load_from_server();
 			} else {
 				// Handle errors here
 				set_upload_message('Upload failed: ' + data.error, true);

@@ -183,6 +183,81 @@ ensure_kraken2_db_dir()
     fi
 }
 
+ensure_motus_db()
+{
+    local engine="$1"
+    local image="$2"
+    local motus_db_host
+
+    motus_db_host="$(pwd)/lib/mOTUs/db"
+    mkdir -p "${motus_db_host}"
+
+    if [ -d "${motus_db_host}/db_mOTU" ] && find "${motus_db_host}/db_mOTU" -type f -name "*.bwt" | grep -q .; then
+        echo "mOTUs database already present in ${motus_db_host}/db_mOTU"
+    else
+        if [ -d "${motus_db_host}/db_mOTU" ]; then
+            echo "Removing incomplete mOTUs database in ${motus_db_host}/db_mOTU"
+            rm -rf "${motus_db_host}/db_mOTU"
+        fi
+
+        echo "Downloading mOTUs marker-gene database into ${motus_db_host}"
+        echo "This can take a while."
+
+        "${engine}" run --rm \
+            -v "${motus_db_host}:/db" \
+            "${image}" \
+            bash -lc '
+                set -euo pipefail
+                motus downloadMGDB
+
+                db_dir="$(python - <<'"'"'PY'"'"'
+import importlib.util
+import pathlib
+import sys
+
+roots = []
+spec = importlib.util.find_spec("motus")
+if spec and spec.submodule_search_locations:
+    roots.extend(pathlib.Path(p) for p in spec.submodule_search_locations)
+elif spec and spec.origin:
+    roots.append(pathlib.Path(spec.origin).resolve().parent)
+
+roots.append(pathlib.Path("/root/miniforge3/envs/motus"))
+
+candidates = []
+for root in roots:
+    if root.exists():
+        candidates.extend(
+            p for p in root.rglob("db_mOTU")
+            if p.is_dir() and any(p.iterdir())
+        )
+
+if not candidates:
+    sys.exit("Unable to locate db_mOTU after motus downloadMGDB")
+
+print(candidates[0])
+PY
+)"
+
+                rm -rf /db/db_mOTU
+                cp -a "${db_dir}" /db/
+            '
+    fi
+
+    if [ ! -d "${motus_db_host}/db_mOTU" ] || ! find "${motus_db_host}/db_mOTU" -type f -name "*.bwt" | grep -q .; then
+        echo "Error: mOTUs database was not found after download."
+        exit 1
+    fi
+
+    MOTUS_DB_HOST="${motus_db_host}"
+    MOTUS_DB_CONTAINER="/app/lib/mOTUs/db/db_mOTU"
+
+    export MOTUS_DB_HOST
+    export MOTUS_DB_CONTAINER
+
+    echo "mOTUs database: ${MOTUS_DB_CONTAINER}"
+}
+
 build_mail_env_args()
 {
     MAIL_ENV_ARGS=()
@@ -234,6 +309,7 @@ fi
 
 ensure_singlem_db "${engine}" "${IMAGE_NAME}"
 ensure_kraken2_db_dir
+ensure_motus_db "${engine}" "${IMAGE_NAME}"
 build_mail_env_args
 
 echo "Starting SLIM."
@@ -243,8 +319,10 @@ echo "Starting SLIM."
     -p "${port}" \
     -v "${SINGLEM_DB_HOST}:/app/lib/singleM/db:ro" \
     -v "${KRAKEN2_DB_HOST}:/app/lib/kraken2/db:ro" \
+    -v "${MOTUS_DB_HOST}:/app/lib/mOTUs/db:ro" \
     -e "SINGLEM_METAPACKAGE_PATH=${SINGLEM_METAPACKAGE_CONTAINER}" \
     -e "KRAKEN2_DB_ROOT=/app/lib/kraken2/db" \
+    -e "MOTUS_DB_PATH=${MOTUS_DB_CONTAINER}" \
     "${MAIL_ENV_ARGS[@]}" \
     -d "${IMAGE_NAME}"
 

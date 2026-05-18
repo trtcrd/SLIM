@@ -1,0 +1,67 @@
+<p>Input mode</p>
+<select name="mode" class="param_value">
+    <option value="single" selected>Single-end or already merged reads</option>
+    <option value="paired">Paired-end reads</option>
+</select>
+
+<div class="single_reads">
+    <p>Reads pattern</p>
+    <input type="text" name="reads" class="input_file_text fastq fasta agregate" value="*.fastq.gz">
+</div>
+
+<div class="paired_reads">
+    <p>Forward reads pattern</p>
+    <input type="text" name="fwd" class="input_file_text fastq fasta agregate" value="*_R1.fastq.gz">
+
+    <p>Reverse reads pattern</p>
+    <input type="text" name="rev" class="input_file_text fastq fasta agregate" value="*_R2.fastq.gz">
+</div>
+
+<p>mOTUs merged profile</p>
+<span class="output_zone">
+    <input type="text" name="profile_matrix" value="mOTUs.profile.tsv">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<p>mOTUs merged relative profile</p>
+<span class="output_zone">
+    <input type="text" name="relative_matrix" value="mOTUs.relative_abundance.tsv">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<p>mOTUs results archive</p>
+<span class="output_zone">
+    <input type="text" name="results_archive" value="mOTUs.results.tar.gz">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<p>fastp reports archive</p>
+<span class="output_zone">
+    <input type="text" name="fastp_report_archive" value="mOTUs.fastp_reports.tar.gz">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<div class="options">
+    <p>
+        Marker genes required:
+        <input type="text" name="marker_genes" class="integer number param_value" value="3">
+    </p>
+    <p>
+        Minimum alignment length:
+        <input type="text" name="alignment_length" class="integer number param_value" value="75">
+    </p>
+    <p>
+        Counting mode:
+        <select name="counting_mode" class="param_value">
+            <option value="INSERT_SCALED" selected>INSERT_SCALED</option>
+            <option value="INSERT_RAW">INSERT_RAW</option>
+            <option value="INSERT_NORM">INSERT_NORM</option>
+            <option value="BASE_RAW">BASE_RAW</option>
+            <option value="BASE_NORM">BASE_NORM</option>
+        </select>
+    </p>
+    <p>
+        Trim adapters and low-quality bases with fastp:
+        <input type="checkbox" name="fastp_trim" class="param_value" checked>
+    </p>
+</div>

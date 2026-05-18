@@ -27,3 +27,12 @@ ASHURE	1.0.0	get_dependencies_slim_v1.0.0.sh
 spoa	4.1.0	bundled with ASHURE build
 SingleM	0.20.3	conda/bioconda pinned
 polars-lts-cpu	build-time	pip-installed replacement for polars in SingleM environment
+Kraken2	build-time	conda/bioconda package in Kraken2-Bracken environment
+Bracken	build-time	conda/bioconda package in Kraken2-Bracken environment
+mOTUs	4.0.4	conda/bioconda package in dedicated conda environment
+fetchMGs	build-time	conda/bioconda dependency of mOTUs
+polars[rtcompat]	build-time	pip-installed compatible Polars runtime in mOTUs environment
+metaDMG	build-time	conda/bioconda package in ancient-DNA environment
+NCBI Datasets CLI	build-time	conda package in ancient-DNA environment
+BWA	build-time	conda/bioconda package in ancient-DNA environment
+SAMtools	build-time	conda/bioconda package in ancient-DNA environment

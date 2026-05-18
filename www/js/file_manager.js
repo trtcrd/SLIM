@@ -43,7 +43,44 @@ class FileManager {
 			event.files = [...removed];
 			if (event.files.length > 0)
 				document.dispatchEvent(event);
+
+			that.setServerFiles(data);
 		});
+	}
+
+	setServerFiles (files) {
+		this.server_files = {};
+
+		for (var idx in files) {
+			var filename = files[idx];
+			var extention = this.getFileExtention(filename);
+
+			if (this.server_files[extention] == undefined)
+				this.server_files[extention] = [];
+
+			if (this.server_files[extention].indexOf(filename) == -1)
+				this.server_files[extention].push(filename);
+		}
+
+		this.notifyAdd({files: files});
+	}
+
+	getFileExtention (filename) {
+		var lower = filename.toLowerCase();
+
+		if (lower.endsWith('.fastq.gz'))
+			return 'fastq';
+		if (lower.endsWith('.fq.gz'))
+			return 'fastq';
+		if (lower.endsWith('.fasta.gz'))
+			return 'fasta';
+		if (lower.endsWith('.fa.gz'))
+			return 'fasta';
+
+		if (filename.includes('.'))
+			return filename.substr(filename.lastIndexOf('.') + 1);
+
+		return '';
 	}
 
 	get_download_link (filename) {
@@ -273,7 +310,7 @@ class FileManager {
 		document.addEventListener('new_file', (event) => {
 			for (var idx in event.files) {
 				var filename = event.files[idx];
-				var extention = filename.substr(filename.lastIndexOf('.')+1);
+				var extention = that.getFileExtention(filename);
 
 				// Create new array if doesn't exist
 				if (that.server_files[extention] == undefined)
@@ -290,7 +327,7 @@ class FileManager {
 		document.addEventListener('rmv_file', (event) => {
 			for (var idx in event.files) {
 				var filename = event.files[idx];
-				var extention = filename.substr(filename.lastIndexOf('.')+1);
+				var extention = that.getFileExtention(filename);
 
 				if (that.server_files[extention] != undefined) {
 					var file_idx = that.server_files[extention].indexOf(filename);

@@ -277,6 +277,42 @@ RUN conda create --solver=classic -n kraken2 -y \
 
 ENV PATH=/root/miniforge3/envs/kraken2/bin:$PATH
 
+# ----- install ancient-DNA targeted-reference/metaDMG tools ----- #
+RUN conda create --solver=classic -n ancientdna -y \
+    -c conda-forge \
+    -c bioconda \
+    --override-channels \
+    metadmg \
+    ncbi-datasets-cli \
+    bwa \
+    samtools \
+    fastp \
+    pigz \
+    unzip && \
+    conda clean -afy
+
+ENV PATH=/root/miniforge3/envs/ancientdna/bin:$PATH
+
+# ----- install mOTUs ----- #
+# Kept after metaDMG so mOTUs fixes do not invalidate the ancient-DNA build cache.
+RUN conda create --solver=classic -n motus -y \
+    -c conda-forge \
+    -c bioconda \
+    --override-channels \
+    python=3.12 \
+    "bwa=0.7.19" \
+    vsearch \
+    samtools \
+    fastp \
+    pip && \
+    conda run -n motus python -m pip install --no-cache-dir "motus-tool==4.0.4" && \
+    conda run -n motus python -c "import importlib.util, pathlib; p = pathlib.Path(importlib.util.find_spec('motus.motus').origin); s = p.read_text(); old_cmd = \"command: str = f'bwa mem -a -t {threads} {MOTUS_DB.get_bwa_index()} {readsfile}'\"; new_cmd = \"command: str = f'bwa mem -a -t {threads} {MOTUS_DB.get_bwa_index()} {readsfile} | samtools view -b -'\"; assert old_cmd in s or new_cmd in s, 'mOTUs map_tax command patch target not found'; s = s.replace(old_cmd, new_cmd); s = s.replace(\"pysam.AlignmentFile(process.stdout, 'r')\", \"pysam.AlignmentFile(process.stdout, 'rb')\"); p.write_text(s)" && \
+    (conda run -n motus python -m pip uninstall -y polars polars-runtime-32 polars-runtime-64 polars-lts-cpu || true) && \
+    conda run -n motus python -m pip install --no-cache-dir "polars[rtcompat]" && \
+    conda clean -afy
+
+ENV PATH=/root/miniforge3/envs/motus/bin:$PATH
+
 # ----- copy python_scripts -----
 COPY lib/python_scripts /app/lib/python_scripts
 

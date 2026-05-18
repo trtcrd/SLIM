@@ -45,6 +45,7 @@ In these pages you will find tutorials for beginners and programmers, plus detai
 ### Shotgun metagenomics
   * [SingleM](/man/sections/SingleM.md)
   * [Kraken2-Bracken](/man/sections/Kraken2-Bracken.md)
+  * [mOTUs](/man/sections/mOTUs.md)
 
 ### Utils
   * [Dereplication](/man/sections/Fasta-dereplication.md)
