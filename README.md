@@ -43,7 +43,9 @@ Kraken2/Bracken databases are optional and are kept outside the Docker image. Th
 ./download_kraken2_db.sh pluspf_16
 ```
 
-Available choices are `viral`, `standard_8`, `standard_16`, `pluspf_8`, and `pluspf_16`. The database will be stored under `lib/kraken2/db/` and mounted into the SLIM container by `start_slim_v1.0.0.sh`.
+Available choices are `viral`, `standard_8`, `standard_16`, `pluspf_8`, and `pluspf_16`. The database will be stored under `lib/kraken2/db/` and mounted into the SLIM container by `start_slim_v1.0.0.sh`. The Kraken2-Bracken module can trim adapters and low-quality bases with fastp before classification; this option is enabled by default for FASTQ input.
+
+The SingleM module can also trim paired-end FASTQ files with fastp before profiling. This option is enabled by default and produces a small fastp reports archive.
 
 
 As soon as podman is installed and running and the SLIM archive downloaded, it can be deployed by using the two scripts `get_dependencies_slim_v1.0.0.sh` and `start_slim_v1.0.0.sh`.

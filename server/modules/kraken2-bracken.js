@@ -21,6 +21,7 @@ exports.run = function (os, config, callback) {
         '-r', params.read_length,
         '-T', params.bracken_threshold,
         '-M', params.memory_mapping ? 'yes' : 'no',
+        '-f', params.fastp_trim !== false ? 'yes' : 'no',
         '-o', config.params.outputs.abundance_matrix,
         '-O', config.params.outputs.relative_abundance_matrix,
         '-a', config.params.outputs.results_archive

@@ -310,6 +310,7 @@ RUN conda create --solver=classic -n kraken2 -y \
     -c bioconda \
     kraken2 \
     bracken \
+    fastp \
     krakentools \
     krona && \
     conda clean -afy

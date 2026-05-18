@@ -9,11 +9,12 @@ tax_level="S"
 read_length="300"
 bracken_threshold="10"
 memory_mapping="no"
+fastp_trim="yes"
 reads_pattern=""
 fwd_pattern=""
 rev_pattern=""
 
-while getopts i:s:1:2:t:m:d:c:l:r:T:M:o:O:a: flag
+while getopts i:s:1:2:t:m:d:c:l:r:T:M:f:o:O:a: flag
 do
     case "${flag}" in
         i) dir="${OPTARG}";;
@@ -28,10 +29,11 @@ do
         r) read_length="${OPTARG}";;
         T) bracken_threshold="${OPTARG}";;
         M) memory_mapping="${OPTARG}";;
+        f) fastp_trim="${OPTARG}";;
         o) abundance_matrix="${OPTARG}";;
         O) relative_abundance_matrix="${OPTARG}";;
         a) results_archive="${OPTARG}";;
-        \?) echo "usage: run_kraken2_bracken.sh -i dir [-s reads|-1 fwd -2 rev] -t threads -m single|paired -d db -c confidence -l tax_level -r read_length -T bracken_threshold -M yes|no -o abundance_matrix -O relative_matrix -a archive"; exit 1;;
+        \?) echo "usage: run_kraken2_bracken.sh -i dir [-s reads|-1 fwd -2 rev] -t threads -m single|paired -d db -c confidence -l tax_level -r read_length -T bracken_threshold -M yes|no -f yes|no -o abundance_matrix -O relative_matrix -a archive"; exit 1;;
     esac
 done
 
@@ -68,6 +70,28 @@ fi
 outdir="kraken2_bracken"
 rm -rf "${outdir}"
 mkdir -p "${outdir}"
+fastp_report_dir="${outdir}/fastp_reports"
+fastp_trim_dir="${outdir}/fastp_trimmed"
+
+if [ "${fastp_trim}" = "yes" ]; then
+    if ! command -v fastp >/dev/null 2>&1; then
+        echo "fastp trimming was requested, but fastp is not available in PATH."
+        echo "Rebuild the image with fastp in the Kraken2/Bracken conda environment."
+        exit 1
+    fi
+
+    mkdir -p "${fastp_report_dir}" "${fastp_trim_dir}"
+fi
+
+is_fastq_file() {
+    local lower
+    lower="$(printf '%s\n' "$1" | tr '[:upper:]' '[:lower:]')"
+
+    case "${lower}" in
+        *.fastq|*.fastq.gz|*.fq|*.fq.gz) return 0 ;;
+        *) return 1 ;;
+    esac
+}
 
 sample_name_from_file() {
     local file="$1"
@@ -155,7 +179,35 @@ if [ "${mode}" = "paired" ]; then
     for idx in "${!fwd_files[@]}"; do
         sample="$(sample_name_from_file "${fwd_files[$idx]}")"
         sample_names+=("${sample}")
-        run_one_sample "${sample}" --paired "${fwd_files[$idx]}" "${rev_files[$idx]}"
+
+        kraken_fwd="${fwd_files[$idx]}"
+        kraken_rev="${rev_files[$idx]}"
+
+        if [ "${fastp_trim}" = "yes" ]; then
+            if is_fastq_file "${kraken_fwd}" && is_fastq_file "${kraken_rev}"; then
+                trimmed_fwd="${fastp_trim_dir}/${sample}.R1.fastp.fastq.gz"
+                trimmed_rev="${fastp_trim_dir}/${sample}.R2.fastp.fastq.gz"
+
+                echo
+                echo "Trimming adapters/low-quality bases with fastp for sample: ${sample}"
+                fastp \
+                    -i "${kraken_fwd}" \
+                    -I "${kraken_rev}" \
+                    -o "${trimmed_fwd}" \
+                    -O "${trimmed_rev}" \
+                    --detect_adapter_for_pe \
+                    --thread "${threads}" \
+                    --html "${fastp_report_dir}/${sample}.fastp.html" \
+                    --json "${fastp_report_dir}/${sample}.fastp.json"
+
+                kraken_fwd="${trimmed_fwd}"
+                kraken_rev="${trimmed_rev}"
+            else
+                echo "Skipping fastp for sample ${sample}: paired inputs are not FASTQ files."
+            fi
+        fi
+
+        run_one_sample "${sample}" --paired "${kraken_fwd}" "${kraken_rev}"
     done
 else
     reads_pattern="${reads_pattern//€/*}"
@@ -171,7 +223,29 @@ else
     for file in "${read_files[@]}"; do
         sample="$(sample_name_from_file "${file}")"
         sample_names+=("${sample}")
-        run_one_sample "${sample}" "${file}"
+
+        kraken_file="${file}"
+
+        if [ "${fastp_trim}" = "yes" ]; then
+            if is_fastq_file "${kraken_file}"; then
+                trimmed_file="${fastp_trim_dir}/${sample}.fastp.fastq.gz"
+
+                echo
+                echo "Trimming adapters/low-quality bases with fastp for sample: ${sample}"
+                fastp \
+                    -i "${kraken_file}" \
+                    -o "${trimmed_file}" \
+                    --thread "${threads}" \
+                    --html "${fastp_report_dir}/${sample}.fastp.html" \
+                    --json "${fastp_report_dir}/${sample}.fastp.json"
+
+                kraken_file="${trimmed_file}"
+            else
+                echo "Skipping fastp for sample ${sample}: input is not a FASTQ file."
+            fi
+        fi
+
+        run_one_sample "${sample}" "${kraken_file}"
     done
 fi
 
@@ -215,6 +289,7 @@ write_matrix 6 "${relative_abundance_matrix}"
 
 cp "${abundance_matrix}" "${outdir}/${abundance_matrix}"
 cp "${relative_abundance_matrix}" "${outdir}/${relative_abundance_matrix}"
+rm -rf "${fastp_trim_dir}"
 tar -czf "${results_archive}" "${outdir}"
 
 echo

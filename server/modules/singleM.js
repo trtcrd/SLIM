@@ -16,7 +16,9 @@ exports.run = function (os, config, callback) {
         '-t', os.cores,
         '-p', config.params.outputs.profile,
         '-O', config.params.outputs.otu_table,
-        '-a', config.params.outputs.relative_abundance_archive
+        '-a', config.params.outputs.relative_abundance_archive,
+        '-q', config.params.outputs.fastp_report_archive || 'singleM.fastp_reports.tar.gz',
+        '-f', config.params.params.fastp_trim !== false ? 'yes' : 'no'
     ];
 
     console.log('Running SingleM with the command line:');

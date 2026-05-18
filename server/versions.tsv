@@ -19,6 +19,7 @@ DADA2	1.26	get_dependencies_slim_v1.0.0.sh
 DECIPHER	2.16.0	get_dependencies_slim_v1.0.0.sh
 lulu	build-time	cloned from https://github.com/tobiasgf/lulu
 chopper	0.8.0	conda/bioconda pinned
+fastp	build-time	conda/bioconda package in Kraken2-Bracken environment; used by SingleM preprocessing through PATH
 MSI	build-time	cloned from https://github.com/adriantich/msi
 fastq_utils	build-time	cloned from https://github.com/adriantich/fastq_utils for MSI
 seqtk	build-time	cloned from https://github.com/lh3/seqtk for MSI

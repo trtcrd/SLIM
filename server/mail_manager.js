@@ -90,9 +90,9 @@ exports.send_address = (token) => {
 	send_mail(
 		token,
 		'Your job ' + token,
-		'Here is the link to follow the execution process.\n' +
+		'Here is the link to follow the progress of your pipeline.\n' +
 		exports.urls[token] + '\n\n' +
-		'The SLIM pipeline staff',
+		'NOTICE: This is an automatically generated email by SLIM',
 		['/app/data/' + token + '/pipeline.conf', '/app/versions.tsv']
 	);
 };
@@ -105,9 +105,9 @@ exports.send_end_mail = (token) => {
 		'Your results are available at this address:\n' +
 		exports.urls[token] + '\n\n' +
 		'Your session will automatically be deleted in 24h. Don\'t forget to download your results\n\n' +
-		'You can use the .conf attached file to reload all your pipeline in the future.\n' +
-		'For used software versions, please look at the attached version.tsv file.\n\n' +
-		'The SLIM pipeline staff',
+		'You can use the "pipeline.conf" attached to this email to reproduce your pipeline in the future.\n' +
+		'The versions of the software you used are indicated in the attached "version.tsv" file.\n\n' +
+		'NOTICE: This is an automatically generated email by SLIM',
 		['/app/data/' + token + '/pipeline.conf', '/app/versions.tsv']
 	);
 }
@@ -120,7 +120,7 @@ exports.send_crash_email = (token) => {
 		exports.urls[token] + '\n' +
 		'Please check all your configuration before another submission.\n\n' +
 		'Your session will automatically be deleted in 24h.\n\n' +
-		'The SLIM pipeline staff'	
+		'NOTICE: This is an automatically generated email by SLIM'	
 	);
 }
 
@@ -130,6 +130,6 @@ exports.send_delete_reminder = (token) => {
 		'Your job ' + token + ' will be deleted in 3 hours',
 		'Your results are still available at this address for only 3 more hours:\n' +
 		exports.urls[token] + '\n\n' +
-		'The SLIM pipeline staff'
+		'NOTICE: This is an automatically generated email by SLIM'
 	);
 }
