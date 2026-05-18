@@ -188,11 +188,54 @@ ensure_motus_db()
     local engine="$1"
     local image="$2"
     local motus_db_host
+    local host_uid
+    local host_gid
+
+    motus_db_ready()
+    {
+        local db_dir="$1"
+        local bwt
+        local prefix
+
+        [ -d "${db_dir}" ] || return 1
+
+        for bwt in "${db_dir}"/*.bwt; do
+            [ -e "${bwt}" ] || continue
+            prefix="${bwt%.bwt}"
+            if [ -f "${prefix}.amb" ] && [ -f "${prefix}.ann" ] && [ -f "${prefix}.pac" ] && [ -f "${prefix}.sa" ]; then
+                return 0
+            fi
+        done
+
+        return 1
+    }
+
+    repair_existing_motus_db_permissions()
+    {
+        if [ ! -d "${motus_db_host}/db_mOTU" ]; then
+            return
+        fi
+
+        if [ -r "${motus_db_host}/db_mOTU" ] && [ -x "${motus_db_host}/db_mOTU" ]; then
+            return
+        fi
+
+        echo "Repairing mOTUs database permissions in ${motus_db_host}/db_mOTU"
+        "${engine}" run --rm \
+            -e HOST_UID="${host_uid}" \
+            -e HOST_GID="${host_gid}" \
+            -v "${motus_db_host}:/db" \
+            "${image}" \
+            bash -lc 'chown -R "${HOST_UID}:${HOST_GID}" /db/db_mOTU 2>/dev/null || true; chmod -R u+rwX,go+rX /db/db_mOTU 2>/dev/null || true'
+    }
 
     motus_db_host="$(pwd)/lib/mOTUs/db"
+    host_uid="$(id -u)"
+    host_gid="$(id -g)"
     mkdir -p "${motus_db_host}"
+    repair_existing_motus_db_permissions
 
-    if [ -d "${motus_db_host}/db_mOTU" ] && find "${motus_db_host}/db_mOTU" -type f -name "*.bwt" | grep -q .; then
+    if motus_db_ready "${motus_db_host}/db_mOTU"; then
         echo "mOTUs database already present in ${motus_db_host}/db_mOTU"
     else
         if [ -d "${motus_db_host}/db_mOTU" ]; then
@@ -204,10 +247,40 @@ ensure_motus_db()
         echo "This can take a while."
 
         "${engine}" run --rm \
+            -e HOST_UID="${host_uid}" \
+            -e HOST_GID="${host_gid}" \
             -v "${motus_db_host}:/db" \
             "${image}" \
             bash -lc '
                 set -euo pipefail
+                fix_db_permissions() {
+                    if [ -d /db/db_mOTU ]; then
+                        chown -R "${HOST_UID}:${HOST_GID}" /db/db_mOTU 2>/dev/null || true
+                        chmod -R u+rwX,go+rX /db/db_mOTU 2>/dev/null || true
+                    fi
+                }
+
+                db_ready() {
+                    local bwt
+                    local prefix
+                    [ -d /db/db_mOTU ] || return 1
+                    for bwt in /db/db_mOTU/*.bwt; do
+                        [ -e "${bwt}" ] || continue
+                        prefix="${bwt%.bwt}"
+                        [ -f "${prefix}.amb" ] && [ -f "${prefix}.ann" ] && [ -f "${prefix}.pac" ] && [ -f "${prefix}.sa" ] && return 0
+                    done
+                    return 1
+                }
+
+                if db_ready; then
+                    echo "mOTUs database already present in /db/db_mOTU"
+                    fix_db_permissions
+                    exit 0
+                elif [ -d /db/db_mOTU ]; then
+                    echo "Removing incomplete mOTUs database in /db/db_mOTU"
+                    rm -rf /db/db_mOTU
+                fi
+
                 motus downloadMGDB
 
                 db_dir="$(python - <<'"'"'PY'"'"'
@@ -241,10 +314,11 @@ PY
 
                 rm -rf /db/db_mOTU
                 cp -a "${db_dir}" /db/
+                fix_db_permissions
             '
     fi
 
-    if [ ! -d "${motus_db_host}/db_mOTU" ] || ! find "${motus_db_host}/db_mOTU" -type f -name "*.bwt" | grep -q .; then
+    if ! motus_db_ready "${motus_db_host}/db_mOTU"; then
         echo "Error: mOTUs database was not found after download."
         exit 1
     fi

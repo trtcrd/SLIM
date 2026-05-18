@@ -181,6 +181,16 @@ prepare_kraken2_db_dir() {
     fi
 }
 
+prepare_motus_db_dir() {
+    mkdir -p mOTUs/db
+
+    if [ -d "mOTUs/db/db_mOTU" ] && find "mOTUs/db/db_mOTU" -type f -name "*.bwt" | grep -q .; then
+        mark_ok "mOTUs database directory"
+    else
+        mark_ok "mOTUs database directory prepared; database will be downloaded by start_slim.sh after image build"
+    fi
+}
+
 install_miniforge_installer() {
     local name="Miniforge installer"
     local arch
@@ -407,6 +417,7 @@ prepare_ashure
 install_miniforge_installer
 prepare_singlem_db_dir
 prepare_kraken2_db_dir
+prepare_motus_db_dir
 
 echo
 echo "========== Dependency summary =========="
