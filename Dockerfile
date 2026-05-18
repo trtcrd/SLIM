@@ -262,6 +262,21 @@ RUN conda run -n singlem python -m pip uninstall -y polars && \
 
 ENV PATH=/root/miniforge3/envs/singlem/bin:$PATH
 
+# ----- install Kraken2/Bracken ----- #
+# Kept at the end on purpose so existing Docker build cache is preserved while
+# adding the new shotgun-metagenomics module.
+RUN conda create --solver=classic -n kraken2 -y \
+    -c conda-forge \
+    -c bioconda \
+    kraken2 \
+    bracken \
+    fastp \
+    krakentools \
+    krona && \
+    conda clean -afy
+
+ENV PATH=/root/miniforge3/envs/kraken2/bin:$PATH
+
 # ----- copy python_scripts -----
 COPY lib/python_scripts /app/lib/python_scripts
 
@@ -301,21 +316,5 @@ RUN mkdir /app/data
 #RUN apt update --fix-missing 
 #RUN apt install vim -y
 
-
-# ----- install Kraken2/Bracken ----- #
-# Kept at the end on purpose so existing Docker build cache is preserved while
-# adding the new shotgun-metagenomics module.
-RUN conda create --solver=classic -n kraken2 -y \
-    -c conda-forge \
-    -c bioconda \
-    kraken2 \
-    bracken \
-    fastp \
-    krakentools \
-    krona && \
-    conda clean -afy
-
-ENV PATH=/root/miniforge3/envs/kraken2/bin:$PATH
-
-# commamd executed to run the server
-CMD ["npm", "start"]
+# command executed to run the server
+CMD ["bash", "/app/start_slim_server.sh"]

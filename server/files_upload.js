@@ -78,6 +78,17 @@ exports.upload = function (app) {
 		// set upload directory corresponding to the token send
 		var token = null;
 		var onError = false;
+		var handle_form_error = (err) => {
+			if (onError)
+				return;
+
+			onError = true;
+			console.log('Upload request failed: ' + (err && err.message ? err.message : err));
+
+			if (!res.headersSent && !res.writableEnded)
+				res.status(400).send(err && err.message ? err.message : 'Upload request failed');
+		};
+
 		form.on('field', function(name, value) {
 			if (onError)
 				return;
@@ -118,7 +129,7 @@ exports.upload = function (app) {
 
 		// log any errors that occur
 		form.on('error', function(err) {
-			console.log('An error has occured: \n' + err);
+			handle_form_error(err);
 		});
 
 		// once all the files have been uploaded, send a response to the client
@@ -153,7 +164,10 @@ exports.upload = function (app) {
 		});
 
 		// parse the incoming request containing the form data
-		form.parse(req);
+		form.parse(req, function(err) {
+			if (err)
+				handle_form_error(err);
+		});
 	});
 };
 

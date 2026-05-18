@@ -21,6 +21,9 @@ app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
   extended: true
 }));
 
+const system_status = require('./system_status.js');
+system_status.expose(app);
+
 app.get('/', function (req, res) {
 	res.send(pipeline_GUI());
 });
@@ -69,4 +72,3 @@ const scheduler = require('./scheduler.js');
 scheduler.start();
 scheduler.listen_commands(app);
 scheduler.expose_status(app);
-

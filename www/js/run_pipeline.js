@@ -109,8 +109,10 @@ var update_run_status = (token, callback=(status)=>{}) => {
 		msgs = "";
 		for (let idx=0 ; idx<server_status.messages.length ; idx++) {
 			let msg = server_status.messages[idx];
-			msgs += '<p>' + msg + '</p>';
+			msgs += '<p>' + html_escape(msg) + '</p>';
 		}
+		if (server_status.msg)
+			msgs += '<pre>' + html_escape(server_status.msg) + '</pre>';
 
 		for (let idx=0 ; idx<warnings_areas.length ; idx++) {
 			warnings_areas[idx].innerHTML = msgs;
@@ -127,7 +129,6 @@ var update_run_status = (token, callback=(status)=>{}) => {
 		}
 
 		// Update the GUI
-		console.log(server_status);
 		for (var idx in modules_div.children) {
 			var element = modules_div.children[idx];
 			if (element.tagName != 'DIV')
@@ -156,5 +157,13 @@ var update_run_status = (token, callback=(status)=>{}) => {
 		}
 
 		callback(server_status);
+	}).fail(() => {
+		if (typeof show_server_health_alert != "undefined") {
+			show_server_health_alert(
+				'SLIM server is not responding',
+				'The server may be restarting. Pipeline status will refresh when it comes back.',
+				''
+			);
+		}
 	});
 }

@@ -239,6 +239,7 @@ build_mail_env_args
 echo "Starting SLIM."
 "${engine}" run \
     --name "${CONTAINER_NAME}" \
+    --restart unless-stopped \
     -p "${port}" \
     -v "${SINGLEM_DB_HOST}:/app/lib/singleM/db:ro" \
     -v "${KRAKEN2_DB_HOST}:/app/lib/kraken2/db:ro" \

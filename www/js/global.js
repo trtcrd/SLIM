@@ -1,4 +1,65 @@
 
+var html_escape = (txt) => {
+	return String(txt)
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#039;');
+};
+
+var show_server_health_alert = (title, message, details) => {
+	let alert = document.getElementById('server_health_alert');
+	if (!alert)
+		return;
+
+	let html = '<strong>' + html_escape(title) + '</strong>';
+	if (message)
+		html += '<p>' + html_escape(message) + '</p>';
+	if (details)
+		html += '<pre>' + html_escape(details) + '</pre>';
+	html += '<button type="button" onclick="dismiss_server_health_alert()">Dismiss</button>';
+
+	alert.innerHTML = html;
+	alert.style.display = 'block';
+};
+
+var dismiss_server_health_alert = () => {
+	let alert = document.getElementById('server_health_alert');
+	if (alert)
+		alert.style.display = 'none';
+};
+
+var check_server_health = () => {
+	$.get('/server_status')
+	.done((data) => {
+		let status = JSON.parse(data);
+		if (!status.last_crash || !status.last_crash.timestamp)
+			return;
+
+		let seen_key = 'slim_server_crash_seen_' + status.last_crash.timestamp;
+		if (localStorage.getItem(seen_key) == 'Y')
+			return;
+
+		localStorage.setItem(seen_key, 'Y');
+		show_server_health_alert(
+			'SLIM server restarted after a crash',
+			'The web service has restarted. Any pipeline that was running at the time was marked as aborted.',
+			status.last_crash.snippet
+		);
+	})
+	.fail(() => {
+		show_server_health_alert(
+			'SLIM server is not responding',
+			'The server may be restarting. This page will continue checking.',
+			''
+		);
+	});
+};
+
+check_server_health();
+setInterval(check_server_health, 10000);
+
 
 // --- Actions on load ---
 var on_token_generated = () => {
@@ -149,10 +210,6 @@ down_conf.onclick = () => {
 	var conf = get_config();
 	store_wildcard_creator_suggestions(conf);
 	delete conf.token;
-	console.log("pipeline.conf wildcard suggestions:",
-		Object.values(conf)
-			.filter((module) => module.name == 'wildcard-creator')
-			.map((module) => module.params.params.suggestion));
 	var data = new Blob([JSON.stringify(conf)], {type: 'text/plain'});
 	var textFile = window.URL.createObjectURL(data);
 	var link = document.createElement('a');

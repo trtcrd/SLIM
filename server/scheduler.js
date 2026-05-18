@@ -8,6 +8,7 @@ const uploads = require('./files_upload.js');
 const mailer = require('./mail_manager.js');
 const accounts = require('./accounts.js');
 const config_module = require('./config.js');
+const system_status = require('./system_status.js');
 
 var get_uploaded_file_path = (file) => {
 	return file.filepath || file.path;
@@ -29,6 +30,8 @@ exports.urls = {};
 
 
 exports.start = function () {
+	abort_stale_jobs_after_server_crash();
+
 	si.cpu((data) => {
 		NB_CORES = data.cores;
 		MAX_JOBS = Math.ceil(NB_CORES/CORES_BY_RUN);
@@ -37,6 +40,58 @@ exports.start = function () {
 		console.log(MAX_JOBS + ' executions can be done simultaneously');
 		setInterval (scheduler, SCHEDULE_TIME);
 	});
+};
+
+var abort_stale_jobs_after_server_crash = () => {
+	let crash = system_status.read_last_crash();
+
+	if (!crash || !fs.existsSync('/app/data'))
+		return;
+
+	let message = 'SLIM restarted after a Node server crash';
+	if (crash.timestamp)
+		message += ' at ' + crash.timestamp;
+	message += '. The previous run was marked aborted because the scheduler state was lost.';
+
+	let snippet = crash.snippet ? String(crash.snippet).trim() : '';
+	if (snippet != '')
+		message += '\n\nLast server log lines:\n' + snippet;
+
+	for (let token of fs.readdirSync('/app/data')) {
+		let directory = '/app/data/' + token;
+		let execFile = directory + '/exec.log';
+
+		if (!fs.existsSync(execFile))
+			continue;
+
+		let exec = null;
+		try {
+			exec = JSON.parse(fs.readFileSync(execFile, 'utf8'));
+		} catch (err) {
+			console.log(token + ': unable to inspect previous execution state: ' + err.message);
+			continue;
+		}
+
+		if (!['waiting', 'ready', 'running'].includes(exec.status))
+			continue;
+
+		exec.status = 'aborted';
+		exec.msg = message;
+
+		for (let soft_id in exec.conf) {
+			if (Array.isArray(exec.conf[soft_id])) {
+				for (let sub_idx=0 ; sub_idx<exec.conf[soft_id].length ; sub_idx++) {
+					if (['waiting', 'ready', 'running'].includes(exec.conf[soft_id][sub_idx].status))
+						exec.conf[soft_id][sub_idx].status = 'aborted';
+				}
+			} else if (exec.conf[soft_id] && ['waiting', 'ready', 'running'].includes(exec.conf[soft_id].status)) {
+				exec.conf[soft_id].status = 'aborted';
+			}
+		}
+
+		fs.writeFileSync(execFile, JSON.stringify(exec));
+		console.log(token + ': marked aborted after server restart');
+	}
 };
 
 var scheduler = function () {
@@ -207,8 +262,22 @@ exports.listen_commands = function (app) {
 		let token = null;
 		let mail = null;
 		let file = null;
+		let onError = false;
+		let handle_form_error = (err) => {
+			if (onError)
+				return;
+
+			onError = true;
+			console.log('Run request failed: ' + (err && err.message ? err.message : err));
+
+			if (!res.headersSent && !res.writableEnded)
+				res.status(400).send(err && err.message ? err.message : 'Run request failed');
+		};
 
 		form.on('field', function (field, value) {
+			if (onError)
+				return;
+
 			if (field == "token")
 				token = value;
 			if (field == "mail")
@@ -216,11 +285,21 @@ exports.listen_commands = function (app) {
 		});
 
 		form.on('file', function(field, f) {
+			if (onError)
+				return;
+
 			if (field == "config")
 				file = f;
 		});
 
+		form.on('error', function(err) {
+			handle_form_error(err);
+		});
+
 		form.on('end', function () {
+			if (onError)
+				return;
+
 			// Verify data integrity
 			if (token == null || !accounts.tokens[token] || file == null) {
 				console.log('Wrong token', token);
@@ -258,7 +337,10 @@ exports.listen_commands = function (app) {
 				res.status(code).send(msg ? msg : "");
 			});
 		});
-		form.parse(req);
+		form.parse(req, function(err) {
+			if (err)
+				handle_form_error(err);
+		});
 	});
 }
 
@@ -386,10 +468,11 @@ exports.expose_status = function (app) {
 
 		// Browse process
 		for (var idx in exec.conf) {
-			sub_status = {};
+			let sub_status = {};
+			let sub_executions = Array.isArray(exec.conf[idx]) ? exec.conf[idx] : [exec.conf[idx]];
 			// Analyse the sub process results
-			for (var sub_idx=0 ; sub_idx<exec.conf[idx].length ; sub_idx++) {
-				let st = exec.conf[idx][sub_idx].status;
+			for (var sub_idx=0 ; sub_idx<sub_executions.length ; sub_idx++) {
+				let st = sub_executions[sub_idx].status;
 				sub_status[st] = sub_status[st] ? sub_status[st] + 1 : 1;
 			}
 
@@ -404,7 +487,7 @@ exports.expose_status = function (app) {
 			default:
 				// If aborted
 				if (sub_status['aborted']) {
-					if (sub_status['aborted'] == exec.conf[idx].length)
+					if (sub_status['aborted'] == sub_executions.length)
 						status.jobs[idx] = 'aborted';
 					else
 						status.jobs[idx] = 'warnings';

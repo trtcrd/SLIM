@@ -17,6 +17,34 @@ body {
 	background-color: #f5f5f5;
 }
 
+#server_health_alert {
+	display: none;
+	width: 760px;
+	margin: 10px auto;
+	padding: 12px;
+	background-color: #fff8dc;
+	border: 1px solid #d6a800;
+	border-radius: 3px;
+	color: #3b2f00;
+	box-shadow: 2px 2px 10px #c8c8c8;
+}
+
+#server_health_alert p {
+	margin-top: 6px;
+	margin-bottom: 6px;
+}
+
+#server_health_alert pre {
+	max-height: 240px;
+	overflow: auto;
+	text-align: left;
+	white-space: pre-wrap;
+	background: #1f1f1f;
+	color: white;
+	padding: 8px;
+	margin-top: 8px;
+}
+
 /* ------------------------ Global style ------------------------ */
 input[type="text"] {
 	width: 400px;
@@ -304,4 +332,3 @@ input[type="text"].integer {
 	margin-top: 20px;
 	margin-bottom: 150px;
 }
-
