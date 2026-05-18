@@ -1,7 +1,7 @@
 
 class opticsModule extends Module {
 	constructor (params) {
-		super ("optics", "https://github.com/adriantich/SLIM/blob/master/man/sections/OPTICS.md");
+		super ("optics", "/man/sections/OPTICS.md");
 
 		this.params = params;
 	}
@@ -15,4 +15,3 @@ class opticsModule extends Module {
 module_manager.moduleCreators.optics = (params) => {
 	return new opticsModule(params);
 };
-

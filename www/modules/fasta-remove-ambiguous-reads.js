@@ -1,7 +1,7 @@
 
 class NremoverModule extends Module {
 	constructor (params) {
-		super ("fasta-remove-ambiguous-reads");
+		super ("fasta-remove-ambiguous-reads", "/man/sections/Fasta-remove-ambiguous-reads.md");
 
 		this.params = params;
 	}
@@ -33,4 +33,3 @@ class NremoverModule extends Module {
 module_manager.moduleCreators['fasta-remove-ambiguous-reads'] = (params) => {
 	return new NremoverModule(params);
 };
-

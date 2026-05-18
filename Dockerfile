@@ -294,13 +294,14 @@ RUN python3 -m pip install --no-cache-dir biopython --upgrade
 # prepare the web server
 COPY server /app
 COPY www/ /app/www/
+COPY man/ /app/man/
 COPY ssl/ /app/ssl/
 EXPOSE 80
 
 # copy npm libraries
 COPY package*.json /app/
 RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi && \
-    npm cache clean --force
+    rm -rf /root/.npm
 
 # jquery
 RUN cp node_modules/jquery/dist/jquery.js /app/www/js/jquery.js

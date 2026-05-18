@@ -1,6 +1,6 @@
 class SingleMModule extends Module {
     constructor(params) {
-        super("singleM");
+        super("singleM", "/man/sections/SingleM.md");
         this.params = params;
     }
 }

@@ -1,7 +1,7 @@
 
 class msiModule extends Module {
 	constructor (params) {
-		super ("msi", "https://github.com/adriantich/SLIM/blob/master/man/sections/MSI.md");
+		super ("msi", "/man/sections/MSI.md");
 
 		this.params = params;
 	}
@@ -103,4 +103,3 @@ class msiModule extends Module {
 module_manager.moduleCreators.msi = (params) => {
 	return new msiModule(params);
 };
-

@@ -1,7 +1,7 @@
 
 class FastqNoPrimerModule extends Module {
 	constructor (params) {
-		super ("fastq-primers-filtering");
+		super ("fastq-primers-filtering", "/man/sections/Fastq-primers-filtering.md");
 		this.params = params;
 	}
 

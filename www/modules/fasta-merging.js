@@ -1,7 +1,7 @@
 
 class FastaMergingModule extends Module {
 	constructor (params) {
-		super ("fasta-merging");
+		super ("fasta-merging", "/man/sections/Fasta-merging.md");
 
 		this.params = params;
 	}
@@ -11,4 +11,3 @@ class FastaMergingModule extends Module {
 module_manager.moduleCreators['fasta-merging'] = (params) => {
 	return new FastaMergingModule(params);
 };
-

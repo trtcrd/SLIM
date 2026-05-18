@@ -177,7 +177,7 @@ The chaining between module is made through the files names used as input / outp
 Such wildcards are generated from the compressed libraries fastq files (tar.gz) and by the tag-to-sample file.
 **Users cannot type on their own wildcards in the file names of modules**. Instead, the application has an autocompletion feature and will make wildcards suggestions for the user to select within the GUI.
 
-However, when uploading demultiplexed libraries (each fastq correspond to a single sample), the demultiplexing step is not needed and in substitution we need to create this wildcard pattern to proceed throughout the different processing steps. To do so, we have created the module [wildcard-creator](https://github.com/adriantich/SLIM/blob/master/man/sections/wildcard_creator.md).
+However, when uploading demultiplexed libraries (each FASTQ corresponds to a single sample), the demultiplexing step is not needed. Instead, create a wildcard pattern to pass groups of files through the different processing steps. To do so, use the module [wildcard-creator](man/sections/wildcard_creator.md).
 
 To point to a set of samples (all samples from the tag-to-sample, or all the samples from the library_1 for instance), there will be a '*', and the application adds the processing step as a suffix incrementaly:
 - all samples from the tag-to-sample file that have been demultiplexed: 'tag_to_sample*_fwd.fastq' and 'tag_to_sample*_rev.fastq'

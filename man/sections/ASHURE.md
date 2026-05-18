@@ -21,7 +21,7 @@ It runs the following steps:
 ## Module interactions
 
 ### Main inputs
-* The fastq files to process. To be able to select multiple fastq at the same time, the shared pattern is needed, the wildcard. See [wildcard creator](https://github.com/adriantich/SLIM/blob/master/man/sections/wildcard_creator.md) module for more information.
+* The fastq files to process. To be able to select multiple fastq at the same time, the shared pattern is needed, the wildcard. See [wildcard creator](/man/sections/wildcard_creator.md) module for more information.
 
 
 * Primers file. This fasta file requires the first sequence \*\*\* to be the forward primer and the second the reverse as follows:

@@ -1,6 +1,6 @@
 # MSI
 
-MSI module runs the MSI pipeline which clusters and classify sequences. Clustering is performed with cd-hit and sequence alignment is done using BLAST against a database that has to be provided. The pipeline is divided in five steps as follows:
+The MSI module runs the MSI pipeline, which clusters and classifies sequences. Clustering is performed with CD-HIT and sequence alignment is done using BLAST against a database that has to be provided. The full MSI pipeline is divided into five steps:
 
 A. Preprocess
 
@@ -12,24 +12,24 @@ D. Primer processing
 
 E. Classification
 
-However in the Module implemented in SLIM, only the steps A, B and C are processed to obtain the centroids for each sample.
+In the SLIM module, only steps A, B, and C are run to obtain centroids for each sample.
 
-This steps are mentioned in Optional inputs as to which they are referred to.
+The optional inputs below indicate which MSI step they refer to.
 
 ## Module interactions
 
 ### Main inputs
-* The fastq files to process. To be able to select multiple fastq at the same time, the shared pattern is needed, the wildcard. See [wildcard creator](https://github.com/adriantich/SLIM/blob/master/man/sections/wildcard_creator.md) module for more information.
+* FASTQ files to process. To select several FASTQ files at the same time, use their shared wildcard pattern. See the [wildcard creator](/man/sections/wildcard_creator.md) module for more information.
 
 
-* Primers file. This fasta file requires the first sequence \*\*\* to be the forward primer and the second the reverse as follows:
+* Primers file. This FASTA file requires the first sequence to be the forward primer and the second sequence to be the reverse primer, as follows:
 ```
 >forward_primer
 GAACCTGGTTGATCCTGCCAGT
 >reverse_primer
 GGTGATCCTTCTGCAGGTTCACCTAC
 ```
-\*\*\*Only IUPAC characters are allowed.
+Only IUPAC characters are allowed.
 
 #### Optional inputs
 

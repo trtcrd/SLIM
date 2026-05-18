@@ -23,6 +23,8 @@ app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
 
 const system_status = require('./system_status.js');
 system_status.expose(app);
+const markdown_renderer = require('./markdown_renderer.js');
+markdown_renderer.expose(app);
 
 app.get('/', function (req, res) {
 	res.send(pipeline_GUI());
@@ -31,6 +33,7 @@ app.use('/js', express.static('www/js'));
 app.use('/css', express.static('www/css'));
 app.use('/imgs', express.static('www/imgs'));
 app.use('/modules', express.static('www/modules'));
+app.use('/man', express.static('/app/man'));
 
 app.use('/data', express.static('/app/data'));
 
@@ -52,6 +55,13 @@ if (secured_server) {
   server = require('http');
   server = server.createServer(app);
 }
+
+// Large sequence uploads can legitimately take longer than Node's default
+// request timeout. Let Formidable enforce the explicit upload-size limits
+// instead of having the HTTP server abort long transfers.
+server.requestTimeout = 0;
+server.headersTimeout = 0;
+server.timeout = 0;
 
 server.listen(PORT);
 

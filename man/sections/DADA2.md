@@ -1,48 +1,94 @@
 # DADA2
 
-This module integrate the DADA2 workflow.
+The `DADA2` module runs a paired-end DADA2 workflow to infer amplicon sequence variants (ASVs). It expects demultiplexed, correctly oriented, primer-trimmed FASTQ files. In SLIM, these files are usually produced by the `demultiplexer` module.
 
-## Module interactions
+## Inputs
 
-### Main inputs
+### Tag-to-Sample File
 
-* The tag-to-sample file (.csv)
+CSV file describing the samples and libraries. This is used to connect the demultiplexed FASTQ files to sample names.
 
-* The forward reads file(s). Fastq must be oriented and primers trimmed. For now, only paired-end fastq files are compatible. You can used the DTD module of SLIM for that (designed for multiplexed paired-end double tagged amplicons) 
+### Forward Reads
 
-* The reverse reads file(s). Fastq must be oriented and primers trimmed. 
+Forward FASTQ files. These reads must already be oriented and primer-trimmed.
 
-* The strategy for training error(s) model(s) 
+### Reverse Reads
 
-* The strategy for ASV inference, see Benjamin explanations [here](https://benjjneb.github.io/dada2/pseudo.html#pseudo-pooling). "no pool" (naive, fully de novo), pseudo-pool (2 steps, with prior from the first step used during the second step), pool (pooled sample for inference. If the strategy for error model training is by sample, this option has no effect.
+Reverse FASTQ files. These reads must already be oriented and primer-trimmed.
 
-### Output
+## Parameters
 
-* An ASV table (chimera-free, using the "consensus" mode) 
+### Error Model
 
-* A fasta file containing the ASV sequences 
+Default:
 
-* A table containing the filtering statistics 
+```
+for each library
+```
 
+Available values:
+
+* `for each library`: one error model is learned per sequencing library.
+* `for each sample`: one error model is learned per sample.
+
+Library-level error learning is usually more stable when each sample has modest read depth.
+
+### Pooling Strategy
+
+Default:
+
+```
+no pool
+```
+
+Available values:
+
+* `no pool`: each sample is processed independently.
+* `pseudo-pool`: ASVs found across samples are used as priors in a second inference step.
+* `pool`: samples are pooled for ASV inference.
+
+Pooling can improve detection of rare variants, but it can also increase compute time. In this SLIM module, pooling only matters when the error model is trained by library.
+
+## Outputs
+
+### ASV Table
+
+Default:
+
+```
+asvs-table.tsv
+```
+
+Tabular count matrix with ASVs as rows and samples as columns.
+
+### ASV Sequences
+
+Default:
+
+```
+representative-asvs.fasta
+```
+
+FASTA file containing the inferred ASV sequences.
+
+### Filtering Statistics
+
+Default:
+
+```
+filtering-stats.tsv
+```
+
+Per-sample statistics from filtering and trimming steps inside the DADA2 workflow.
+
+## Practical Advice
+
+Use the `demultiplexer` module first when working with double-tagged amplicon libraries. DADA2 is sensitive to read orientation, primers, and low-quality tails, so inspect filtering statistics if many reads disappear.
+
+For low-depth datasets, start with library-level error models and no pooling or pseudo-pooling. Full pooling can help rare ASVs but is more computationally demanding.
 
 ## References
 
-* DADA2 webpage: https://benjjneb.github.io/dada2/index.html
+* DADA2 webpage: https://benjjneb.github.io/dada2/
+* DADA2 pooling explanation: https://benjjneb.github.io/dada2/pseudo.html
 * DADA2 publication: https://www.nature.com/articles/nmeth.3869
-
-## Known issue
-
-On macOS, the DADA2 module returns: 
-```Error in names(answer) <- names1 : 
-  'names' attribute [30] must be the same length as the vector [10]
-Calls: filterAndTrim -> mcmapply
-In addition: Warning message:
-In mclapply(seq_len(n), do_one, mc.preschedule = mc.preschedule,  :
-  scheduled cores 2, 3, 4, 5, 6 did not deliver results, all values of the jobs will be affected
-```
-Docker v2.0.0.3
-R version 3.6.0
-dada2_1.12.1 
-
-Seems to be a docker issue, as the script on macOS version of R runs it fine. 
-

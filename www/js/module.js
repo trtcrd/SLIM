@@ -193,7 +193,6 @@ class Module {
 
 		// text file inputs
 		var in_files_text = this.dom.getElementsByClassName('input_file_text');
-		console.log(in_files_text);
 		for (let in_id=0 ; in_id<in_files_text.length ; in_id++) {
 			let input = in_files_text[in_id];
 			if (input.classList.contains('agregate')) {

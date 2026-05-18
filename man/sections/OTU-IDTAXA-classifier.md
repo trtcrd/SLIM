@@ -1,28 +1,51 @@
-# OTU IDTAXA classifier
+# ASV/OTU Table Assignment with IDTAXA
 
-This module uses the IDTAXA classifier from the DECIPHER R package for taxonomic assignments.
+The `assignment-table-IDTAXA` module uses the IDTAXA classifier from the DECIPHER R package to assign taxonomy to representative ASV/OTU sequences, then appends the assignments to an ASV/OTU table.
 
-## Module interactions
+## Inputs
 
-### Main inputs
+### Trained IDTAXA Classifier
 
-* Representative sequences OTU/ASV: the (representative) sequences of each (OTU)/ASV in a fasta format. 
+RData file containing a trained IDTAXA classifier.
 
-* OTU/ASV table: The OTU/ASV table in tsv format to be annotated with IDTAXA. Each OTU/ASV in the table must have a corresponding sequence in the FASTA file.
+### ASV/OTU Representative Sequences
 
-* Trained IDTAXA classifier: A RData file containing the previously trained classifier. See [here](http://www2.decipher.codes/Documentation/Documentation-ClassifySequences.html) for training your own classifier from a curated FASTA database. Alternatively you can download some on the [download](http://www2.decipher.codes/Downloads.html) page of the package. 
+FASTA file containing one representative sequence for each ASV/OTU in the table.
 
-### Options
+### Input ASV/OTU Table
 
-* Confidence threshold: the confidence at which to truncate the output taxonomic classifications. Lower values of threshold will classify deeper into the taxonomic tree at the expense of accuracy, and vise-versa for higher values of threshold.
+TSV count table to annotate. Each ASV/OTU in the table must have a matching sequence in the representative FASTA file.
 
+## Parameters
 
-### Output
+### Threshold
 
-* Annotated OTU/ASV table
+Default:
 
+```
+60
+```
+
+Confidence threshold used by IDTAXA. Lower values classify deeper into the taxonomy but may reduce accuracy. Higher values are more conservative and may stop assignments at higher taxonomic ranks.
+
+## Output
+
+### Annotated ASV/OTU Table
+
+Default:
+
+```
+idtaxa.tsv
+```
+
+TSV table containing the original ASV/OTU table with added taxonomic assignments.
+
+## Practical Advice
+
+Use this module when you want to keep abundance counts and IDTAXA taxonomy together. Use `assignment-fasta-IDTAXA` if you only need a sequence-to-taxonomy table.
 
 ## References
 
 * DECIPHER package: http://www2.decipher.codes/
+* IDTAXA documentation: http://www2.decipher.codes/Documentation/Documentation-ClassifySequences.html
 * IDTAXA publication: https://microbiomejournal.biomedcentral.com/articles/10.1186/s40168-018-0521-5

@@ -1,6 +1,35 @@
 // This file contains the code to upload files to the server
 var up_formData;
 var up_filenames = [];
+var up_processing_interval = null;
+
+var upload_html_escape = (txt) => {
+	if (typeof html_escape != "undefined")
+		return html_escape(txt);
+
+	return String(txt)
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#039;');
+};
+
+var set_upload_message = (message, is_error=false) => {
+	$('.progress-bar').html(message);
+
+	let warnings_areas = document.getElementsByClassName("gui_warnings");
+	let html = is_error ? '<p>' + upload_html_escape(message) + '</p>' : '';
+	for (let idx=0 ; idx<warnings_areas.length ; idx++)
+		warnings_areas[idx].innerHTML = html;
+};
+
+var clear_upload_processing_interval = () => {
+	if (up_processing_interval) {
+		clearInterval(up_processing_interval);
+		up_processing_interval = null;
+	}
+};
 
 // this will select the files to upload
 document.querySelector("#up_files").onchange = function (event) {
@@ -40,6 +69,13 @@ document.querySelector("#up_submit").onclick = function (event) {
 	var file_selector = document.getElementById('up_files');
 
 	// Upload the file
+	clear_upload_processing_interval();
+	if (!up_formData) {
+		set_upload_message('Please select one or more files before uploading.', true);
+		return;
+	}
+
+	set_upload_message('');
 	document.querySelector('#start').disabled = true;
 	$.ajax({
 		url: '/upload',
@@ -51,19 +87,25 @@ document.querySelector("#up_submit").onclick = function (event) {
 		
 		success: function(data, textStatus, jqXHR)
 		{
+			clear_upload_processing_interval();
 			if(typeof data.error === 'undefined') {
 				var event = new Event('new_file');
 				event.files = up_filenames;
 				document.dispatchEvent(event);
+				set_upload_message('Done');
+				document.querySelector('#start').disabled = false;
 			} else {
 				// Handle errors here
-				console.log('ERRORS: ' + data.error);
+				set_upload_message('Upload failed: ' + data.error, true);
+				document.querySelector('#start').disabled = false;
 			}
 		},
 		error: function(jqXHR, textStatus, errorThrown) {
 			// Handle errors here
-			console.log('ERRORS: ' + textStatus);
-			// STOP LOADING SPINNER
+			clear_upload_processing_interval();
+			let message = jqXHR.responseText || errorThrown || textStatus || 'Upload failed';
+			set_upload_message('Upload failed: ' + message, true);
+			document.querySelector('#start').disabled = false;
 		},
 		xhr: function() {
 			// create an XMLHttpRequest
@@ -91,7 +133,7 @@ document.querySelector("#up_submit").onclick = function (event) {
 						document.dispatchEvent(event);
 
 						// Verify files that have been converted to linux format
-						var interval = setInterval(
+						up_processing_interval = setInterval(
 							// Get the file list to process
 							()=>{$.get('/convertion?token=' + exec_token).done((data) => {
 								data = JSON.parse(data);
@@ -100,12 +142,16 @@ document.querySelector("#up_submit").onclick = function (event) {
 								if (data.length > 0) {
 									$('.progress-bar').html('Processing file(s): ' + data.length + ' remaining');
 								} else {
-									clearInterval (interval);
+									clear_upload_processing_interval();
 									$('.progress-bar').html('Done');
 									document.querySelector('#start').disabled = false;
 
 									file_manager.load_from_server();
 								}
+							}).fail(() => {
+								clear_upload_processing_interval();
+								set_upload_message('Upload processing status is unavailable. The server may be restarting.', true);
+								document.querySelector('#start').disabled = false;
 							})}
 							, 1000
 						);

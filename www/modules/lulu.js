@@ -1,7 +1,7 @@
 
 class LuluModule extends Module {
 	constructor (params) {
-		super ("lulu", "https://github.com/adriantich/SLIM/blob/master/man/sections/LULU-post-clustering-module.md");
+		super ("lulu", "/man/sections/LULU-post-clustering-module.md");
 
 		this.params = params;
 	}
@@ -29,4 +29,3 @@ class LuluModule extends Module {
 module_manager.moduleCreators['lulu'] = (params) => {
 	return new LuluModule(params);
 };
-

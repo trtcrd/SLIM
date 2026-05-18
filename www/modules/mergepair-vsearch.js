@@ -1,7 +1,7 @@
 
 class MergeVsearchModule extends Module {
 	constructor (params) {
-		super ("mergepair-vsearch", 'https://github.com/adriantich/SLIM/blob/master/man/sections/Mergepair-vsearch.md');
+		super ("mergepair-vsearch", '/man/sections/Mergepair-vsearch.md');
 
 		this.params = params;
 	}
@@ -39,4 +39,3 @@ class MergeVsearchModule extends Module {
 module_manager.moduleCreators['mergepair-vsearch'] = (params) => {
 	return new MergeVsearchModule(params);
 };
-

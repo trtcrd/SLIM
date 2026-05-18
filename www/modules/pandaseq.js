@@ -1,7 +1,7 @@
 
 class PandaseqModule extends Module {
 	constructor (params) {
-		super ("pandaseq", "https://github.com/adriantich/SLIM/blob/master/man/sections/Pandaseq-module.md");
+		super ("pandaseq", "/man/sections/Pandaseq-module.md");
 
 		this.params = params;
 	}
@@ -39,4 +39,3 @@ class PandaseqModule extends Module {
 module_manager.moduleCreators.pandaseq = (params) => {
 	return new PandaseqModule(params);
 };
-

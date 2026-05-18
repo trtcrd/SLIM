@@ -1,7 +1,7 @@
 
 class OtuVsearchModule extends Module {
 	constructor (params) {
-		super ("otu-vsearch");
+		super ("otu-vsearch", "/man/sections/OTU-vsearch.md");
 
 		this.params = params;
 	}

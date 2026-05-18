@@ -1,7 +1,7 @@
 
 class DereplicationModule extends Module {
 	constructor (params) {
-		super ("fasta-dereplication", 'https://github.com/adriantich/SLIM/blob/master/man/sections/Fasta-dereplication.md');
+		super ("fasta-dereplication", '/man/sections/Fasta-dereplication.md');
 
 		this.params = params;
 	}
@@ -26,4 +26,3 @@ class DereplicationModule extends Module {
 module_manager.moduleCreators['fasta-dereplication'] = (params) => {
 	return new DereplicationModule(params);
 };
-

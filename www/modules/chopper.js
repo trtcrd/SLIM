@@ -1,7 +1,7 @@
 
 class ChopperModule extends Module {
 	constructor (params) {
-		super ("chopper", "https://github.com/adriantich/SLIM/blob/master/man/sections/CHOPPER.md");
+		super ("chopper", "/man/sections/CHOPPER.md");
 
 		this.params = params;
 	}
@@ -27,4 +27,3 @@ class ChopperModule extends Module {
 module_manager.moduleCreators.chopper = (params) => {
 	return new ChopperModule(params);
 };
-

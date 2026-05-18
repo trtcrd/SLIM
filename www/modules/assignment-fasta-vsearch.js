@@ -1,7 +1,7 @@
 
 class AssignFastaVsearchModule extends Module {
 	constructor (params) {
-		super ("assignment-fasta-vsearch", "https://github.com/adriantich/SLIM/blob/master/man/sections/Fasta-assignment-Vsearch.md");
+		super ("assignment-fasta-vsearch", "/man/sections/Fasta-assignment-Vsearch.md");
 		this.params = params;
 	}
 
@@ -25,4 +25,3 @@ class AssignFastaVsearchModule extends Module {
 module_manager.moduleCreators['assignment-fasta-vsearch'] = (params) => {
 	return new AssignFastaVsearchModule(params);
 };
-

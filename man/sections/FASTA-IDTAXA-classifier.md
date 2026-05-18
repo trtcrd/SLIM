@@ -1,26 +1,47 @@
-# FASTA IDTAXA classifier
+# FASTA Assignment with IDTAXA
 
-This module uses the IDTAXA classifier from the DECIPHER R package for taxonomic assignments.
+The `assignment-fasta-IDTAXA` module uses the IDTAXA classifier from the DECIPHER R package to assign taxonomy to sequences in a FASTA file.
 
-## Module interactions
+## Inputs
 
-### Main inputs
+### Trained IDTAXA Classifier
 
-* Input FASTA to be annotated: the FASTA file to be annotated. 
+RData file containing a trained IDTAXA classifier. You can train your own classifier from a curated FASTA database or use a compatible pre-trained classifier.
 
-* Trained IDTAXA classifier: A RData file containing the previously trained classifier. See [here](http://www2.decipher.codes/Documentation/Documentation-ClassifySequences.html) for training your own classifier from a curated FASTA database. Alternatively you can download some on the [download](http://www2.decipher.codes/Downloads.html) page of the package. 
+### Input FASTA to Be Annotated
 
-### Options
+FASTA file containing the sequences to classify.
 
-* Confidence threshold: the confidence at which to truncate the output taxonomic classifications. Lower values of threshold will classify deeper into the taxonomic tree at the expense of accuracy, and vise-versa for higher values of threshold.
+## Parameters
 
+### Threshold
 
-### Output
+Default:
 
-* Annotated table containing assignent for each sequence. 
+```
+60
+```
 
+Confidence threshold used by IDTAXA. Lower values classify deeper into the taxonomy but may reduce accuracy. Higher values are more conservative and may stop assignments at higher taxonomic ranks.
+
+## Output
+
+### Annotated Sequences
+
+Default:
+
+```
+idtaxa.tsv
+```
+
+TSV table containing the taxonomic assignment for each input sequence.
+
+## Practical Advice
+
+IDTAXA results depend strongly on the quality and taxonomic scope of the trained classifier. Use a classifier matching your marker gene and target group, for example 16S for bacteria/archaea, 18S for eukaryotes, ITS for fungi, or another marker-specific database.
 
 ## References
 
 * DECIPHER package: http://www2.decipher.codes/
+* IDTAXA documentation: http://www2.decipher.codes/Documentation/Documentation-ClassifySequences.html
 * IDTAXA publication: https://microbiomejournal.biomedcentral.com/articles/10.1186/s40168-018-0521-5

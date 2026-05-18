@@ -1,7 +1,7 @@
 
 class TrimmingModule extends Module {
 	constructor (params) {
-		super ("fasta-trimming");
+		super ("fasta-trimming", "/man/sections/Fasta-trimming.md");
 
 		this.params = params;
 	}
@@ -45,4 +45,3 @@ class TrimmingModule extends Module {
 module_manager.moduleCreators['fasta-trimming'] = (params) => {
 	return new TrimmingModule(params);
 };
-

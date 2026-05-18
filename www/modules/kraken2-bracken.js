@@ -1,6 +1,6 @@
 class Kraken2BrackenModule extends Module {
     constructor(params) {
-        super("kraken2-bracken");
+        super("kraken2-bracken", "/man/sections/Kraken2-Bracken.md");
         this.params = params;
     }
 

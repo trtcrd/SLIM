@@ -14,7 +14,7 @@
     "formidable": "^3.5.4",
     "jquery": "^3.7.1",
     "line-reader": "^0.4.0",
-    "nodemailer": "^6.9.16",
+    "nodemailer": "^8.0.5",
     "pug": "^3.0.3",
     "systeminformation": "^5.23.0"
   }

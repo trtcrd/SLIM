@@ -1,7 +1,7 @@
 
 class Fastq2FastaModule extends Module {
 	constructor (params) {
-		super ("fastq2fasta");
+		super ("fastq2fasta", "/man/sections/Fastq2fasta.md");
 
 		this.params = params;
 	}
@@ -25,4 +25,3 @@ class Fastq2FastaModule extends Module {
 module_manager.moduleCreators['fastq2fasta'] = (params) => {
 	return new Fastq2FastaModule(params);
 };
-

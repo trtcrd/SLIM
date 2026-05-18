@@ -1,7 +1,7 @@
 
 class FastaFilteringModule extends Module {
 	constructor (params) {
-		super ("fasta-filtering");
+		super ("fasta-filtering", "/man/sections/Fasta-filtering.md");
 
 		this.params = params;
 	}
@@ -22,4 +22,3 @@ class FastaFilteringModule extends Module {
 module_manager.moduleCreators['fasta-filtering'] = (params) => {
 	return new FastaFilteringModule(params);
 };
-

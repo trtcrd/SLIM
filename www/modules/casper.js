@@ -1,7 +1,7 @@
 
 class CasperModule extends Module {
 	constructor (params) {
-		super ('casper', 'https://github.com/adriantich/SLIM/blob/master/man/sections/Casper.md');
+		super ('casper', '/man/sections/Casper.md');
 
 		this.params = params;
 	}
@@ -39,4 +39,3 @@ class CasperModule extends Module {
 module_manager.moduleCreators.casper = (params) => {
 	return new CasperModule(params);
 };
-
