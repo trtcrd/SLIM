@@ -93,6 +93,7 @@ class FileManager {
 
 	get_autocomplete_format (files) {
 		var formated = [];
+		files = this.sortFilesForAutocomplete(files);
 
 		for (var idx in files) {
 			var filename = files[idx];
@@ -100,6 +101,128 @@ class FileManager {
 		}
 
 		return formated;
+	}
+
+	sortFilesForAutocomplete (files) {
+		return Array.from(new Set(files)).sort((a, b) => {
+			let a_wildcard = a.includes('*') || a.includes('€');
+			let b_wildcard = b.includes('*') || b.includes('€');
+
+			if (a_wildcard != b_wildcard)
+				return a_wildcard ? -1 : 1;
+
+			return a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'});
+		});
+	}
+
+	getPairedReadPatterns (extentions = ['fastq']) {
+		let files = this.getFiles(extentions).filter((val) => {return typeof(val) == "string";});
+		files = this.sortFilesForAutocomplete(files);
+
+		let file_set = new Set(files);
+		let wildcard_pair = this.findExistingWildcardPair(files, file_set);
+		if (wildcard_pair)
+			return wildcard_pair;
+
+		return this.inferWildcardPair(files);
+	}
+
+	findExistingWildcardPair (files, file_set) {
+		for (let idx=0 ; idx<files.length ; idx++) {
+			let fwd = files[idx];
+
+			if (!fwd.includes('*'))
+				continue;
+
+			let rev = this.getReverseReadName(fwd);
+			if (rev && file_set.has(rev))
+				return {fwd: fwd, rev: rev};
+		}
+
+		return null;
+	}
+
+	inferWildcardPair (files) {
+		let pairs = [];
+		let file_set = new Set(files);
+
+		for (let idx=0 ; idx<files.length ; idx++) {
+			let fwd = files[idx];
+			let rev = this.getReverseReadName(fwd);
+
+			if (rev && file_set.has(rev))
+				pairs.push({fwd: fwd, rev: rev});
+		}
+
+		if (pairs.length == 0)
+			return null;
+
+		let fwd_pattern = this.commonReadPattern(pairs.map((pair) => pair.fwd));
+		let rev_pattern = this.commonReadPattern(pairs.map((pair) => pair.rev));
+
+		if (fwd_pattern && rev_pattern)
+			return {fwd: fwd_pattern, rev: rev_pattern};
+
+		return null;
+	}
+
+	commonReadPattern (files) {
+		if (files.length == 0)
+			return null;
+		if (files.length == 1)
+			return files[0];
+
+		let prefix = files[0];
+		let suffix = files[0];
+
+		for (let idx=1 ; idx<files.length ; idx++) {
+			prefix = this.commonPrefix(prefix, files[idx]);
+			suffix = this.commonSuffix(suffix, files[idx]);
+		}
+
+		while (prefix.length > 0 && suffix.length > 0 && prefix.length + suffix.length > files[0].length)
+			suffix = suffix.substring(1);
+
+		if (prefix.length == files[0].length)
+			return files[0];
+
+		return prefix + '*' + suffix;
+	}
+
+	commonPrefix (a, b) {
+		let idx = 0;
+		while (idx < a.length && idx < b.length && a[idx] == b[idx])
+			idx++;
+
+		return a.substring(0, idx);
+	}
+
+	commonSuffix (a, b) {
+		let idx = 0;
+		while (idx < a.length && idx < b.length && a[a.length - 1 - idx] == b[b.length - 1 - idx])
+			idx++;
+
+		return idx == 0 ? '' : a.substring(a.length - idx);
+	}
+
+	getReverseReadName (filename) {
+		let replacements = [
+			[/([._-])R1(?=([._-]|\.|$))/i, '$1R2'],
+			[/([._-])1sub(?=([._-]|\.|$))/i, '$12sub'],
+			[/([._-])1(?=([._-]|\.|$))/i, '$12'],
+			[/([._-])fwd(?=([._-]|\.|$))/i, '$1rev'],
+			[/([._-])forward(?=([._-]|\.|$))/i, '$1reverse']
+		];
+
+		for (let idx=0 ; idx<replacements.length ; idx++) {
+			let regex = replacements[idx][0];
+			let replacement = replacements[idx][1];
+
+			if (regex.test(filename))
+				return filename.replace(regex, replacement);
+		}
+
+		return null;
 	}
 
 	getFiles (extentions = []) {

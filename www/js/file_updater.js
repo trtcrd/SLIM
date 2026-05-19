@@ -31,6 +31,8 @@ class FileUpdater {
 			});
 		}
 
+		autocomplete = file_manager.sortFilesForAutocomplete(autocomplete);
+
 		for (let idx=0 ; idx<autocomplete.length ; idx++) {
 			autocomplete[idx] = {value:autocomplete[idx], data:autocomplete[idx]};
 		}
