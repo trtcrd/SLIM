@@ -110,8 +110,8 @@ var lulu_run = (os, config, callback) => {
 
 	// Execute the R script
 	console.log("Running Rscript lulu.R with the command line:");
-	console.log('Rscript ' + options.join(' '));
-	var child = Rexec('Rscript ' + options.join(' '));
+	console.log('/usr/bin/Rscript ' + options.join(' '));
+	var child = Rexec('/usr/bin/Rscript ' + options.join(' '));
 
 	child.stdout.on('data', function(data) {
 		console.log('STDOUT:' + data);

@@ -47,7 +47,7 @@ exports.run = function(os,config,callback){
   var command = ['/app/lib/R_scripts/dada2.R',by_lib,tags,asvs_seq,asvs_table,token,proc,,stats,pool,fwd,rev];
   console.log('R command line:' + command.join(' '));
 
-  var child = Rexec('Rscript '+command.join(' '));
+  var child = Rexec('/usr/bin/Rscript '+command.join(' '));
 
   child.stdout.on('data', function(data) {
 		console.log('STDOUT:' + data);

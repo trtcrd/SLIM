@@ -19,7 +19,7 @@ exports.run = function(os,config,callback){
 
   var command = ['/app/lib/R_scripts/otu-idtaxa.R',filenameFasta,filenameClassifier,out_file,threshold,proc,filenameOtu_table];
 
-  var child = Rexec('Rscript '+command.join(' '));
+  var child = Rexec('/usr/bin/Rscript '+command.join(' '));
 
   child.stdout.on('data', function(data) {
 		console.log('STDOUT:' + data);
