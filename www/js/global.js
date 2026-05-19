@@ -87,13 +87,30 @@ var load_modules = (log) => {
 		return;
 	}
 
-	// // Reload mail address
-	// document.getElementById('mail').value = log.mail;
-	// delete log.mail;
+	// Loading a pipeline.conf should replace the current editor state. Keeping
+	// previous modules leaves stale output files in autocomplete and can make
+	// dependencies appear to exist before they are produced.
+	let modules_div = document.querySelector('#modules');
+	if (modules_div) {
+		modules_div.innerHTML = '';
+	}
+	module_manager.modules = {};
+	file_manager.futur_files = {};
+	__next_id = 0;
+
+	// Reload optional mail address when present, but do not treat it as a module.
+	if (log.mail) {
+		let mail = document.getElementById('mail');
+		if (mail)
+			mail.value = log.mail;
+	}
 
 	// For each module in the log file
 	for (let idx in log) {
 		let soft = log[idx];
+		if (!soft || typeof soft != 'object' || !soft.name || !soft.params)
+			continue;
+
 		soft.params.idx = idx;
 
 		// Create the module

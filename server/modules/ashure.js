@@ -22,26 +22,6 @@ exports.run = function (os, config, callback) {
 	// else
 	// 	project = project.substr(0, project.lastIndexOf('_panda'));
 
-	// if options.refdb is not defined, set it to empty string
-
-	function logAttributes(obj, prefix = '') {
-		for (const key in obj) {
-			if (obj.hasOwnProperty(key)) {
-				const value = obj[key];
-				const newPrefix = prefix ? `${prefix}.${key}` : key;
-				if (typeof value === 'object' && value !== null) {
-					logAttributes(value, newPrefix);
-				} else {
-					console.log(newPrefix);
-				}
-			}
-		}
-	}
-
-	// Call the function with the options object
-	logAttributes(options);
-	logAttributes(config);
-	
 	var command = ['-f', config.params.inputs.fastq, // fastq_files
 		'-p', config.params.inputs.primers, // primers
 		'-d', directory, // directory
@@ -58,7 +38,7 @@ exports.run = function (os, config, callback) {
 
 
 	// Joining
-	console.log('Running optics');
+	console.log('Running ashure');
 	console.log('/app/lib/bash_scripts/run_ashure.sh', command.join(' '));
 	fs.appendFileSync(directory + config.log, '--- Command ---\n');
 	fs.appendFileSync(directory + config.log, 'run_ashure ' + command.join(' ') + '\n');

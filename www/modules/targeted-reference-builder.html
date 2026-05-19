@@ -1,0 +1,61 @@
+<p>Kraken2/Bracken relative-abundance table</p>
+<input type="text" name="kraken_table" class="input_file_text tsv txt" value="kraken2_bracken_relative_abundance.tsv">
+
+<p>Targeted reference FASTA</p>
+<span class="output_zone">
+    <input type="text" name="reference_fasta" value="targeted_reference.fna">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<p>Reference manifest</p>
+<span class="output_zone">
+    <input type="text" name="manifest" value="targeted_reference_manifest.tsv">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<p>acc2tax table</p>
+<span class="output_zone">
+    <input type="text" name="acc2tax" value="targeted_reference.acc2tax.tsv">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<p>Reference archive</p>
+<span class="output_zone">
+    <input type="text" name="archive" value="targeted_reference.tar.gz">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<div class="options">
+    <p>
+        Kraken2/Bracken rank:
+        <select name="rank" class="param_value">
+            <option value="S" selected>Species</option>
+            <option value="G">Genus</option>
+            <option value="F">Family</option>
+            <option value="P">Phylum</option>
+            <option value="any">Any rank</option>
+        </select>
+    </p>
+    <p>
+        Minimum relative abundance:
+        <input type="text" name="min_abundance" class="number param_value" value="0.001">
+    </p>
+    <p>
+        Maximum taxa:
+        <input type="text" name="max_taxa" class="integer number param_value" value="25">
+    </p>
+    <p>
+        Maximum genomes per taxon:
+        <input type="text" name="max_genomes" class="integer number param_value" value="1">
+    </p>
+    <p>
+        Assembly choice:
+        <select name="assembly_choice" class="param_value">
+            <option value="reference_then_representative" selected>Reference, then representative, then complete</option>
+            <option value="reference">Reference genomes only</option>
+            <option value="representative">Representative genomes only</option>
+            <option value="complete">Complete RefSeq genomes only</option>
+            <option value="any">Any RefSeq genome</option>
+        </select>
+    </p>
+</div>

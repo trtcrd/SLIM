@@ -1,0 +1,51 @@
+<p>Input mode</p>
+<select name="mode" class="param_value">
+    <option value="single" selected>Single-end reads</option>
+    <option value="paired">Paired-end reads</option>
+</select>
+
+<div class="single_reads">
+    <p>Reads pattern</p>
+    <input type="text" name="reads" class="input_file_text fastq fq agregate" value="*.fastq.gz">
+</div>
+
+<div class="paired_reads">
+    <p>Forward reads pattern</p>
+    <input type="text" name="fwd" class="input_file_text fastq fq agregate" value="*_R1.fastq.gz">
+
+    <p>Reverse reads pattern</p>
+    <input type="text" name="rev" class="input_file_text fastq fq agregate" value="*_R2.fastq.gz">
+</div>
+
+<p>Targeted reference FASTA</p>
+<input type="text" name="reference_fasta" class="input_file_text fasta fa fna" value="targeted_reference.fna">
+
+<p>Output BAM pattern</p>
+<span class="output_zone">
+    <input type="text" name="bam_pattern" value="*_targeted.bam">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<p>Mapping archive</p>
+<span class="output_zone">
+    <input type="text" name="archive" value="targeted_reference_mapping.tar.gz">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<div class="options">
+    <p>
+        Mapper:
+        <select name="mapper" class="param_value">
+            <option value="aln" selected>bwa aln (short/damaged reads)</option>
+            <option value="mem">bwa mem</option>
+        </select>
+    </p>
+    <p>
+        Minimum mapping quality:
+        <input type="text" name="min_mapq" class="integer number param_value" value="0">
+    </p>
+    <p>
+        Trim adapters and low-quality bases with fastp:
+        <input type="checkbox" name="fastp_trim" class="param_value" checked>
+    </p>
+</div>

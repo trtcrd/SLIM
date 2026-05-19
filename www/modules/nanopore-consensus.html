@@ -50,6 +50,21 @@
     </p>
 
     <p>
+        Primer max error rate:
+        <input type="text" name="primer_error_rate" class="number param_value" value="0.20">
+    </p>
+
+    <p>
+        Discard reads without linked primer match:
+        <input type="checkbox" name="discard_untrimmed" class="param_value">
+    </p>
+
+    <p>
+        Pool reads before consensus clustering:
+        <input type="checkbox" name="pool_reads" class="param_value" checked>
+    </p>
+
+    <p>
         VSEARCH clustering identity:
         <input type="text" name="cluster_id" class="number param_value" value="0.90">
     </p>
@@ -62,5 +77,15 @@
     <p>
         Medaka model:
         <input type="text" name="medaka_model" class="param_value" value="auto">
+    </p>
+
+    <p>
+        Polish draft consensuses with Medaka:
+        <input type="checkbox" name="polish_medaka" class="param_value" checked>
+    </p>
+
+    <p>
+        Use VSEARCH draft consensuses if Medaka fails:
+        <input type="checkbox" name="allow_medaka_fallback" class="param_value" checked>
     </p>
 </div>

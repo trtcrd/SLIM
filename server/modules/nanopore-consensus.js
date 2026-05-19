@@ -9,6 +9,8 @@ exports.run = function (os, config, callback) {
     const token = os.token;
     const directory = '/app/data/' + token + '/';
     const params = config.params.params;
+    const primerErrorRate = params.primer_error_rate || '0.20';
+    const medakaModel = params.medaka_model || 'auto';
 
     const options = [
         '-i', directory,
@@ -19,9 +21,14 @@ exports.run = function (os, config, callback) {
         '-M', params.maxlength,
         '-e', params.maxee,
         '-r', params.trim_primers ? 'yes' : 'no',
+        '-E', primerErrorRate,
+        '-u', params.discard_untrimmed ? 'yes' : 'no',
+        '-G', params.pool_reads === false ? 'no' : 'yes',
+        '-P', params.polish_medaka === false ? 'no' : 'yes',
+        '-F', params.allow_medaka_fallback === false ? 'no' : 'yes',
         '-c', params.cluster_id,
         '-s', params.min_cluster_size,
-        '-k', params.medaka_model,
+        '-k', medakaModel,
         '-o', config.params.outputs.consensus,
         '-O', config.params.outputs.otu_table,
         '-S', config.params.outputs.stats,
@@ -57,8 +64,20 @@ exports.run = function (os, config, callback) {
         if (code === 0) {
             callback(os, null);
         } else {
-            fs.appendFileSync(directory + config.log, '\nNanopore consensus terminated with code ' + code + '\n');
-            callback(os, 'Nanopore consensus terminated with code ' + code);
+            const logPath = directory + config.log;
+            let message = 'Nanopore consensus terminated with code ' + code;
+
+            try {
+                const lines = fs.readFileSync(logPath, 'utf8').trim().split(/\r?\n/);
+                const tail = lines.slice(-30).join('\n');
+                if (tail)
+                    message += '\n\nLast log lines:\n' + tail;
+            } catch (err) {
+                message += '\nUnable to read the module log tail: ' + err.message;
+            }
+
+            fs.appendFileSync(logPath, '\n' + message + '\n');
+            callback(os, message);
         }
     });
 

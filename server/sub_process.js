@@ -22,8 +22,17 @@ fs.readdir('/app/modules/', (err, items) => {
 			continue;
 
 		let module = require('/app/modules/' + filename);
-		if (module.name)
+		if (module.name) {
+			let html = '/app/www/modules/' + module.name + '.html';
+			let js = '/app/www/modules/' + module.name + '.js';
+
+			if (!fs.existsSync(html) || !fs.existsSync(js)) {
+				console.log('Skipping module without frontend files:', module.name);
+				continue;
+			}
+
 			modules[module.name] = module;
+		}
 	}
 
 	console.log('Module loaded: ', JSON.stringify(Object.keys(modules)));
@@ -191,7 +200,6 @@ exports.compress_outputs = (token, jokers) => {
         }
     });
 };
-
 
 
 

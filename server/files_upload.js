@@ -14,20 +14,33 @@ exports.exposeDir = function (app) {
 	app.get('/list', function(req, res) {
 		let token = req.query.token;
 
-		fs.readdir("/app/data/" + token, function(err, items) {
+		fs.readdir("/app/data/" + token, {withFileTypes: true}, function(err, entries) {
 			// If token incorrect
-			if (!items) {
+			if (!entries) {
 				res.status(403).send("bad token");
 				console.log('/list bad token');
 				return;
 			}
 
-			for (var idx=0 ; idx<items.length ; idx++) {
-				if (items[idx].endsWith('.log') || items[idx].endsWith('.conf')) {
-					items.splice(idx, 1);
-					idx--;
-				}
-			}
+			let processing = new Set(files_to_process[token] || []);
+			let items = entries
+				.filter((entry) => entry.isFile())
+				.map((entry) => entry.name)
+				.filter((name) => {
+					if (processing.has(name))
+						return false;
+					if (name.endsWith('.log') || name.endsWith('.conf'))
+						return false;
+					if (name.startsWith('.'))
+						return false;
+					if (!name.includes('.'))
+						return false;
+					if (/^[a-f0-9]{24,}$/i.test(name))
+						return false;
+					if (/^upload_[A-Za-z0-9_-]+$/.test(name))
+						return false;
+					return true;
+				});
 
 			let jok = exports.jokers[token] ? exports.jokers[token] : {};
 

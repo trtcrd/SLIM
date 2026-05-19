@@ -127,6 +127,12 @@ Default: enabled.
 
 When enabled, Medaka polishes retained VSEARCH draft consensuses. When disabled, the module skips Medaka and uses the retained VSEARCH draft consensuses directly. Disable this on machines where Medaka or its TensorFlow dependency crashes with an illegal CPU instruction, or when you want a faster first pass.
 
+**Use VSEARCH draft consensuses if Medaka fails**
+
+Default: enabled.
+
+When enabled, the module does not abort the whole run if Medaka fails for one sample. Instead, it records the Medaka failure in the log and uses the retained VSEARCH draft consensuses for that sample. The stats table records this in the `polishing` column. Disable this option if you want Medaka failures to stop the pipeline.
+
 ## Notes
 
 Medaka polishing is usually the slowest step. Runtime scales with read count, number of retained draft consensuses, and available CPU cores.

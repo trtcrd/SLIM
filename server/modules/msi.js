@@ -22,28 +22,6 @@ exports.run = function (os, config, callback) {
 	// else
 	// 	project = project.substr(0, project.lastIndexOf('_panda'));
 
-	// if options.refdb is not defined, set it to empty string
-
-	function logAttributes(obj, prefix = '') {
-		for (const key in obj) {
-			if (obj.hasOwnProperty(key)) {
-				const value = obj[key];
-				const newPrefix = prefix ? `${prefix}.${key}` : key;
-				if (typeof value === 'object' && value !== null) {
-					logAttributes(value, newPrefix);
-				} else {
-					console.log(newPrefix);
-				}
-			}
-		}
-	}
-
-	// Call the function with the options object
-	logAttributes(options);
-	console.log('checking config');
-	logAttributes(config);
-
-
 	// if (config.params.inputs.refdb === " " || config.params.inputs.refdb === "") {
 	//     console.log("params.inputs.refdb is undefined");
 	//     refdb_option = '';

@@ -1,0 +1,70 @@
+<p>BAM/SAM/CRAM pattern</p>
+<input type="text" name="bam_pattern" class="input_file_text bam sam cram agregate" value="*_targeted.bam">
+
+<p>Reference FASTA</p>
+<input type="text" name="reference_fasta" class="input_file_text fasta fa fna" value="targeted_reference.fna">
+
+<p>acc2tax table</p>
+<input type="text" name="acc2tax" class="input_file_text tsv txt" value="targeted_reference.acc2tax.tsv">
+
+<p>metaDMG summary</p>
+<span class="output_zone">
+    <input type="text" name="summary" value="metaDMG.summary.tsv">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<p>metaDMG results archive</p>
+<span class="output_zone">
+    <input type="text" name="archive" value="metaDMG_results.tar.gz">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<div class="options">
+    <p>
+        Output prefix:
+        <input type="text" name="output_prefix" class="param_value" value="metaDMG">
+    </p>
+    <p>
+        Damage mode:
+        <select name="run_mode" class="param_value">
+            <option value="1" selected>Local, per reference</option>
+            <option value="0">Global, whole BAM</option>
+            <option value="2">Taxid, using acc2tax</option>
+        </select>
+    </p>
+    <p>
+        Minimum read length:
+        <input type="text" name="min_length" class="integer number param_value" value="35">
+    </p>
+    <p>
+        Positions at read termini:
+        <input type="text" name="print_length" class="integer number param_value" value="5">
+    </p>
+    <p>
+        Minimum ANI (-1 disables):
+        <input type="text" name="min_ani" class="number param_value" value="-1">
+    </p>
+    <p>
+        Maximum ANI (empty disables):
+        <input type="text" name="max_ani" class="number param_value" value="">
+    </p>
+    <p>
+        Fit detail:
+        <select name="showfits" class="param_value">
+            <option value="0" selected>Summary fit</option>
+            <option value="1">Include per-position estimates</option>
+            <option value="2">Include counts and per-position estimates</option>
+        </select>
+    </p>
+    <p>
+        Bootstrap iterations:
+        <input type="text" name="nbootstrap" class="integer number param_value" value="0">
+    </p>
+    <p>
+        Library type:
+        <select name="library_type" class="param_value">
+            <option value="ds" selected>Double stranded</option>
+            <option value="ss">Single stranded</option>
+        </select>
+    </p>
+</div>
