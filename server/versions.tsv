@@ -30,6 +30,9 @@ Bracken	build-time	conda/bioconda package in Kraken2-Bracken environment
 mOTUs	4.0.4	conda/bioconda package in dedicated conda environment
 fetchMGs	build-time	conda/bioconda dependency of mOTUs
 polars[rtcompat]	build-time	pip-installed compatible Polars runtime in mOTUs environment
+minimap2	build-time	conda/bioconda package in nanopore-consensus environment
+Medaka	build-time	conda/bioconda package in nanopore-consensus environment
+cutadapt	build-time	conda/bioconda package in nanopore-consensus environment
 metaDMG	build-time	conda/bioconda package in ancient-DNA environment
 NCBI Datasets CLI	build-time	conda package in ancient-DNA environment
 BWA	build-time	conda/bioconda package in ancient-DNA environment

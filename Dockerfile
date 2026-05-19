@@ -304,6 +304,51 @@ RUN conda create --solver=classic -n motus -y \
 
 ENV PATH=/root/miniforge3/envs/motus/bin:$PATH
 
+# ----- install Nanopore consensus tools ----- #
+# Kept near the end so adding/revising this modern Nanopore amplicon module
+# does not invalidate the older amplicon and shotgun build layers.
+# Default to the CPU PyTorch build of Medaka unless CUDA is visible during
+# the image build. Use
+#   --build-arg SLIM_MEDAKA_BACKEND=gpu
+# to force the CUDA-capable PyTorch/Medaka stack for NVIDIA GPU hosts, or
+#   --build-arg SLIM_MEDAKA_BACKEND=cpu
+# to force CPU-only.
+ARG SLIM_MEDAKA_BACKEND=auto
+RUN if command -v mamba >/dev/null 2>&1; then \
+        mamba create -n nanopore-consensus -y \
+            -c conda-forge \
+            -c bioconda \
+            --override-channels \
+            python=3.10 \
+            minimap2 \
+            cutadapt \
+            samtools \
+            htslib \
+            pip; \
+    else \
+        CONDA_NO_PLUGINS=true conda create --solver=classic -n nanopore-consensus -y \
+            -c conda-forge \
+            -c bioconda \
+            --override-channels \
+            python=3.10 \
+            minimap2 \
+            cutadapt \
+            samtools \
+            htslib \
+            pip; \
+    fi && \
+    if [ "${SLIM_MEDAKA_BACKEND}" = "gpu" ] || { [ "${SLIM_MEDAKA_BACKEND}" = "auto" ] && { command -v nvidia-smi >/dev/null 2>&1 || [ -d /usr/local/cuda ]; }; }; then \
+        echo "Installing CUDA-capable Medaka/PyTorch stack."; \
+        conda run -n nanopore-consensus python -m pip install --no-cache-dir medaka; \
+    else \
+        echo "Installing CPU-only Medaka/PyTorch stack."; \
+        conda run -n nanopore-consensus python -m pip install --no-cache-dir medaka --extra-index-url https://download.pytorch.org/whl/cpu; \
+    fi && \
+    conda run -n nanopore-consensus python -c "import torch; print('Medaka PyTorch CUDA available:', torch.cuda.is_available())" && \
+    conda clean -afy
+
+ENV PATH=/root/miniforge3/envs/nanopore-consensus/bin:$PATH
+
 # ----- copy python_scripts -----
 COPY lib/python_scripts /app/lib/python_scripts
 

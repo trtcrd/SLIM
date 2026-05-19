@@ -12,6 +12,11 @@ counting_mode="INSERT_SCALED"
 fastp_trim="yes"
 fastp_report_archive="mOTUs.fastp_reports.tar.gz"
 
+checkpoint() {
+    echo
+    echo "== checkpoint == $*"
+}
+
 while getopts i:s:1:2:t:m:g:l:y:f:o:O:a:q: flag
 do
     case "${flag}" in
@@ -75,6 +80,7 @@ if ! has_complete_bwa_index; then
     echo "  bash download_motus_db.sh"
     exit 1
 fi
+checkpoint "mOTUs database validation done"
 
 if ! command -v motus >/dev/null 2>&1; then
     echo "motus is not available in PATH."
@@ -113,6 +119,7 @@ then
     exit 1
 fi
 
+checkpoint "mOTUs compatibility patch check started"
 "${motus_python}" - <<'PY'
 import importlib.util
 import pathlib
@@ -159,6 +166,7 @@ for line in text.splitlines():
 if "samtools view -b -" not in text:
     sys.exit("mOTUs map_tax command is still not patched to produce BAM output")
 PY
+checkpoint "mOTUs compatibility patch check done"
 
 motus_package_dir="$(
 "${motus_python}" - <<'PY'
@@ -198,6 +206,7 @@ fi
 echo "mOTUs package database path: ${motus_expected_db}"
 echo "mOTUs database index files:"
 find -L "${motus_expected_db}" -type f \( -name "*.bwt" -o -name "*.amb" -o -name "*.ann" -o -name "*.pac" -o -name "*.sa" \) -print | sed 's/^/  /'
+checkpoint "mOTUs package database link ready"
 
 motus_bwa_index="${motus_expected_db}/mOTUsv4.0.db.fna.gz"
 if [ ! -f "${motus_bwa_index}" ]; then
@@ -353,6 +362,7 @@ preflight_motus_alignment() {
 
     make_sequence_subset "${read_file}" "${subset_file}"
 
+    checkpoint "${sample}: mOTUs BWA/samtools preflight started"
     echo "Testing mOTUs BWA/samtools alignment on a small read subset:"
     echo "  bwa mem -a -t ${threads} ${motus_bwa_index} ${subset_file}"
 
@@ -412,6 +422,7 @@ preflight_motus_alignment() {
     fi
 
     rm -f "${subset_file}" "${preflight_sam}" "${preflight_bam}"
+    checkpoint "${sample}: mOTUs BWA/samtools preflight done"
 }
 
 run_motus_profile() {
@@ -427,6 +438,7 @@ run_motus_profile() {
 
     preflight_motus_alignment "${sample}" "$@"
 
+    checkpoint "${sample}: mOTUs profile started"
     motus profile \
         "$@" \
         -n "${sample}" \
@@ -435,6 +447,7 @@ run_motus_profile() {
         -g "${marker_genes}" \
         -l "${alignment_length}" \
         -y "${counting_mode}"
+    checkpoint "${sample}: mOTUs profile done"
 
     profile_files+=("${profile}")
 
@@ -504,8 +517,7 @@ if [ "${mode}" = "paired" ]; then
                 trimmed_fwd="${fastp_trim_dir}/${sample}.R1.fastp.fastq"
                 trimmed_rev="${fastp_trim_dir}/${sample}.R2.fastp.fastq"
 
-                echo
-                echo "Trimming adapters/low-quality bases with fastp for sample: ${sample}"
+                checkpoint "${sample}: fastp trimming started"
                 fastp \
                     -i "${motus_fwd}" \
                     -I "${motus_rev}" \
@@ -515,6 +527,7 @@ if [ "${mode}" = "paired" ]; then
                     --thread "${threads}" \
                     --html "${fastp_report_dir}/${sample}.fastp.html" \
                     --json "${fastp_report_dir}/${sample}.fastp.json"
+                checkpoint "${sample}: fastp trimming done"
 
                 motus_fwd="${trimmed_fwd}"
                 motus_rev="${trimmed_rev}"
@@ -547,14 +560,14 @@ else
             if is_fastq_file "${motus_file}"; then
                 trimmed_file="${fastp_trim_dir}/${sample}.fastp.fastq"
 
-                echo
-                echo "Trimming adapters/low-quality bases with fastp for sample: ${sample}"
+                checkpoint "${sample}: fastp trimming started"
                 fastp \
                     -i "${motus_file}" \
                     -o "${trimmed_file}" \
                     --thread "${threads}" \
                     --html "${fastp_report_dir}/${sample}.fastp.html" \
                     --json "${fastp_report_dir}/${sample}.fastp.json"
+                checkpoint "${sample}: fastp trimming done"
 
                 motus_file="${trimmed_file}"
             else
@@ -566,10 +579,14 @@ else
     done
 fi
 
+checkpoint "mOTUs profile merge started"
 merge_profiles "${profile_matrix}" "${profile_files[@]}"
+checkpoint "mOTUs profile merge done"
 
 if [ "${#relab_files[@]}" -gt 0 ]; then
+    checkpoint "mOTUs relative-abundance profile merge started"
     merge_profiles "${relative_matrix}" "${relab_files[@]}"
+    checkpoint "mOTUs relative-abundance profile merge done"
 else
     echo "mOTUs did not produce .relab files; copying the merged profile to ${relative_matrix}."
     cp "${profile_matrix}" "${relative_matrix}"
@@ -578,8 +595,11 @@ fi
 cp "${profile_matrix}" "${outdir}/${profile_matrix}"
 cp "${relative_matrix}" "${outdir}/${relative_matrix}"
 rm -rf "${fastp_trim_dir}"
+checkpoint "Compressing mOTUs fastp reports"
 tar -czf "${fastp_report_archive}" "${fastp_report_dir}"
+checkpoint "Compressing mOTUs results archive"
 tar -czf "${results_archive}" "${outdir}"
+checkpoint "mOTUs archives ready"
 
 echo
 echo "mOTUs finished."

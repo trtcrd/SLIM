@@ -2,6 +2,10 @@
 
 # this script will run the ashure pipeline
 
+checkpoint() {
+    echo
+    echo "== checkpoint == $*"
+}
 
 while getopts f:p:m:M:d:s:t:T:N:i:C:c:o: flag
 do
@@ -39,10 +43,13 @@ export PATH=$PATH/app/lib/msi/bin/:/app/lib/ASHURE/spoa/build/bin/
 # export paths to ashure
 export PATH=$PATH/app/lib/ASHURE/src/:
 
+checkpoint "ASHURE conda environment activation started"
 source activate ashure
+checkpoint "ASHURE conda environment activation done"
 
 cd ${directory}
 
+checkpoint "ASHURE primer/config preparation started"
 primer_f_name=$(sed -n '1p' ${primers})
 primer_f=$(sed -n '2p' ${primers})
 primer_r_name=$(sed -n '3p' ${primers})
@@ -110,10 +117,15 @@ cat <<EOF > "$config_file"
   "subcommand": "run"
 }
 EOF
+checkpoint "ASHURE primer/config preparation done"
 
 mkdir -p fastq_dir
+checkpoint "ASHURE input FASTQ staging started"
 cp ${fastq_files} fastq_dir/.
+checkpoint "ASHURE input FASTQ staging done"
+checkpoint "ASHURE run started"
 python3 /app/lib/ASHURE/src/ashure.py run -fq fastq_dir/* -c ${config_file} 
+checkpoint "ASHURE run done"
 
 exit 0
 # S1.1 Pseudo reference database generation

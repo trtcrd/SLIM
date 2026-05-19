@@ -14,6 +14,11 @@ reads_pattern=""
 fwd_pattern=""
 rev_pattern=""
 
+checkpoint() {
+    echo
+    echo "== checkpoint == $*"
+}
+
 while getopts i:s:1:2:t:m:d:c:l:r:T:M:f:o:O:a: flag
 do
     case "${flag}" in
@@ -66,6 +71,7 @@ if ! ls "${kraken_db}/database${read_length}mers."* >/dev/null 2>&1; then
     echo "Choose another Bracken read length or rebuild/add the Bracken database files."
     exit 1
 fi
+checkpoint "Kraken2/Bracken database validation done"
 
 outdir="kraken2_bracken"
 rm -rf "${outdir}"
@@ -130,6 +136,7 @@ run_one_sample() {
     echo "Kraken2 input files:"
     printf '  %s\n' "$@"
 
+    checkpoint "${sample}: Kraken2 classification started"
     kraken2 \
         --db "${kraken_db}" \
         --threads "${threads}" \
@@ -139,7 +146,9 @@ run_one_sample() {
         --output "${output}" \
         "${kraken_options[@]}" \
         "$@"
+    checkpoint "${sample}: Kraken2 classification done"
 
+    checkpoint "${sample}: Bracken abundance estimation started"
     bracken \
         -d "${kraken_db}" \
         -i "${report}" \
@@ -148,6 +157,7 @@ run_one_sample() {
         -r "${read_length}" \
         -l "${tax_level}" \
         -t "${bracken_threshold}"
+    checkpoint "${sample}: Bracken abundance estimation done"
 }
 
 shopt -s nullglob
@@ -188,8 +198,7 @@ if [ "${mode}" = "paired" ]; then
                 trimmed_fwd="${fastp_trim_dir}/${sample}.R1.fastp.fastq.gz"
                 trimmed_rev="${fastp_trim_dir}/${sample}.R2.fastp.fastq.gz"
 
-                echo
-                echo "Trimming adapters/low-quality bases with fastp for sample: ${sample}"
+                checkpoint "${sample}: fastp trimming started"
                 fastp \
                     -i "${kraken_fwd}" \
                     -I "${kraken_rev}" \
@@ -199,6 +208,7 @@ if [ "${mode}" = "paired" ]; then
                     --thread "${threads}" \
                     --html "${fastp_report_dir}/${sample}.fastp.html" \
                     --json "${fastp_report_dir}/${sample}.fastp.json"
+                checkpoint "${sample}: fastp trimming done"
 
                 kraken_fwd="${trimmed_fwd}"
                 kraken_rev="${trimmed_rev}"
@@ -230,14 +240,14 @@ else
             if is_fastq_file "${kraken_file}"; then
                 trimmed_file="${fastp_trim_dir}/${sample}.fastp.fastq.gz"
 
-                echo
-                echo "Trimming adapters/low-quality bases with fastp for sample: ${sample}"
+                checkpoint "${sample}: fastp trimming started"
                 fastp \
                     -i "${kraken_file}" \
                     -o "${trimmed_file}" \
                     --thread "${threads}" \
                     --html "${fastp_report_dir}/${sample}.fastp.html" \
                     --json "${fastp_report_dir}/${sample}.fastp.json"
+                checkpoint "${sample}: fastp trimming done"
 
                 kraken_file="${trimmed_file}"
             else
@@ -249,6 +259,7 @@ else
     done
 fi
 
+checkpoint "Building Kraken2/Bracken long table and matrices"
 long_table="${outdir}/bracken_long.${tax_level}.tsv"
 taxa_table="${outdir}/taxa.${tax_level}.tsv"
 
@@ -286,11 +297,14 @@ write_matrix() {
 
 write_matrix 5 "${abundance_matrix}"
 write_matrix 6 "${relative_abundance_matrix}"
+checkpoint "Kraken2/Bracken matrices ready"
 
 cp "${abundance_matrix}" "${outdir}/${abundance_matrix}"
 cp "${relative_abundance_matrix}" "${outdir}/${relative_abundance_matrix}"
 rm -rf "${fastp_trim_dir}"
+checkpoint "Compressing Kraken2/Bracken results archive"
 tar -czf "${results_archive}" "${outdir}"
+checkpoint "Kraken2/Bracken results archive ready"
 
 echo
 echo "Kraken2/Bracken finished."

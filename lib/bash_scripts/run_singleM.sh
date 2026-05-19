@@ -6,6 +6,11 @@ level="species"
 fastp_trim="yes"
 fastp_report_archive="singleM.fastp_reports.tar.gz"
 
+checkpoint() {
+    echo
+    echo "== checkpoint == $*"
+}
+
 while getopts i:1:2:t:p:O:a:q:f: flag
 do
     case "${flag}" in
@@ -71,6 +76,7 @@ printf '  %s\n' "${fwd_files[@]}"
 
 echo "Reverse files:"
 printf '  %s\n' "${rev_files[@]}"
+checkpoint "SingleM input validation done"
 
 fastp_report_dir="singleM_fastp_reports"
 fastp_trim_dir="singleM_fastp_trimmed"
@@ -111,8 +117,7 @@ if [ "${fastp_trim}" = "yes" ]; then
         trimmed_fwd="${fastp_trim_dir}/${sample}.R1.fastp.fastq.gz"
         trimmed_rev="${fastp_trim_dir}/${sample}.R2.fastp.fastq.gz"
 
-        echo
-        echo "Trimming adapters/low-quality bases with fastp for sample: ${sample}"
+        checkpoint "${sample}: fastp trimming started"
         fastp \
             -i "${fwd_files[$idx]}" \
             -I "${rev_files[$idx]}" \
@@ -122,6 +127,7 @@ if [ "${fastp_trim}" = "yes" ]; then
             --thread "${threads}" \
             --html "${fastp_report_dir}/${sample}.fastp.html" \
             --json "${fastp_report_dir}/${sample}.fastp.json"
+        checkpoint "${sample}: fastp trimming done"
 
         singlem_fwd_files+=("${trimmed_fwd}")
         singlem_rev_files+=("${trimmed_rev}")
@@ -132,6 +138,7 @@ else
     echo "fastp trimming was disabled for this SingleM run." > "${fastp_report_dir}/fastp_skipped.txt"
 fi
 
+checkpoint "SingleM pipe started"
 singlem pipe \
     -1 "${singlem_fwd_files[@]}" \
     -2 "${singlem_rev_files[@]}" \
@@ -139,16 +146,23 @@ singlem pipe \
     --taxonomic-profile "${profile}" \
     --otu-table "${otu_table}" \
     --threads "${threads}"
+checkpoint "SingleM pipe done"
 
 relative_prefix="singleM.relative_abundance"
 
+checkpoint "SingleM relative-abundance summarise started"
 singlem summarise \
     --input-taxonomic-profiles "${profile}" \
     --metapackage "${singlem_metapackage}" \
     --output-species-by-site-relative-abundance-prefix "${relative_prefix}"
+checkpoint "SingleM relative-abundance summarise done"
 
+checkpoint "Compressing SingleM relative-abundance tables"
 tar -czf "${relative_abundance_archive}" ${relative_prefix}-*.tsv
+checkpoint "SingleM relative-abundance archive ready"
+checkpoint "Compressing SingleM fastp reports"
 tar -czf "${fastp_report_archive}" "${fastp_report_dir}"
+checkpoint "SingleM fastp reports archive ready"
 rm -rf "${fastp_trim_dir}" "${fastp_report_dir}"
 
 

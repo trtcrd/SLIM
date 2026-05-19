@@ -55,6 +55,17 @@ The mOTUs module is another shotgun metagenomics profiler. Its marker-gene datab
 
 The database is stored under `lib/mOTUs/db/` and mounted into the container at runtime. The mOTUs module can also trim FASTQ files with fastp before profiling; this option is enabled by default.
 
+Experimental ancient-DNA modules are also available. A practical end-to-end workflow is:
+
+```text
+kraken2-bracken
+-> targeted-reference-builder
+-> map-to-targeted-reference
+-> metaDMG
+```
+
+This workflow uses Kraken2/Bracken taxids to download a small targeted RefSeq reference, maps reads with BWA, adds `MD:Z` tags with samtools, and estimates DNA damage with metaDMG-cpp.
+
 
 As soon as podman is installed and running and the SLIM archive downloaded, it can be deployed by using the two scripts `get_dependencies_slim_v1.0.0.sh` and `start_slim_v1.0.0.sh`.
 * `get_dependencies_slim_v1.0.0.sh` fetches all the bioinformatics tools needed from their respective repositories.

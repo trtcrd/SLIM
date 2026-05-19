@@ -2,6 +2,11 @@
 
 # This script runs the MSI pipeline for one primer set at a time.
 
+checkpoint() {
+    echo
+    echo "== checkpoint == $*"
+}
+
 while getopts i:y:t:o:p:C:a:A:m:M:q:x:X:b:c: flag
 do
     case "${flag}" in
@@ -38,6 +43,7 @@ echo "output_sufix: ${output_sufix}"
 # Load MSI runtime environment.
 export MSI_DIR=/app/lib/msi
 
+checkpoint "MSI runtime environment setup started"
 if [ -f "${MSI_DIR}/msi_env.sh" ]; then
     source "${MSI_DIR}/msi_env.sh"
 fi
@@ -56,6 +62,7 @@ for sitepkg in "${MSI_DIR}"/python/lib/python*/site-packages; do
 done
 
 hash -r
+checkpoint "MSI runtime environment setup done"
 
 cd "${dir}" || exit 1
 
@@ -69,6 +76,7 @@ fi
 
 config_file="${dir}params_file.cfg"
 
+checkpoint "MSI configuration file creation started"
 cat <<EOF > "${config_file}"
 TL_DIR="${dir}input_msi"
 OUT_FOLDER="${dir}"
@@ -90,7 +98,9 @@ CLUST_ALIGNED_THRESHOLD=${clust_aligned_threshold}
 
 blast_refdb="refdb/db"
 EOF
+checkpoint "MSI configuration file creation done"
 
+checkpoint "MSI primer parsing and metadata creation started"
 primer_f=$(sed -n '2p' "${primers}")
 primer_r=$(sed -n '4p' "${primers}")
 
@@ -117,9 +127,11 @@ for file in "${fastq_files[@]}"; do
 
     cp "${file}" "${dir2}${sample_id}.fastq"
 done
+checkpoint "MSI primer parsing and metadata creation done"
 
 mkdir -p input_msi
 
+checkpoint "MSI input FASTQ preparation started"
 for file in "${fastq_files[@]}"; do
     base=$(basename "${file}")
     sample_id="${base%.fastq}"
@@ -128,12 +140,16 @@ for file in "${fastq_files[@]}"; do
     sed -i "s/\t/ /g" "${dir2}${sample_id}.fastq"
     gzip -c "${dir2}${sample_id}.fastq" > "input_msi/${sample_id}/${sample_id}.fastq.gz"
 done
+checkpoint "MSI input FASTQ preparation done"
 
+checkpoint "MSI core pipeline started"
 msi -c "${config_file}" -i "${dir}input_msi"
+checkpoint "MSI core pipeline done"
 
 empty_files=''
 there_are_empty_files='N'
 
+checkpoint "MSI centroid export started"
 for file in "${fastq_files[@]}"; do
     base=$(basename "${file}")
     sample_id="${base%.fastq}"
@@ -148,6 +164,7 @@ for file in "${fastq_files[@]}"; do
         rm -r "${dir}${sample_id}"
     fi
 done
+checkpoint "MSI centroid export done"
 
 if [ "${there_are_empty_files}" == 'Y' ]; then
     echo "The following files are empty: ${empty_files}"

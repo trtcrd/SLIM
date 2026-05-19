@@ -1,0 +1,66 @@
+<p>Input Nanopore FASTQ pattern</p>
+<input type="text" name="fastq" class="input_file_text fastq agregate" value="*.fastq">
+
+<p>Primer FASTA file</p>
+<input type="text" name="primers" class="input_file fasta">
+
+<p>Consensus FASTA</p>
+<span class="output_zone">
+    <input type="text" name="consensus" value="nanopore_consensus.fasta">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<p>Run statistics</p>
+<span class="output_zone">
+    <input type="text" name="stats" value="nanopore_consensus.stats.tsv">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<p>OTU table</p>
+<span class="output_zone">
+    <input type="text" name="otu_table" value="nanopore_consensus.otu_table.tsv">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<p>Full results archive</p>
+<span class="output_zone">
+    <input type="text" name="results_archive" value="nanopore_consensus.results.tar.gz">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<div class="options">
+    <div>
+        <p>Read length filter:</p>
+        <p>
+            Min:
+            <input type="text" name="minlength" class="integer number param_value" value="100">
+            Max:
+            <input type="text" name="maxlength" class="integer number param_value" value="5000">
+        </p>
+    </div>
+
+    <p>
+        VSEARCH maximum expected errors (0 disables this filter):
+        <input type="text" name="maxee" class="number param_value" value="0">
+    </p>
+
+    <p>
+        Trim primers from reads before consensus:
+        <input type="checkbox" name="trim_primers" class="param_value" checked>
+    </p>
+
+    <p>
+        VSEARCH clustering identity:
+        <input type="text" name="cluster_id" class="number param_value" value="0.90">
+    </p>
+
+    <p>
+        Minimum reads per draft consensus:
+        <input type="text" name="min_cluster_size" class="integer number param_value" value="5">
+    </p>
+
+    <p>
+        Medaka model:
+        <input type="text" name="medaka_model" class="param_value" value="auto">
+    </p>
+</div>
