@@ -9,7 +9,7 @@
 
 <p>Quality filtering</p>
 <p>
-    VSEARCH maximum expected error rate:
+    <p>VSEARCH maximum expected error rate:</p>
     <input type="text" name="maxee_rate" class="number param_value" value="0.05">
 </p>
 
@@ -21,11 +21,12 @@
     <input type="text" name="maxlength" class="integer number param_value" value="">
 </p>
 
-<p>Primers fasta file (first sequence forward, second sequence reverse; IUPAC supported)</p>
+<p>Primers fasta file</p>
+<p>(first sequence forward, second sequence reverse; IUPAC supported)</p>
 <input type="text" name="primers" class="input_file fasta">
 
 <p class="nanopore_only">
-    Minimap2 + Racon iterations:
+    Number of minimap2-racon iteration(s)
     <input type="text" name="racon_iterations" class="integer number param_value" value="3">
 </p>
 
