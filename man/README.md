@@ -15,7 +15,6 @@ In these pages you will find tutorials for beginners and programmers, plus detai
 * [Wildcard creator](/man/sections/wildcard_creator.md)
 
 ### Paired-end joiners
-  * [Pandaseq joining](/man/sections/Pandaseq-module.md)
   * [Casper](/man/sections/Casper.md)
   * [Mergepair vsearch](/man/sections/Mergepair-vsearch.md)
   
@@ -25,7 +24,6 @@ In these pages you will find tutorials for beginners and programmers, plus detai
 ### ASVs inference / OTUs clustering
   * [DADA2](/man/sections/DADA2.md)
   * [Clustering vsearch](/man/sections/OTU-vsearch.md)
-  * [SWARM v2](/man/sections/Swarm-module.md)
   * [SWARM v3](/man/sections/SWARM3-Module.md)
   * [OPTICS](/man/sections/OPTICS.md)
 
@@ -38,14 +36,20 @@ In these pages you will find tutorials for beginners and programmers, plus detai
 ### Post-processing
   * [LULU post clustering](/man/sections/LULU-post-clustering-module.md)
 
-### Nanopore pipeline
+### Nanopore/PacBio pipeline
   * [ASHURE](/man/sections/ASHURE.md)
   * [MSI](/man/sections/MSI.md)
+  * [isONclust-for-Nanopore-PacBio](/man/sections/isONclust-for-Nanopore-PacBio.md)
 
 ### Shotgun metagenomics
   * [SingleM](/man/sections/SingleM.md)
   * [Kraken2-Bracken](/man/sections/Kraken2-Bracken.md)
   * [mOTUs](/man/sections/mOTUs.md)
+
+### Ancient DNA
+  * [Targeted reference builder](/man/sections/Targeted-reference-builder.md)
+  * [Map to targeted reference](/man/sections/Map-to-targeted-reference.md)
+  * [metaDMG](/man/sections/metaDMG.md)
 
 ### Utils
   * [Dereplication](/man/sections/Fasta-dereplication.md)

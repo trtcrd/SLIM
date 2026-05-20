@@ -304,18 +304,11 @@ RUN conda create --solver=classic -n motus -y \
 
 ENV PATH=/root/miniforge3/envs/motus/bin:$PATH
 
-# ----- install Nanopore consensus tools ----- #
-# Kept near the end so adding/revising this modern Nanopore amplicon module
+# ----- install isONclust Nanopore/PacBio tools ----- #
+# Kept near the end so adding/revising this modern long-read amplicon module
 # does not invalidate the older amplicon and shotgun build layers.
-# Default to the CPU PyTorch build of Medaka unless CUDA is visible during
-# the image build. Use
-#   --build-arg SLIM_MEDAKA_BACKEND=gpu
-# to force the CUDA-capable PyTorch/Medaka stack for NVIDIA GPU hosts, or
-#   --build-arg SLIM_MEDAKA_BACKEND=cpu
-# to force CPU-only.
-ARG SLIM_MEDAKA_BACKEND=auto
 RUN if command -v mamba >/dev/null 2>&1; then \
-        mamba create -n nanopore-consensus -y \
+        mamba create -n isonclust-nanopore-pacbio -y \
             -c conda-forge \
             -c bioconda \
             --override-channels \
@@ -324,9 +317,10 @@ RUN if command -v mamba >/dev/null 2>&1; then \
             cutadapt \
             samtools \
             htslib \
+            rust \
             pip; \
     else \
-        CONDA_NO_PLUGINS=true conda create --solver=classic -n nanopore-consensus -y \
+        CONDA_NO_PLUGINS=true conda create --solver=classic -n isonclust-nanopore-pacbio -y \
             -c conda-forge \
             -c bioconda \
             --override-channels \
@@ -335,29 +329,41 @@ RUN if command -v mamba >/dev/null 2>&1; then \
             cutadapt \
             samtools \
             htslib \
+            rust \
             pip; \
     fi && \
-    if [ "${SLIM_MEDAKA_BACKEND}" = "gpu" ] || { [ "${SLIM_MEDAKA_BACKEND}" = "auto" ] && { command -v nvidia-smi >/dev/null 2>&1 || [ -d /usr/local/cuda ]; }; }; then \
-        echo "Installing CUDA-capable Medaka/PyTorch stack."; \
-        conda run -n nanopore-consensus python -m pip install --no-cache-dir medaka; \
-    else \
-        echo "Installing CPU-only Medaka/PyTorch stack."; \
-        conda run -n nanopore-consensus python -m pip install --no-cache-dir medaka --extra-index-url https://download.pytorch.org/whl/cpu; \
-    fi && \
-    conda run -n nanopore-consensus python -c "import torch; print('Medaka PyTorch CUDA available:', torch.cuda.is_available())" && \
+    conda run -n isonclust-nanopore-pacbio cargo install isONclust3 --root /root/miniforge3/envs/isonclust-nanopore-pacbio && \
     conda clean -afy
 
-ENV PATH=/root/miniforge3/envs/nanopore-consensus/bin:$PATH
+ENV PATH=/root/miniforge3/envs/isonclust-nanopore-pacbio/bin:$PATH
+
+# Reuse the SPOA executable built for ASHURE, but install it into this module's
+# environment too so the isONclust-for-Nanopore-PacBio runner has a single tool
+# path for minimap2, cutadapt, isONclust3, Racon, and SPOA.
+RUN install -m 0755 /app/lib/ASHURE/spoa/build/bin/spoa /root/miniforge3/envs/isonclust-nanopore-pacbio/bin/spoa && \
+    /root/miniforge3/envs/isonclust-nanopore-pacbio/bin/spoa --version
+
+# Build Racon from source instead of using the bioconda binary. Some older
+# deployment CPUs crash with exit code 132 on the prebuilt Racon package.
+RUN git clone --recursive --branch 1.5.0 https://github.com/lbcb-sci/racon.git /tmp/racon && \
+    cmake -S /tmp/racon -B /tmp/racon/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/root/miniforge3/envs/isonclust-nanopore-pacbio \
+        -DCMAKE_C_COMPILER=/usr/bin/gcc \
+        -DCMAKE_CXX_COMPILER=/usr/bin/g++ \
+        -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG" \
+        -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG" \
+        -Dracon_enable_cuda=OFF && \
+    cmake --build /tmp/racon/build --parallel $(nproc) && \
+    install -m 0755 /tmp/racon/build/bin/racon /root/miniforge3/envs/isonclust-nanopore-pacbio/bin/racon && \
+    /root/miniforge3/envs/isonclust-nanopore-pacbio/bin/racon --version && \
+    rm -rf /tmp/racon
 
 # ----- copy python_scripts -----
 COPY lib/python_scripts /app/lib/python_scripts
 
 # ----- copy R_scripts -----
 COPY lib/R_scripts /app/lib/R_scripts
-
-# ----- copy bash_scripts -----
-COPY lib/bash_scripts /app/lib/bash_scripts
-RUN chmod +x /app/lib/bash_scripts/*
 
 # updates on biopython
 RUN python3 -m pip install --no-cache-dir biopython --upgrade
@@ -382,6 +388,10 @@ COPY lib/papa/papaparse.js /app/www/js/papaparse.js
 
 # use browserify to create the bundle.js file
 # RUN browserify /app/www/js/upload_SRA.js -o /app/www/js/bundle.js
+
+# ----- copy bash_scripts -----
+COPY lib/bash_scripts /app/lib/bash_scripts
+RUN chmod +x /app/lib/bash_scripts/*
 
 # prepare data folder
 RUN mkdir /app/data

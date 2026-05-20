@@ -178,6 +178,39 @@ CTT
 
 # Analyse your data
 
+## Shotgun metagenomics
+
+SLIM now includes several modules for shotgun metagenomic taxonomic profiling, alongside the original metabarcoding workflows. These modules accept single-end, already-merged, or paired-end FASTQ files depending on the tool. For multiple samples, create file groups with the `wildcard-creator` module, then use those wildcard groups as inputs.
+
+The currently integrated shotgun taxonomic profilers are:
+
+* [Kraken2-Bracken](man/sections/Kraken2-Bracken.md): fast k-mer/minimizer classification with Kraken2, followed by Bracken abundance estimation at a selected taxonomic rank.
+* [mOTUs](man/sections/mOTUs.md): marker-gene profiling with mOTUs v4, useful for prokaryotic community profiling based on universal marker genes.
+* [singleM](man/sections/SingleM.md): single-copy-marker profiling, mainly for bacterial and archaeal shotgun metagenomes.
+
+SLIM also includes experimental ancient-DNA modules that can be chained after shotgun profiling:
+
+```text
+kraken2-bracken
+-> targeted-reference-builder
+-> map-to-targeted-reference
+-> metaDMG
+```
+
+This workflow uses taxa detected by Kraken2/Bracken to build a smaller targeted reference set, maps reads with BWA, adds `MD:Z` tags with samtools, and estimates DNA damage patterns with [metaDMG](man/sections/metaDMG.md). It is intended for ancient-DNA authentication, not as a taxonomic profiler by itself.
+
+### Choosing a shotgun profiler
+
+| Feature | Kraken2-Bracken | mOTUs | singleM |
+| --- | --- | --- | --- |
+| Primary method | k-mer/minimizer matching against a whole-genome database. | Nucleotide mapping to universal marker genes. | Protein-space search against conserved single-copy marker genes. |
+| Main output unit | Bracken-estimated read counts and relative abundance at one selected taxonomic rank. | Marker-gene-normalized mOTU abundance profiles. | Marker-gene OTU/profile outputs and relative-abundance summaries. |
+| Database dependence | Very dependent on the chosen Kraken2 database. Reads without sufficient database evidence remain unclassified or are assigned conservatively higher in the taxonomy. | Less dependent on exact whole-genome matches, but still limited to marker genes represented in the mOTUs database. | Designed to detect microbial marker-gene lineages, including novel OTUs, but mainly for bacteria and archaea with the default metapackage. |
+| Best used for | Fast broad screening, especially with PlusPF databases for bacteria, archaea, viruses, plasmids, human, protozoa, and fungi. | Prokaryotic species-level or mOTU-level profiling when marker-gene precision is preferred over broad whole-genome screening. | Bacterial/archaeal community profiling and microbial novelty estimates from conserved marker genes. |
+| Important limitations | Results follow the database content. PlusPF does not include plants by default; use a custom database for other targets. Bracken requires database files built for the selected read length. | Requires enough marker-gene signal and can be memory intensive because mOTUs v4 maps with BWA against a large marker database. | Not intended as a broad eukaryotic, fungal, viral, or plasmid classifier with the default SLIM metapackage. |
+
+For general exploratory shotgun data, `kraken2-bracken` is usually the fastest first-pass screen. For microbial community profiling where marker genes are more appropriate, compare `mOTUs` and `singleM`. For ancient DNA, keep preprocessing permissive, inspect negative controls, and treat taxonomic calls as candidates to authenticate with mapping and damage analysis rather than final proof.
+
 ## Metabarcoding
 
 Usually, a typical Metabarcoding workflow would include:

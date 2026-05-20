@@ -1,0 +1,80 @@
+<p>Input fastq files</p>
+<input type="text" name="fastq" class="input_file_text fastq fq agregate" value="*.fastq">
+
+<p>Sequencing platform</p>
+<p>
+    <label><input type="radio" name="platform" class="param_value platform_selector" value="nanopore" checked> Nanopore</label>
+    <label><input type="radio" name="platform" class="param_value platform_selector" value="pacbio"> PacBio</label>
+</p>
+
+<p>Quality filtering</p>
+<p>
+    VSEARCH maximum expected error rate:
+    <input type="text" name="maxee_rate" class="number param_value" value="0.05">
+</p>
+
+<p>Length filtering</p>
+<p>
+    Min:
+    <input type="text" name="minlength" class="integer number param_value" value="">
+    Max:
+    <input type="text" name="maxlength" class="integer number param_value" value="">
+</p>
+
+<p>Primers fasta file (first sequence forward, second sequence reverse; IUPAC supported)</p>
+<input type="text" name="primers" class="input_file fasta">
+
+<p class="nanopore_only">
+    Minimap2 + Racon iterations:
+    <input type="text" name="racon_iterations" class="integer number param_value" value="3">
+</p>
+
+<p>OTU table</p>
+<span class="output_zone">
+    <input type="text" name="otu_table" value="isonclust_nanopore_pacbio.otu_table.tsv">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<p>OTUs representative sequences</p>
+<span class="output_zone">
+    <input type="text" name="consensus" value="isonclust_nanopore_pacbio.representatives.fasta">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<p>Run summary statistics</p>
+<span class="output_zone">
+    <input type="text" name="stats" value="isonclust_nanopore_pacbio.stats.tsv">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<p>Full results archive</p>
+<span class="output_zone">
+    <input type="text" name="results_archive" value="isonclust_nanopore_pacbio.results.tar.gz">
+    <a href="" download><img src="/imgs/download.png" class="download"></a>
+</span>
+
+<div class="options">
+    <p>
+        Primer max error rate:
+        <input type="text" name="primer_error_rate" class="number param_value" value="0.20">
+    </p>
+
+    <p>
+        Minimum reads per retained isONclust3 cluster:
+        <input type="text" name="min_cluster_size" class="integer number param_value" value="5">
+    </p>
+
+    <p class="pacbio_only">SPOA scoring:</p>
+    <p class="pacbio_only">
+        Match:
+        <input type="text" name="spoa_match" class="integer number param_value platform_default" value="5">
+        Mismatch:
+        <input type="text" name="spoa_mismatch" class="integer number param_value platform_default" value="-4">
+    </p>
+    <p class="pacbio_only">
+        Gap open:
+        <input type="text" name="spoa_gap_open" class="integer number param_value platform_default" value="-5">
+        Gap extend:
+        <input type="text" name="spoa_gap_extend" class="integer number param_value platform_default" value="-1">
+    </p>
+</div>

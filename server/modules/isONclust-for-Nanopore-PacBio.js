@@ -1,50 +1,58 @@
 const exec = require('child_process').spawn;
 const fs = require('fs');
 
-exports.name = 'nanopore-consensus';
+exports.name = 'isONclust-for-Nanopore-PacBio';
 exports.multicore = true;
-exports.category = '07. Nanopore pipelines';
+exports.category = '07. Nanopore/PacBio pipelines';
 
 exports.run = function (os, config, callback) {
     const token = os.token;
     const directory = '/app/data/' + token + '/';
-    const params = config.params.params;
+    const params = config.params.params || {};
+    const platform = (params.platform || 'nanopore').toLowerCase();
+    const maxExpectedErrorRate = params.maxee_rate || (platform === 'pacbio' ? '0.01' : '0.05');
+    const minLength = params.minlength || '';
+    const maxLength = params.maxlength || '';
     const primerErrorRate = params.primer_error_rate || '0.20';
-    const medakaModel = params.medaka_model || 'auto';
+    const minClusterSize = params.min_cluster_size || '5';
+    const raconIterations = params.racon_iterations || '3';
+    const spoaMatch = params.spoa_match || (platform === 'pacbio' ? '1' : '5');
+    const spoaMismatch = params.spoa_mismatch || (platform === 'pacbio' ? '-8' : '-4');
+    const spoaGapOpen = params.spoa_gap_open || (platform === 'pacbio' ? '-6' : '-5');
+    const spoaGapExtend = params.spoa_gap_extend || (platform === 'pacbio' ? '-2' : '-1');
 
     const options = [
         '-i', directory,
         '-y', config.params.inputs.fastq,
         '-p', config.params.inputs.primers || '',
         '-t', os.cores,
-        '-m', params.minlength,
-        '-M', params.maxlength,
-        '-e', params.maxee,
-        '-r', params.trim_primers ? 'yes' : 'no',
+        '-P', platform,
+        '-q', maxExpectedErrorRate,
+        '-m', minLength,
+        '-M', maxLength,
         '-E', primerErrorRate,
-        '-u', params.discard_untrimmed ? 'yes' : 'no',
-        '-G', params.pool_reads === false ? 'no' : 'yes',
-        '-P', params.polish_medaka === false ? 'no' : 'yes',
-        '-F', params.allow_medaka_fallback === false ? 'no' : 'yes',
-        '-c', params.cluster_id,
-        '-s', params.min_cluster_size,
-        '-k', medakaModel,
-        '-o', config.params.outputs.consensus,
+        '-R', raconIterations,
+        '-s', minClusterSize,
+        '-A', spoaMatch,
+        '-N', spoaMismatch,
+        '-B', spoaGapOpen,
+        '-C', spoaGapExtend,
         '-O', config.params.outputs.otu_table,
+        '-o', config.params.outputs.consensus,
         '-S', config.params.outputs.stats,
         '-a', config.params.outputs.results_archive
     ];
 
-    console.log('Running nanopore consensus');
-    console.log('/app/lib/bash_scripts/run_nanopore_consensus.sh', options.join(' '));
+    console.log('Running isONclust-for-Nanopore-PacBio');
+    console.log('/app/lib/bash_scripts/run_isonclust_for_nanopore_pacbio.sh', options.join(' '));
 
     fs.appendFileSync(directory + config.log, '--- Command ---\n');
-    fs.appendFileSync(directory + config.log, 'run_nanopore_consensus ' + options.join(' ') + '\n');
+    fs.appendFileSync(directory + config.log, 'run_isonclust_for_nanopore_pacbio ' + options.join(' ') + '\n');
     fs.appendFileSync(directory + config.log, '--- Exec ---\n');
 
-    const runner = '/app/lib/bash_scripts/run_nanopore_consensus.sh';
+    const runner = '/app/lib/bash_scripts/run_isonclust_for_nanopore_pacbio.sh';
     if (!fs.existsSync(runner)) {
-        const message = runner + ' is missing. Rebuild the image after copying lib/bash_scripts/run_nanopore_consensus.sh.';
+        const message = runner + ' is missing. Rebuild the image after copying lib/bash_scripts/run_isonclust_for_nanopore_pacbio.sh.';
         fs.appendFileSync(directory + config.log, message + '\n');
         callback(os, message);
         return;
@@ -65,7 +73,7 @@ exports.run = function (os, config, callback) {
             callback(os, null);
         } else {
             const logPath = directory + config.log;
-            let message = 'Nanopore consensus terminated with code ' + code;
+            let message = 'isONclust-for-Nanopore-PacBio terminated with code ' + code;
 
             try {
                 const lines = fs.readFileSync(logPath, 'utf8').trim().split(/\r?\n/);
@@ -83,6 +91,6 @@ exports.run = function (os, config, callback) {
 
     child.on('error', function (err) {
         fs.appendFileSync(directory + config.log, err.message + '\n');
-        callback(os, 'Nanopore consensus failed to start: ' + err.message);
+        callback(os, 'isONclust-for-Nanopore-PacBio failed to start: ' + err.message);
     });
 };

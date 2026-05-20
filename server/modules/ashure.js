@@ -6,7 +6,7 @@ const fs = require('fs');
 
 exports.name = 'ashure';
 exports.multicore = true;
-exports.category = '07. Nanopore pipelines';
+exports.category = '07. Nanopore/PacBio pipelines';
 
 exports.run = function (os, config, callback) {
 	let token = os.token;
