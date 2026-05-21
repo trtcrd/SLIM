@@ -1,6 +1,6 @@
-class IsonclustForNanoporePacBioModule extends Module {
+class Isonclust3Module extends Module {
     constructor(params) {
-        super("isONclust-for-Nanopore-PacBio", "/man/sections/isONclust-for-Nanopore-PacBio.md");
+        super("isONclust3", "/man/sections/isONclust3.md");
         this.params = params;
     }
 
@@ -47,17 +47,11 @@ class IsonclustForNanoporePacBioModule extends Module {
         const defaults = {
             nanopore: {
                 maxee_rate: "0.05",
-                spoa_match: "5",
-                spoa_mismatch: "-4",
-                spoa_gap_open: "-5",
-                spoa_gap_extend: "-1"
+                yacrd_min_coverage: "4"
             },
             pacbio: {
                 maxee_rate: "0.01",
-                spoa_match: "1",
-                spoa_mismatch: "-8",
-                spoa_gap_open: "-6",
-                spoa_gap_extend: "-2"
+                yacrd_min_coverage: "3"
             }
         };
 
@@ -112,6 +106,6 @@ class IsonclustForNanoporePacBioModule extends Module {
     }
 }
 
-module_manager.moduleCreators['isONclust-for-Nanopore-PacBio'] = (params) => {
-    return new IsonclustForNanoporePacBioModule(params);
+module_manager.moduleCreators['isONclust3'] = (params) => {
+    return new Isonclust3Module(params);
 };

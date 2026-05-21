@@ -46,13 +46,31 @@ body {
 }
 
 /* ------------------------ Global style ------------------------ */
-input[type="text"] {
+input[type="text"],  
+select {
 	width: 400px;
 	font-family: sans-serif;
     font-size: 14px;
     margin-top: 2px;
     margin-bottom: 25px;
 }
+
+input[type="radio"] {
+    margin-top: 2px;
+    margin-bottom: 25px;
+}
+
+input[type="checkbox"] {
+    margin-top: 2px;
+    margin-bottom: 25px;
+}
+
+#module_list {
+	text-align: left;
+	height: 40;
+	font-size: 14px;
+}
+
 
 .no_vertical_margins {
 	margin-bottom: 0px;
@@ -124,6 +142,12 @@ button {
 }
 
 input[type="text"].integer {
+	width: 80px;
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+}
+
+input[type="text"].number {
 	width: 80px;
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 14px;

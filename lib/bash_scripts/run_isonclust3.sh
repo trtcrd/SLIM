@@ -11,10 +11,9 @@ primer_file=""
 primer_error_rate="0.20"
 primer_trimming="yes"
 racon_iterations="3"
-spoa_match=""
-spoa_mismatch=""
-spoa_gap_open=""
-spoa_gap_extend=""
+yacrd_filtering="no"
+yacrd_min_coverage=""
+yacrd_min_read_coverage="0.4"
 
 checkpoint() {
     echo
@@ -22,10 +21,10 @@ checkpoint() {
 }
 
 usage() {
-    echo "usage: run_isonclust_for_nanopore_pacbio.sh -i dir -y reads_pattern [-p primers.fasta] -t threads -P nanopore|pacbio -q maxee_rate -m min_len -M max_len -E primer_error_rate -T yes|no -R racon_iterations -s min_cluster_size -A spoa_match -N spoa_mismatch -B spoa_gap_open -C spoa_gap_extend -o representatives.fasta -O otu_table.tsv -S stats.tsv -a archive.tar.gz"
+    echo "usage: run_isonclust3.sh -i dir -y reads_pattern [-p primers.fasta] -t threads -P nanopore|pacbio -q maxee_rate -m min_len -M max_len -E primer_error_rate -T yes|no -R racon_iterations -s min_cluster_size -Y yes|no -c yacrd_min_coverage -n yacrd_min_read_coverage -o representatives.fasta -O otu_table.tsv -S stats.tsv -a archive.tar.gz"
 }
 
-while getopts i:y:p:t:m:M:q:E:T:P:R:s:A:N:B:C:o:O:S:a: flag
+while getopts i:y:p:t:m:M:q:E:T:P:R:s:Y:c:n:o:O:S:a: flag
 do
     case "${flag}" in
         i) dir="${OPTARG}";;
@@ -40,10 +39,9 @@ do
         P) platform="${OPTARG}";;
         R) racon_iterations="${OPTARG}";;
         s) min_cluster_size="${OPTARG}";;
-        A) spoa_match="${OPTARG}";;
-        N) spoa_mismatch="${OPTARG}";;
-        B) spoa_gap_open="${OPTARG}";;
-        C) spoa_gap_extend="${OPTARG}";;
+        Y) yacrd_filtering="${OPTARG}";;
+        c) yacrd_min_coverage="${OPTARG}";;
+        n) yacrd_min_read_coverage="${OPTARG}";;
         o) consensus_fasta="${OPTARG}";;
         O) otu_table="${OPTARG}";;
         S) stats_tsv="${OPTARG}";;
@@ -67,25 +65,23 @@ case "${platform}" in
         platform="nanopore"
         isonclust_mode="ont"
         minimap_preset="map-ont"
+        yacrd_minimap_preset="ava-ont"
+        yacrd_minimap_gap="500"
         default_maxee_rate="0.05"
+        default_yacrd_min_coverage="4"
         isonclust_k_label="13"
         isonclust_w_label="21"
-        default_spoa_match="5"
-        default_spoa_mismatch="-4"
-        default_spoa_gap_open="-5"
-        default_spoa_gap_extend="-1"
         ;;
     pacbio|hifi|ccs)
         platform="pacbio"
         isonclust_mode="pacbio"
         minimap_preset="map-hifi"
+        yacrd_minimap_preset="ava-pb"
+        yacrd_minimap_gap="5000"
         default_maxee_rate="0.01"
+        default_yacrd_min_coverage="3"
         isonclust_k_label="15"
         isonclust_w_label="51"
-        default_spoa_match="1"
-        default_spoa_mismatch="-8"
-        default_spoa_gap_open="-6"
-        default_spoa_gap_extend="-2"
         ;;
     *)
         echo "Invalid sequencing platform: ${platform}. Expected nanopore or pacbio."
@@ -94,10 +90,8 @@ case "${platform}" in
 esac
 
 maxee_rate="${maxee_rate:-${default_maxee_rate}}"
-spoa_match="${spoa_match:-${default_spoa_match}}"
-spoa_mismatch="${spoa_mismatch:-${default_spoa_mismatch}}"
-spoa_gap_open="${spoa_gap_open:-${default_spoa_gap_open}}"
-spoa_gap_extend="${spoa_gap_extend:-${default_spoa_gap_extend}}"
+yacrd_min_coverage="${yacrd_min_coverage:-${default_yacrd_min_coverage}}"
+yacrd_min_read_coverage="${yacrd_min_read_coverage:-0.4}"
 
 primer_trimming="$(printf '%s\n' "${primer_trimming}" | tr '[:upper:]' '[:lower:]')"
 case "${primer_trimming}" in
@@ -113,6 +107,20 @@ case "${primer_trimming}" in
         ;;
 esac
 
+yacrd_filtering="$(printf '%s\n' "${yacrd_filtering}" | tr '[:upper:]' '[:lower:]')"
+case "${yacrd_filtering}" in
+    yes|y|true|1|on)
+        yacrd_filtering="yes"
+        ;;
+    no|n|false|0|off)
+        yacrd_filtering="no"
+        ;;
+    *)
+        echo "Invalid YACRD filtering option: ${yacrd_filtering}. Expected yes or no."
+        exit 1
+        ;;
+esac
+
 if ! [[ "${racon_iterations}" =~ ^[0-9]+$ ]]; then
     echo "Racon iterations must be an integer between 1 and 4."
     exit 1
@@ -120,6 +128,16 @@ fi
 
 if [ "${racon_iterations}" -lt 1 ] || [ "${racon_iterations}" -gt 4 ]; then
     echo "Racon iterations must be between 1 and 4."
+    exit 1
+fi
+
+if ! [[ "${yacrd_min_coverage}" =~ ^[0-9]+$ ]]; then
+    echo "YACRD minimum overlap coverage must be a non-negative integer."
+    exit 1
+fi
+
+if ! [[ "${yacrd_min_read_coverage}" =~ ^(0(\.[0-9]+)?|1(\.0+)?)$ ]]; then
+    echo "YACRD minimum covered read fraction must be between 0 and 1."
     exit 1
 fi
 
@@ -149,19 +167,11 @@ if [ -z "${vsearch_bin}" ] || [ ! -x "${vsearch_bin}" ]; then
 fi
 
 required_tools=(minimap2 isONclust3)
+if [ "${yacrd_filtering}" = "yes" ]; then
+    required_tools+=(yacrd)
+fi
 if [ "${platform}" = "nanopore" ]; then
     required_tools+=(racon)
-else
-    spoa_bin="${SPOA_BIN:-$(command -v spoa || true)}"
-    if [ -z "${spoa_bin}" ] || [ ! -x "${spoa_bin}" ]; then
-        spoa_bin="/app/lib/ASHURE/spoa/build/bin/spoa"
-    fi
-
-    if [ -z "${spoa_bin}" ] || [ ! -x "${spoa_bin}" ]; then
-        echo "SPOA was not found. Expected spoa in PATH or /app/lib/ASHURE/spoa/build/bin/spoa."
-        echo "Run get_dependencies_slim_v1.0.0.sh and rebuild the image so ASHURE/SPOA is available."
-        exit 1
-    fi
 fi
 
 for tool in "${required_tools[@]}"; do
@@ -184,9 +194,9 @@ if [ -n "${primer_file}" ] && [ "${primer_trimming}" = "yes" ] && [ -z "${cutada
     exit 1
 fi
 
-outdir="isonclust_nanopore_pacbio"
+outdir="isonclust3_results"
 rm -rf "${outdir}" "${consensus_fasta}" "${otu_table}" "${stats_tsv}" "${results_archive}"
-mkdir -p "${outdir}"/{primer_oriented,primer_trimmed,quality_filtered,length_filtered,chimera_filtered,drafts,spoa,mappings,racon,per_cluster,otu_counts,pooled,isonclust3}
+mkdir -p "${outdir}"/{primer_oriented,primer_trimmed,quality_filtered,length_filtered,chimera_filtered,drafts,mappings,racon,per_cluster,otu_counts,pooled,isonclust3}
 
 preliminary_representatives="${outdir}/preliminary_representatives.fasta"
 : > "${preliminary_representatives}"
@@ -481,10 +491,18 @@ orient_labeled_fasta_by_primers() {
                     print revcomp(seq)
                     reoriented++
                     fallback_reverse++
-                } else {
+                } else if (score_fwd > score_rev) {
                     print annotate_header("reoriented=forward;orientation_source=iupac_fallback")
                     print seq
                     fallback_forward++
+                } else if (score_fwd == 0) {
+                    print annotate_header("reoriented=unoriented;orientation_source=no_primer_match")
+                    print seq
+                    fallback_unoriented++
+                } else {
+                    print annotate_header("reoriented=unoriented;orientation_source=ambiguous_primer_match")
+                    print seq
+                    fallback_ambiguous++
                 }
             }
             total++
@@ -507,6 +525,8 @@ orient_labeled_fasta_by_primers() {
             print "Cutadapt reverse-orientation labels: " (cutadapt_reverse + 0) > "/dev/stderr"
             print "Fallback forward-orientation calls: " (fallback_forward + 0) > "/dev/stderr"
             print "Fallback reverse-orientation calls: " (fallback_reverse + 0) > "/dev/stderr"
+            print "Fallback no-primer-match records kept: " (fallback_unoriented + 0) > "/dev/stderr"
+            print "Fallback ambiguous-primer-match records kept: " (fallback_ambiguous + 0) > "/dev/stderr"
         }
     ' "${input}" > "${output}"
 }
@@ -604,7 +624,7 @@ orient_fasta_by_primers() {
 
     echo "Primer orientation finished for ${label}."
     echo "--- orientation summary ---"
-    grep -E "^(Total reads processed|Reads with adapters|Reads written|FASTA records oriented|Records reverse-complemented|Cutadapt forward-orientation labels|Cutadapt reverse-orientation labels|Fallback forward-orientation calls|Fallback reverse-orientation calls)" "${log_file}" || tail -n 20 "${log_file}" || true
+    grep -E "^(Total reads processed|Reads with adapters|Reads written|FASTA records oriented|Records reverse-complemented|Cutadapt forward-orientation labels|Cutadapt reverse-orientation labels|Fallback forward-orientation calls|Fallback reverse-orientation calls|Fallback no-primer-match records kept|Fallback ambiguous-primer-match records kept)" "${log_file}" || tail -n 20 "${log_file}" || true
     echo "--- end orientation summary ---"
 }
 
@@ -660,92 +680,84 @@ filter_fasta_by_length() {
     fi
 }
 
-fastq_to_fasta() {
-    local input="$1"
-    local output="$2"
-
-    awk '
-        NR % 4 == 1 {
-            header = $0
-            sub(/^@/, ">", header)
-            print header
-            next
-        }
-        NR % 4 == 2 { print }
-    ' "${input}" > "${output}"
-}
-
-extract_fastq_by_ids() {
+skip_yacrd_filter_fastq() {
     local input_fastq="$1"
-    local ids_file="$2"
-    local output_fastq="$3"
-
-    awk '
-        NR == FNR {
-            keep[$1] = 1
-            next
-        }
-        FNR % 4 == 1 {
-            id = $0
-            sub(/^@/, "", id)
-            sub(/[[:space:]].*$/, "", id)
-            keep_record = (id in keep)
-        }
-        keep_record { print }
-    ' "${ids_file}" "${input_fastq}" > "${output_fastq}"
-}
-
-run_uchime_fasta() {
-    local input_fasta="$1"
-    local output_fasta="$2"
+    local output_fastq="$2"
     local label="$3"
-    local allow_empty="${4:-no}"
-    local records
 
-    records="$(count_fasta_records "${input_fasta}")"
-    if [ "${records}" -lt 2 ]; then
-        echo "${label}: fewer than two FASTA records; skipping de novo chimera filtering."
-        cp "${input_fasta}" "${output_fasta}"
-        return
-    fi
-
-    checkpoint "${label}: VSEARCH de novo chimera filtering started"
-    run_vsearch \
-        --uchime_denovo "${input_fasta}" \
-        --nonchimeras "${output_fasta}" \
-        --threads "${threads}"
-    checkpoint "${label}: VSEARCH de novo chimera filtering done"
-
-    if [ ! -s "${output_fasta}" ]; then
-        echo "No non-chimeric records were retained for ${label}."
-        if [ "${allow_empty}" = "yes" ]; then
-            : > "${output_fasta}"
-            return 1
-        fi
-        exit 1
-    fi
+    echo "${label}: YACRD filtering disabled; keeping reads after quality/length filtering."
+    cp "${input_fastq}" "${output_fastq}"
 }
 
-chimera_filter_fastq() {
+yacrd_filter_fastq() {
     local input_fastq="$1"
     local output_fastq="$2"
     local label="$3"
     local allow_empty="${4:-no}"
-    local input_fasta="${outdir}/chimera_filtered/${label}.input.fasta"
-    local nonchimera_fasta="${outdir}/chimera_filtered/${label}.nonchimeras.fasta"
-    local ids_file="${outdir}/chimera_filtered/${label}.nonchimera_ids.txt"
+    local overlap_paf="${outdir}/chimera_filtered/${label}.yacrd_overlaps.paf"
+    local yacrd_report="${outdir}/chimera_filtered/${label}.yacrd"
+    local yacrd_log="${outdir}/chimera_filtered/${label}.yacrd.log"
+    local records
+    local min_records
+    local retained_records
+    local status
 
-    fastq_to_fasta "${input_fastq}" "${input_fasta}"
-    if ! run_uchime_fasta "${input_fasta}" "${nonchimera_fasta}" "${label}" "${allow_empty}"; then
-        : > "${output_fastq}"
-        return 1
+    records="$(count_fastq_reads "${input_fastq}")"
+    min_records=$((yacrd_min_coverage + 1))
+
+    if [ "${records}" -lt 2 ]; then
+        echo "${label}: fewer than two FASTQ reads; skipping YACRD chimera filtering."
+        cp "${input_fastq}" "${output_fastq}"
+        return
     fi
 
-    grep '^>' "${nonchimera_fasta}" | sed 's/^>//; s/[[:space:]].*$//' > "${ids_file}"
-    extract_fastq_by_ids "${input_fastq}" "${ids_file}" "${output_fastq}"
+    if [ "${yacrd_min_coverage}" -gt 0 ] && [ "${records}" -lt "${min_records}" ]; then
+        echo "${label}: ${records} reads is below YACRD minimum inference size (${min_records} reads for -c ${yacrd_min_coverage}); keeping reads unfiltered."
+        cp "${input_fastq}" "${output_fastq}"
+        return
+    fi
 
-    if [ ! -s "${output_fastq}" ]; then
-        echo "No FASTQ reads remained after chimera filtering for ${label}."
+    checkpoint "${label}: minimap2 all-vs-all overlap mapping for YACRD started"
+    echo "minimap2 command: minimap2 -v 1 -x ${yacrd_minimap_preset} -g ${yacrd_minimap_gap} -t ${threads} ${input_fastq} ${input_fastq}"
+    minimap2 -v 1 -x "${yacrd_minimap_preset}" -g "${yacrd_minimap_gap}" -t "${threads}" "${input_fastq}" "${input_fastq}" > "${overlap_paf}"
+    checkpoint "${label}: minimap2 all-vs-all overlap mapping for YACRD done"
+
+    checkpoint "${label}: YACRD chimera filtering started"
+    echo "YACRD command: yacrd -i ${overlap_paf} -o ${yacrd_report} -c ${yacrd_min_coverage} -n ${yacrd_min_read_coverage} filter -i ${input_fastq} -o ${output_fastq}"
+
+    set +e
+    yacrd \
+        -i "${overlap_paf}" \
+        -o "${yacrd_report}" \
+        -c "${yacrd_min_coverage}" \
+        -n "${yacrd_min_read_coverage}" \
+        filter \
+        -i "${input_fastq}" \
+        -o "${output_fastq}" > "${yacrd_log}" 2>&1
+    status=$?
+    set -e
+
+    if [ -s "${yacrd_log}" ]; then
+        cat "${yacrd_log}"
+    fi
+
+    if [ "${status}" -ne 0 ]; then
+        echo "YACRD failed for ${label} with exit code ${status}."
+        exit "${status}"
+    fi
+
+    checkpoint "${label}: YACRD chimera filtering done"
+
+    if [ -s "${yacrd_report}" ]; then
+        echo "YACRD report summary for ${label}:"
+        awk '{ counts[$1] += 1 } END { for (type in counts) print "  " type ": " counts[type] }' "${yacrd_report}" | sort
+    fi
+
+    retained_records="$(count_fastq_reads "${output_fastq}")"
+    echo "${label}: YACRD retained ${retained_records}/${records} reads."
+
+    if [ "${retained_records}" -eq 0 ]; then
+        echo "No FASTQ reads remained after YACRD chimera filtering for ${label}."
         if [ "${allow_empty}" = "yes" ]; then
             : > "${output_fastq}"
             return 1
@@ -761,7 +773,7 @@ append_fastq_with_sample_prefix() {
 
     awk -v sample="${sample}" '
         NR % 4 == 1 {
-            sub(/^@/, "@" sample "_")
+            sub(/^@/, "@" sample "__SLIM_SAMPLE__")
             print
             next
         }
@@ -818,7 +830,7 @@ select_nanopore_racon_seed() {
         echo "Cluster FASTQ: ${input_fastq}"
         echo "Cluster read count: ${read_count}"
         echo "Seed policy: use the first read emitted in the isONclust3 per-cluster FASTQ."
-        echo "Rationale: isONclust3 writes cluster FASTQs from its sorted read order; this is the module-visible isONclust3 representative."
+        echo "Rationale: sample-level YACRD filtering, when enabled, was already applied before pooling and clustering."
     } > "${seed_log}"
 
     select_isonclust3_representative_as_fasta "${input_fastq}" "${output_fasta}" "${label}" "${read_count}" 2>> "${seed_log}"
@@ -827,40 +839,6 @@ select_nanopore_racon_seed() {
 
     if [ ! -s "${output_fasta}" ]; then
         echo "Could not create Nanopore Racon seed draft for ${label} from ${input_fastq}."
-        exit 1
-    fi
-}
-
-run_spoa_consensus() {
-    local cluster_fastq="$1"
-    local output_fasta="$2"
-    local label="$3"
-    local log_file="${outdir}/spoa/${label}.spoa.log"
-    local status
-
-    echo "SPOA command: ${spoa_bin} -m ${spoa_match} -n ${spoa_mismatch} -g ${spoa_gap_open} -e ${spoa_gap_extend} ${cluster_fastq}"
-
-    set +e
-    "${spoa_bin}" \
-        -m "${spoa_match}" \
-        -n "${spoa_mismatch}" \
-        -g "${spoa_gap_open}" \
-        -e "${spoa_gap_extend}" \
-        "${cluster_fastq}" > "${output_fasta}" 2> "${log_file}"
-    status=$?
-    set -e
-
-    if [ -s "${log_file}" ]; then
-        cat "${log_file}"
-    fi
-
-    if [ "${status}" -ne 0 ]; then
-        echo "SPOA failed for ${label} with exit code ${status}."
-        exit "${status}"
-    fi
-
-    if [ ! -s "${output_fasta}" ]; then
-        echo "SPOA finished without creating a non-empty output for ${label}."
         exit 1
     fi
 }
@@ -927,7 +905,6 @@ process_cluster_set() {
     local draft_count_local=0
     local retained_count_local=0
     local cluster_label
-    local spoa_fasta
     local centroid_fasta
     local polished_fasta
 
@@ -943,9 +920,9 @@ process_cluster_set() {
             continue
         fi
 
-        retained_count_local=$((retained_count_local + 1))
         cluster_label="${label}_cluster_${cluster_index}"
         polished_fasta="${outdir}/per_cluster/${cluster_label}.consensus.fasta"
+        retained_count_local=$((retained_count_local + 1))
 
         if [ "${platform}" = "nanopore" ]; then
             centroid_fasta="${outdir}/drafts/${cluster_label}.racon_seed.fasta"
@@ -953,16 +930,22 @@ process_cluster_set() {
             select_nanopore_racon_seed "${cluster_fastq}" "${centroid_fasta}" "${cluster_label}" "${cluster_read_count}"
             checkpoint "${cluster_label}: Nanopore Racon seed selection done"
 
-            checkpoint "${cluster_label}: Racon polishing loop started"
-            run_racon_iterations "${cluster_label}" "${cluster_fastq}" "${centroid_fasta}" "${polished_fasta}"
-            checkpoint "${cluster_label}: Racon polishing loop done"
+            if [ "${cluster_read_count}" -lt 2 ]; then
+                checkpoint "${cluster_label}: Racon polishing skipped for singleton cluster"
+                echo "Cluster ${cluster_label} contains one read; keeping the isONclust3 representative seed as the OTU draft."
+                cp "${centroid_fasta}" "${polished_fasta}"
+            else
+                checkpoint "${cluster_label}: Racon polishing loop started"
+                run_racon_iterations "${cluster_label}" "${cluster_fastq}" "${centroid_fasta}" "${polished_fasta}"
+                checkpoint "${cluster_label}: Racon polishing loop done"
+            fi
             cat "${polished_fasta}" >> "${output_fasta}"
         else
-            spoa_fasta="${outdir}/drafts/${cluster_label}.spoa.fasta"
-            checkpoint "${cluster_label}: SPOA consensus started"
-            run_spoa_consensus "${cluster_fastq}" "${spoa_fasta}" "${cluster_label}"
-            checkpoint "${cluster_label}: SPOA consensus done"
-            cat "${spoa_fasta}" >> "${output_fasta}"
+            centroid_fasta="${outdir}/drafts/${cluster_label}.isonclust3_representative.fasta"
+            checkpoint "${cluster_label}: PacBio isONclust3 representative selection started"
+            select_isonclust3_representative_as_fasta "${cluster_fastq}" "${centroid_fasta}" "${cluster_label}" "${cluster_read_count}"
+            checkpoint "${cluster_label}: PacBio isONclust3 representative selection done"
+            cat "${centroid_fasta}" >> "${output_fasta}"
         fi
     done
 
@@ -1264,28 +1247,32 @@ prepare_sample_reads() {
         return
     fi
 
-    run_fastq_filter "${quality_fastq}" "${length_fastq}" "${sample}" "length"
-    length_reads="$(count_fastq_reads "${length_fastq}")"
-    if [ "${length_reads}" -eq 0 ]; then
-        echo "No reads survived length filtering for sample ${sample}; retaining sample with zero OTU counts."
-        : > "${length_fastq}"
-        register_sample_for_otu_table "${sample}" "${length_fastq}" "${raw_reads}" "${quality_reads}" "0" "0"
-        return
-    fi
-
     if [ "${platform}" = "pacbio" ]; then
         if [ -n "${primer_file}" ] && [ "${primer_trimming}" = "yes" ]; then
-            checkpoint "${sample}: raw HiFi primer trimming started"
-            trim_primers "${length_fastq}" "${primer_trimmed_fastq}" "${sample}.raw_hifi_reads"
-            checkpoint "${sample}: raw HiFi primer trimming done"
+            checkpoint "${sample}: quality-filtered HiFi primer trimming started"
+            trim_primers "${quality_fastq}" "${primer_trimmed_fastq}" "${sample}.quality_filtered_hifi_reads"
+            checkpoint "${sample}: quality-filtered HiFi primer trimming done"
         else
-            cp "${length_fastq}" "${primer_trimmed_fastq}"
+            cp "${quality_fastq}" "${primer_trimmed_fastq}"
         fi
 
-        if ! chimera_filter_fastq "${primer_trimmed_fastq}" "${chimera_fastq}" "${sample}.hifi_reads" "yes"; then
-            echo "No reads remained after chimera filtering for sample ${sample}; retaining sample with zero OTU counts."
-            register_sample_for_otu_table "${sample}" "${chimera_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "0"
+        run_fastq_filter "${primer_trimmed_fastq}" "${length_fastq}" "${sample}" "length"
+        length_reads="$(count_fastq_reads "${length_fastq}")"
+        if [ "${length_reads}" -eq 0 ]; then
+            echo "No reads survived primer-aware length filtering for sample ${sample}; retaining sample with zero OTU counts."
+            : > "${length_fastq}"
+            register_sample_for_otu_table "${sample}" "${length_fastq}" "${raw_reads}" "${quality_reads}" "0" "0"
             return
+        fi
+
+        if [ "${yacrd_filtering}" = "yes" ]; then
+            if ! yacrd_filter_fastq "${length_fastq}" "${chimera_fastq}" "${sample}.hifi_reads" "yes"; then
+                echo "No reads remained after chimera filtering for sample ${sample}; retaining sample with zero OTU counts."
+                register_sample_for_otu_table "${sample}" "${chimera_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "0"
+                return
+            fi
+        else
+            skip_yacrd_filter_fastq "${length_fastq}" "${chimera_fastq}" "${sample}.hifi_reads"
         fi
 
         chimera_reads="$(count_fastq_reads "${chimera_fastq}")"
@@ -1298,20 +1285,56 @@ prepare_sample_reads() {
         selected_fastq="${chimera_fastq}"
         selected_reads="${chimera_reads}"
     else
-        selected_fastq="${length_fastq}"
-        selected_reads="${length_reads}"
+        run_fastq_filter "${quality_fastq}" "${length_fastq}" "${sample}" "length"
+        length_reads="$(count_fastq_reads "${length_fastq}")"
+        if [ "${length_reads}" -eq 0 ]; then
+            echo "No reads survived length filtering for sample ${sample}; retaining sample with zero OTU counts."
+            : > "${length_fastq}"
+            register_sample_for_otu_table "${sample}" "${length_fastq}" "${raw_reads}" "${quality_reads}" "0" "0"
+            return
+        fi
+
+        if [ "${yacrd_filtering}" = "yes" ]; then
+            if ! yacrd_filter_fastq "${length_fastq}" "${chimera_fastq}" "${sample}.nanopore_reads" "yes"; then
+                echo "No reads remained after chimera filtering for sample ${sample}; retaining sample with zero OTU counts."
+                register_sample_for_otu_table "${sample}" "${chimera_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "0"
+                return
+            fi
+        else
+            skip_yacrd_filter_fastq "${length_fastq}" "${chimera_fastq}" "${sample}.nanopore_reads"
+        fi
+
+        chimera_reads="$(count_fastq_reads "${chimera_fastq}")"
+        if [ "${chimera_reads}" -eq 0 ]; then
+            echo "No reads remained after chimera filtering for sample ${sample}; retaining sample with zero OTU counts."
+            register_sample_for_otu_table "${sample}" "${chimera_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "0"
+            return
+        fi
+
+        selected_fastq="${chimera_fastq}"
+        selected_reads="${chimera_reads}"
     fi
 
     register_sample_for_otu_table "${sample}" "${selected_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "${selected_reads}"
 }
 
-checkpoint "isONclust-for-Nanopore-PacBio input validation done"
+checkpoint "isONclust3 input validation done"
 echo "Input FASTQ files:"
 printf '  %s\n' "${read_files[@]}"
 echo "Sequencing platform: ${platform}"
 echo "VSEARCH: ${vsearch_bin}"
 echo "minimap2: $(command -v minimap2)"
 echo "minimap2 preset: ${minimap_preset}"
+echo "YACRD filtering: ${yacrd_filtering}"
+if [ "${yacrd_filtering}" = "yes" ]; then
+    echo "YACRD: $(command -v yacrd)"
+else
+    echo "YACRD: disabled"
+fi
+echo "YACRD minimap2 preset: ${yacrd_minimap_preset}"
+echo "YACRD minimap2 max gap: ${yacrd_minimap_gap}"
+echo "YACRD minimum overlap coverage: ${yacrd_min_coverage}"
+echo "YACRD minimum covered read fraction: ${yacrd_min_read_coverage}"
 echo "isONclust3: $(command -v isONclust3)"
 echo "isONclust3 mode: ${isonclust_mode}"
 echo "isONclust3 implied k: ${isonclust_k_label}"
@@ -1323,12 +1346,11 @@ echo "Maximum read length: ${max_length:-none}"
 echo "Minimum reads per cluster: ${min_cluster_size}"
 echo "Primer trimming: ${primer_trimming}"
 if [ "${platform}" = "nanopore" ]; then
-    echo "Nanopore initial draft: first isONclust3 cluster read used as the Racon seed"
+    echo "Nanopore initial draft: first isONclust3 cluster read used as the Racon seed after optional sample-level YACRD filtering"
     echo "Racon: $(command -v racon)"
     echo "Racon iterations: ${racon_iterations}"
 else
-    echo "SPOA: ${spoa_bin}"
-    echo "SPOA scores: match=${spoa_match}, mismatch=${spoa_mismatch}, gap_open=${spoa_gap_open}, gap_extend=${spoa_gap_extend}"
+    echo "PacBio representative policy: first isONclust3 cluster read is used directly as the OTU representative; no SPOA consensus is run"
 fi
 if [ -n "${primer_file}" ]; then
     load_primers "${primer_file}"
@@ -1380,14 +1402,14 @@ if [ -n "${primer_file}" ]; then
     oriented_representatives="${outdir}/primer_oriented/preliminary_representatives.oriented.fasta"
     primer_trimmed_representatives="${outdir}/primer_trimmed/preliminary_representatives.primer_trimmed.fasta"
 
-    checkpoint "Post-consensus primer orientation started"
+    checkpoint "Post-representative primer orientation started"
     orient_fasta_by_primers "${preliminary_representatives}" "${oriented_representatives}" "${platform}_representatives"
-    checkpoint "Post-consensus primer orientation done"
+    checkpoint "Post-representative primer orientation done"
 
     if [ "${primer_trimming}" = "yes" ]; then
-        checkpoint "Post-consensus primer trimming started"
+        checkpoint "Post-representative primer trimming started"
         trim_primers "${oriented_representatives}" "${primer_trimmed_representatives}" "${platform}_representatives" "no"
-        checkpoint "Post-consensus primer trimming done"
+        checkpoint "Post-representative primer trimming done"
         postprocessed_representatives="${primer_trimmed_representatives}"
     else
         echo "Primer trimming disabled; keeping oriented representative sequences untrimmed."
@@ -1402,9 +1424,7 @@ if [ "${platform}" = "nanopore" ]; then
     filter_fasta_by_length "${postprocessed_representatives}" "${length_filtered_representatives}" "nanopore_polished_consensus"
     checkpoint "Nanopore representative length filtering done"
 
-    nonchimera_representatives="${outdir}/chimera_filtered/preliminary_representatives.nonchimeras.fasta"
-    run_uchime_fasta "${length_filtered_representatives}" "${nonchimera_representatives}" "nanopore_polished_consensus"
-    representatives_for_normalization="${nonchimera_representatives}"
+    representatives_for_normalization="${length_filtered_representatives}"
 fi
 
 checkpoint "Representative FASTA ID normalization started"
@@ -1425,12 +1445,12 @@ checkpoint "Representative FASTA and OTU table ID validation started"
 validate_representatives_and_otu_table "${consensus_fasta}" "${otu_table}"
 checkpoint "Representative FASTA and OTU table ID validation done"
 
-checkpoint "Compressing isONclust-for-Nanopore-PacBio results archive"
+checkpoint "Compressing isONclust3 results archive"
 tar -czf "${results_archive}" "${outdir}" "${consensus_fasta}" "${otu_table}" "${stats_tsv}"
-checkpoint "isONclust-for-Nanopore-PacBio results archive ready"
+checkpoint "isONclust3 results archive ready"
 
 echo
-echo "isONclust-for-Nanopore-PacBio finished."
+echo "isONclust3 finished."
 echo "OTU table: ${otu_table}"
 echo "OTU representative sequences: ${consensus_fasta}"
 echo "Run summary statistics: ${stats_tsv}"

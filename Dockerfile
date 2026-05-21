@@ -304,59 +304,55 @@ RUN conda create --solver=classic -n motus -y \
 
 ENV PATH=/root/miniforge3/envs/motus/bin:$PATH
 
-# ----- install isONclust Nanopore/PacBio tools ----- #
+# ----- install isONclust3 Nanopore/PacBio tools ----- #
 # Kept near the end so adding/revising this modern long-read amplicon module
 # does not invalidate the older amplicon and shotgun build layers.
 RUN if command -v mamba >/dev/null 2>&1; then \
-        mamba create -n isonclust-nanopore-pacbio -y \
+        mamba create -n isonclust3 -y \
             -c conda-forge \
             -c bioconda \
             --override-channels \
             python=3.10 \
             minimap2 \
+            yacrd \
             cutadapt \
             samtools \
             htslib \
             rust \
             pip; \
     else \
-        CONDA_NO_PLUGINS=true conda create --solver=classic -n isonclust-nanopore-pacbio -y \
+        CONDA_NO_PLUGINS=true conda create --solver=classic -n isonclust3 -y \
             -c conda-forge \
             -c bioconda \
             --override-channels \
             python=3.10 \
             minimap2 \
+            yacrd \
             cutadapt \
             samtools \
             htslib \
             rust \
             pip; \
     fi && \
-    conda run -n isonclust-nanopore-pacbio cargo install isONclust3 --root /root/miniforge3/envs/isonclust-nanopore-pacbio && \
+    conda run -n isonclust3 cargo install isONclust3 --root /root/miniforge3/envs/isonclust3 && \
     conda clean -afy
 
-ENV PATH=/root/miniforge3/envs/isonclust-nanopore-pacbio/bin:$PATH
-
-# Reuse the SPOA executable built for ASHURE, but install it into this module's
-# environment too so the isONclust-for-Nanopore-PacBio runner has a single tool
-# path for minimap2, cutadapt, isONclust3, Racon, and SPOA.
-RUN install -m 0755 /app/lib/ASHURE/spoa/build/bin/spoa /root/miniforge3/envs/isonclust-nanopore-pacbio/bin/spoa && \
-    /root/miniforge3/envs/isonclust-nanopore-pacbio/bin/spoa --version
+ENV PATH=/root/miniforge3/envs/isonclust3/bin:$PATH
 
 # Build Racon from source instead of using the bioconda binary. Some older
 # deployment CPUs crash with exit code 132 on the prebuilt Racon package.
 RUN git clone --recursive --branch 1.5.0 https://github.com/lbcb-sci/racon.git /tmp/racon && \
     cmake -S /tmp/racon -B /tmp/racon/build \
         -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_INSTALL_PREFIX=/root/miniforge3/envs/isonclust-nanopore-pacbio \
+        -DCMAKE_INSTALL_PREFIX=/root/miniforge3/envs/isonclust3 \
         -DCMAKE_C_COMPILER=/usr/bin/gcc \
         -DCMAKE_CXX_COMPILER=/usr/bin/g++ \
         -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG" \
         -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG" \
         -Dracon_enable_cuda=OFF && \
     cmake --build /tmp/racon/build --parallel $(nproc) && \
-    install -m 0755 /tmp/racon/build/bin/racon /root/miniforge3/envs/isonclust-nanopore-pacbio/bin/racon && \
-    /root/miniforge3/envs/isonclust-nanopore-pacbio/bin/racon --version && \
+    install -m 0755 /tmp/racon/build/bin/racon /root/miniforge3/envs/isonclust3/bin/racon && \
+    /root/miniforge3/envs/isonclust3/bin/racon --version && \
     rm -rf /tmp/racon
 
 # ----- copy python_scripts -----

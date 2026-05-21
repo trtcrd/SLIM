@@ -22,7 +22,7 @@ MSI	build-time	cloned from https://github.com/adriantich/msi
 fastq_utils	build-time	cloned from https://github.com/adriantich/fastq_utils for MSI
 seqtk	build-time	cloned from https://github.com/lh3/seqtk for MSI
 ASHURE	1.0.0	get_dependencies_slim_v1.0.0.sh
-spoa	4.1.0	bundled with ASHURE build and installed into isONclust-for-Nanopore-PacBio environment
+spoa	4.1.0	bundled with ASHURE build
 SingleM	0.20.3	conda/bioconda pinned
 polars-lts-cpu	build-time	pip-installed replacement for polars in SingleM environment
 Kraken2	build-time	conda/bioconda package in Kraken2-Bracken environment
@@ -30,10 +30,11 @@ Bracken	build-time	conda/bioconda package in Kraken2-Bracken environment
 mOTUs	4.0.4	conda/bioconda package in dedicated conda environment
 fetchMGs	build-time	conda/bioconda dependency of mOTUs
 polars[rtcompat]	build-time	pip-installed compatible Polars runtime in mOTUs environment
-minimap2	build-time	conda/bioconda package in isONclust-for-Nanopore-PacBio environment
-Racon	1.5.0	source-built in isONclust-for-Nanopore-PacBio environment for CPU compatibility
-isONclust3	build-time	cargo-installed Rust package in isONclust-for-Nanopore-PacBio environment
-cutadapt	build-time	conda/bioconda package in isONclust-for-Nanopore-PacBio environment
+minimap2	build-time	conda/bioconda package in isONclust3 environment
+yacrd	build-time	conda/bioconda package in isONclust3 environment
+Racon	1.5.0	source-built in isONclust3 environment for CPU compatibility
+isONclust3	build-time	cargo-installed Rust package in isONclust3 environment
+cutadapt	build-time	conda/bioconda package in isONclust3 environment
 metaDMG	build-time	conda/bioconda package in ancient-DNA environment
 NCBI Datasets CLI	build-time	conda package in ancient-DNA environment
 BWA	build-time	conda/bioconda package in ancient-DNA environment
