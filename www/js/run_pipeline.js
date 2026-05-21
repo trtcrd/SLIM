@@ -17,6 +17,22 @@ var get_mail_value = () => {
 	return mail_area ? mail_area.value.trim() : "";
 };
 
+var get_job_title_value = () => {
+	var job_title_area = document.getElementById('job_title');
+	return job_title_area ? job_title_area.value.trim() : "";
+};
+
+var get_job_title_config_filename = (job_title) => {
+	let safe = String(job_title || "")
+		.trim()
+		.toLowerCase()
+		.replace(/[^a-z0-9._-]+/g, "_")
+		.replace(/^_+|_+$/g, "")
+		.substring(0, 80);
+
+	return safe == "" ? "pipeline.conf" : safe + "_pipeline.conf";
+};
+
 var get_config = () => {
 	var config = {
 		token:exec_token
@@ -25,6 +41,10 @@ var get_config = () => {
 	let mail_value = get_mail_value();
 	if (mail_value != "")
 		config.mail = mail_value;
+
+	let job_title_value = get_job_title_value();
+	if (job_title_value != "")
+		config.job_title = job_title_value;
 
 	for (var idx in module_manager.modules) {
 		var module = module_manager.modules[idx];

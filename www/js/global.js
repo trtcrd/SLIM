@@ -105,6 +105,12 @@ var load_modules = (log) => {
 			mail.value = log.mail;
 	}
 
+	if (log.job_title) {
+		let job_title = document.getElementById('job_title');
+		if (job_title)
+			job_title.value = log.job_title;
+	}
+
 	// For each module in the log file
 	for (let idx in log) {
 		let soft = log[idx];
@@ -231,7 +237,7 @@ down_conf.onclick = () => {
 	var textFile = window.URL.createObjectURL(data);
 	var link = document.createElement('a');
 	link.href = textFile;
-	link.download = "pipeline.conf";
+	link.download = get_job_title_config_filename(conf.job_title);
 	link.click();
 };
 

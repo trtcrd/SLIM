@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const fs = require('fs');
+const path = require('path');
 
 const config = require ('./config.js');
 
@@ -20,6 +21,31 @@ exports.is_configured = () => {
 };
 
 
+
+let safe_title_filename_part = (value) => {
+	return String(value || '')
+		.trim()
+		.toLowerCase()
+		.replace(/[^a-z0-9._-]+/g, '_')
+		.replace(/^_+|_+$/g, '')
+		.substring(0, 80);
+};
+
+let job_label = (token) => {
+	return exports.job_titles[token] || token;
+};
+
+let pipeline_conf_attachment_name = (token) => {
+	let safe = safe_title_filename_part(exports.job_titles[token]);
+	return (safe == '' ? 'pipeline' : safe + '_pipeline') + '.conf';
+};
+
+let pipeline_conf_attachment = (token) => {
+	return {
+		path: '/app/data/' + token + '/pipeline.conf',
+		filename: pipeline_conf_attachment_name(token)
+	};
+};
 
 let send_mail = (token, subject, text, files=[]) => {
 	if (transporter == null) {
@@ -53,15 +79,13 @@ let send_mail = (token, subject, text, files=[]) => {
 	if (files.length > 0) {
 		let attachments = [];
 		for (let idx=0 ; idx<files.length ; idx++) {
-			let name = files[idx];
+			let file = typeof files[idx] == 'string' ? {path: files[idx]} : files[idx];
+			let name = file.path;
 			if (!fs.existsSync(name))
 				continue;
 
-			let short_name = name.split('/');
-			short_name = short_name[short_name.length - 1]
-
 			attachments.push({
-				filename: short_name,
+				filename: file.filename || path.basename(name),
 				path: name
 			});
 		}
@@ -84,16 +108,17 @@ let send_mail = (token, subject, text, files=[]) => {
 
 exports.mails = {};
 exports.urls = {};
+exports.job_titles = {};
 
 
 exports.send_address = (token) => {
 	send_mail(
 		token,
-		'Your job ' + token,
+		'Your job ' + job_label(token),
 		'Here is the link to follow the progress of your pipeline.\n' +
 		exports.urls[token] + '\n\n' +
 		'Note that this is an automatically generated email sent by SLIM\n\n',
-		['/app/data/' + token + '/pipeline.conf', '/app/versions.tsv']
+		[pipeline_conf_attachment(token), '/app/versions.tsv']
 	);
 };
 
@@ -101,21 +126,21 @@ exports.send_address = (token) => {
 exports.send_end_mail = (token) => {
 	send_mail(
 		token,
-		'Your job ' + token + ' is over',
+		'Your job ' + job_label(token) + ' is over',
 		'Your results are available at this address:\n' +
 		exports.urls[token] + '\n\n' +
 		'Your session will automatically be deleted in 24h. Don\'t forget to download your results\n\n' +
-		'You can use the "pipeline.conf" attached to this email to reproduce your pipeline in the future.\n' +
+			'You can use the attached configuration file to reproduce your pipeline in the future.\n' +
 		'The versions of the software you used are indicated in the attached "version.tsv" file.\n\n' +
 		'Note that this is an automatically generated email sent by SLIM\n\n',
-		['/app/data/' + token + '/pipeline.conf', '/app/versions.tsv']
+		[pipeline_conf_attachment(token), '/app/versions.tsv']
 	);
 }
 
 exports.send_crash_email = (token) => {
 	send_mail(
 		token,
-		'Your job ' + token + ' crashed :(',
+		'Your job ' + job_label(token) + ' crashed :(',
 		'Your partial results are available at this address:\n' +
 		exports.urls[token] + '\n' +
 		'Please check all your configuration before another submission.\n\n' +
@@ -127,7 +152,7 @@ exports.send_crash_email = (token) => {
 exports.send_delete_reminder = (token) => {
 	send_mail(
 		token,
-		'Your job ' + token + ' will be deleted in 3 hours',
+		'Your job ' + job_label(token) + ' will be deleted in 3 hours',
 		'Your results are still available at this address for only 3 more hours:\n' +
 		exports.urls[token] + '\n\n' +
 		'Note that this is an automatically generated email sent by SLIM\n\n'

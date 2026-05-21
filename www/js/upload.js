@@ -31,6 +31,12 @@ var clear_upload_processing_interval = () => {
 	}
 };
 
+var set_start_disabled = (disabled) => {
+	let start = document.querySelector('#start');
+	if (start)
+		start.disabled = disabled;
+};
+
 // this will select the files to upload
 document.querySelector("#up_files").onchange = function (event) {
 	var files = event.target.files;
@@ -76,7 +82,7 @@ document.querySelector("#up_submit").onclick = function (event) {
 	}
 
 	set_upload_message('');
-	document.querySelector('#start').disabled = true;
+	set_start_disabled(true);
 	$.ajax({
 		url: '/upload',
 		type: 'POST',
@@ -87,23 +93,23 @@ document.querySelector("#up_submit").onclick = function (event) {
 		
 		success: function(data, textStatus, jqXHR)
 		{
-			clear_upload_processing_interval();
-			if(typeof data.error === 'undefined') {
-				set_upload_message('Done');
-				document.querySelector('#start').disabled = false;
-				file_manager.load_from_server();
-			} else {
-				// Handle errors here
-				set_upload_message('Upload failed: ' + data.error, true);
-				document.querySelector('#start').disabled = false;
-			}
-		},
+				clear_upload_processing_interval();
+				if(typeof data.error === 'undefined') {
+					set_upload_message('Done');
+					set_start_disabled(false);
+					file_manager.load_from_server();
+				} else {
+					// Handle errors here
+					set_upload_message('Upload failed: ' + data.error, true);
+					set_start_disabled(false);
+				}
+			},
 		error: function(jqXHR, textStatus, errorThrown) {
 			// Handle errors here
 			clear_upload_processing_interval();
 			let message = jqXHR.responseText || errorThrown || textStatus || 'Upload failed';
 			set_upload_message('Upload failed: ' + message, true);
-			document.querySelector('#start').disabled = false;
+			set_start_disabled(false);
 		},
 		xhr: function() {
 			// create an XMLHttpRequest
@@ -139,18 +145,18 @@ document.querySelector("#up_submit").onclick = function (event) {
 								// Update the status
 								if (data.length > 0) {
 									$('.progress-bar').html('Processing file(s): ' + data.length + ' remaining');
-								} else {
-									clear_upload_processing_interval();
-									$('.progress-bar').html('Done');
-									document.querySelector('#start').disabled = false;
+									} else {
+										clear_upload_processing_interval();
+										$('.progress-bar').html('Done');
+										set_start_disabled(false);
 
-									file_manager.load_from_server();
-								}
-							}).fail(() => {
-								clear_upload_processing_interval();
-								set_upload_message('Upload processing status is unavailable. The server may be restarting.', true);
-								document.querySelector('#start').disabled = false;
-							})}
+										file_manager.load_from_server();
+									}
+								}).fail(() => {
+									clear_upload_processing_interval();
+									set_upload_message('Upload processing status is unavailable. The server may be restarting.', true);
+									set_start_disabled(false);
+								})}
 							, 1000
 						);
 					}

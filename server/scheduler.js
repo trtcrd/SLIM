@@ -354,8 +354,10 @@ var run_job = (params, callback) => {
 
 	var token = params.token;
 	var mail = params.mail ? String(params.mail).trim() : "";
+	var job_title = params.job_title ? String(params.job_title).trim().replace(/[\r\n]+/g, " ").substring(0, 120) : "";
 	delete params.token;
 	delete params.mail;
+	delete params.job_title;
 
 	if (mail == "Your email address")
 		mail = "";
@@ -379,8 +381,16 @@ var run_job = (params, callback) => {
 	if (mail != "") {
 		mailer.mails[token] = mail;
 		mailer.urls[token] = exports.urls[token];
+		if (job_title != "")
+			mailer.job_titles[token] = job_title;
+		else
+			delete mailer.job_titles[token];
 		console.log(token + ': email recipient registered: ' + mail);
 	} else {
+		if (job_title != "")
+			mailer.job_titles[token] = job_title;
+		else
+			delete mailer.job_titles[token];
 		console.log(token + ': no email recipient provided');
 	}
 
@@ -389,7 +399,10 @@ var run_job = (params, callback) => {
 			clearTimeout(uploads.deletions[token]);
 
 	// Save the conf and return message
-	fs.writeFileSync('/app/data/' + token + '/pipeline.conf', JSON.stringify(params));
+	let saved_params = Object.assign({}, params);
+	if (job_title != "")
+		saved_params.job_title = job_title;
+	fs.writeFileSync('/app/data/' + token + '/pipeline.conf', JSON.stringify(saved_params));
 	console.log(token + ': configuration saved!');
 	mailer.send_address(token);
 

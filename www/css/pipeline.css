@@ -328,6 +328,11 @@ input[type="text"].integer {
 	width: 250px;
 }
 
+#job_title {
+	margin-right: 10px;
+	width: 180px;
+}
+
 #start_area {
 	margin-top: 20px;
 	margin-bottom: 150px;
