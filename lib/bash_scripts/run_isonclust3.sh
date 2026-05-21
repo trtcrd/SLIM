@@ -14,6 +14,10 @@ racon_iterations="3"
 yacrd_filtering="no"
 yacrd_min_coverage=""
 yacrd_min_read_coverage="0.4"
+run_mode="all"
+single_read_file=""
+sample_count=""
+metadata_file_arg=""
 
 checkpoint() {
     echo
@@ -21,10 +25,10 @@ checkpoint() {
 }
 
 usage() {
-    echo "usage: run_isonclust3.sh -i dir -y reads_pattern [-p primers.fasta] -t threads -P nanopore|pacbio -q maxee_rate -m min_len -M max_len -E primer_error_rate -T yes|no -R racon_iterations -s min_cluster_size -Y yes|no -c yacrd_min_coverage -n yacrd_min_read_coverage -o representatives.fasta -O otu_table.tsv -S stats.tsv -a archive.tar.gz"
+    echo "usage: run_isonclust3.sh -i dir -y reads_pattern [-p primers.fasta] -t threads -P nanopore|pacbio -q maxee_rate -m min_len -M max_len -E primer_error_rate -T yes|no -R racon_iterations -s min_cluster_size -Y yes|no -c yacrd_min_coverage -n yacrd_min_read_coverage -o representatives.fasta -O otu_table.tsv -S stats.tsv -a archive.tar.gz [-X all|prepare|cluster -F read_file -D metadata_file -K sample_count]"
 }
 
-while getopts i:y:p:t:m:M:q:E:T:P:R:s:Y:c:n:o:O:S:a: flag
+while getopts i:y:p:t:m:M:q:E:T:P:R:s:Y:c:n:o:O:S:a:X:F:D:K: flag
 do
     case "${flag}" in
         i) dir="${OPTARG}";;
@@ -46,6 +50,10 @@ do
         O) otu_table="${OPTARG}";;
         S) stats_tsv="${OPTARG}";;
         a) results_archive="${OPTARG}";;
+        X) run_mode="${OPTARG}";;
+        F) single_read_file="${OPTARG}";;
+        D) metadata_file_arg="${OPTARG}";;
+        K) sample_count="${OPTARG}";;
         \?) usage; exit 1;;
     esac
 done
@@ -58,6 +66,39 @@ for var_name in "${required_vars[@]}"; do
         exit 1
     fi
 done
+
+if ! [[ "${threads}" =~ ^[0-9]+$ ]] || [ "${threads}" -lt 1 ]; then
+    echo "Threads must be a positive integer."
+    exit 1
+fi
+
+run_mode="$(printf '%s\n' "${run_mode}" | tr '[:upper:]' '[:lower:]')"
+case "${run_mode}" in
+    all|prepare|cluster)
+        ;;
+    *)
+        echo "Invalid run mode: ${run_mode}. Expected all, prepare, or cluster."
+        exit 1
+        ;;
+esac
+
+if [ "${run_mode}" = "prepare" ]; then
+    if [ -z "${single_read_file}" ]; then
+        echo "Prepare mode requires -F read_file."
+        exit 1
+    fi
+    if [ -z "${metadata_file_arg}" ]; then
+        echo "Prepare mode requires -D metadata_file."
+        exit 1
+    fi
+fi
+
+if [ "${run_mode}" = "cluster" ]; then
+    if [ -z "${sample_count}" ] || ! [[ "${sample_count}" =~ ^[0-9]+$ ]] || [ "${sample_count}" -lt 1 ]; then
+        echo "Cluster mode requires -K sample_count as a positive integer."
+        exit 1
+    fi
+fi
 
 platform="$(printf '%s\n' "${platform}" | tr '[:upper:]' '[:lower:]')"
 case "${platform}" in
@@ -146,7 +187,11 @@ cd "${dir}"
 reads_pattern="${reads_pattern//€/*}"
 
 shopt -s nullglob
-read_files=( ${reads_pattern} )
+if [ "${run_mode}" = "prepare" ]; then
+    read_files=( "${single_read_file}" )
+else
+    read_files=( ${reads_pattern} )
+fi
 shopt -u nullglob
 
 if [ "${#read_files[@]}" -eq 0 ]; then
@@ -155,6 +200,13 @@ if [ "${#read_files[@]}" -eq 0 ]; then
     find . -maxdepth 1 -type f \( -name "*.fastq" -o -name "*.fastq.gz" -o -name "*.fq" -o -name "*.fq.gz" \) -printf "  %f\n" | sort
     exit 1
 fi
+
+for read_file in "${read_files[@]}"; do
+    if [ ! -f "${read_file}" ]; then
+        echo "Input FASTQ file does not exist: ${read_file}"
+        exit 1
+    fi
+done
 
 vsearch_bin="${VSEARCH_BIN:-/app/lib/vsearch/bin/vsearch}"
 if [ ! -x "${vsearch_bin}" ]; then
@@ -195,8 +247,12 @@ if [ -n "${primer_file}" ] && [ "${primer_trimming}" = "yes" ] && [ -z "${cutada
 fi
 
 outdir="isonclust3_results"
-rm -rf "${outdir}" "${consensus_fasta}" "${otu_table}" "${stats_tsv}" "${results_archive}"
-mkdir -p "${outdir}"/{primer_oriented,primer_trimmed,quality_filtered,length_filtered,chimera_filtered,drafts,mappings,racon,per_cluster,otu_counts,pooled,isonclust3}
+if [ "${run_mode}" = "all" ]; then
+    rm -rf "${outdir}" "${consensus_fasta}" "${otu_table}" "${stats_tsv}" "${results_archive}"
+elif [ "${run_mode}" = "cluster" ]; then
+    rm -f "${consensus_fasta}" "${otu_table}" "${stats_tsv}" "${results_archive}"
+fi
+mkdir -p "${outdir}"/{primer_oriented,primer_trimmed,quality_filtered,length_filtered,chimera_filtered,drafts,mappings,racon,per_cluster,otu_counts,pooled,isonclust3,sample_metadata}
 
 preliminary_representatives="${outdir}/preliminary_representatives.fasta"
 : > "${preliminary_representatives}"
@@ -1204,6 +1260,17 @@ register_sample_for_otu_table() {
     local length_reads="$5"
     local chimera_reads="$6"
 
+    if [ -n "${sample_metadata_file:-}" ]; then
+        printf "%s\t%s\t%s\t%s\t%s\t%s\n" \
+            "${sample}" \
+            "${filtered_fastq}" \
+            "${raw_reads}" \
+            "${quality_reads}" \
+            "${length_reads}" \
+            "${chimera_reads}" > "${sample_metadata_file}"
+        return
+    fi
+
     sample_names+=("${sample}")
     sample_filtered_fastqs+=("${filtered_fastq}")
     sample_raw_reads+=("${raw_reads}")
@@ -1211,6 +1278,24 @@ register_sample_for_otu_table() {
     sample_length_reads+=("${length_reads}")
     sample_chimera_reads+=("${chimera_reads}")
     sample_final_reads+=("0")
+}
+
+load_sample_metadata() {
+    local metadata="$1"
+    local sample
+    local filtered_fastq
+    local raw_reads
+    local quality_reads
+    local length_reads
+    local chimera_reads
+
+    if [ ! -s "${metadata}" ]; then
+        echo "Sample preparation metadata missing or empty: ${metadata}"
+        exit 1
+    fi
+
+    IFS=$'\t' read -r sample filtered_fastq raw_reads quality_reads length_reads chimera_reads < "${metadata}"
+    register_sample_for_otu_table "${sample}" "${filtered_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "${chimera_reads}"
 }
 
 prepare_sample_reads() {
@@ -1318,6 +1403,103 @@ prepare_sample_reads() {
     register_sample_for_otu_table "${sample}" "${selected_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "${selected_reads}"
 }
 
+prepare_sample_reads_worker() {
+    local read_file="$1"
+    local metadata_file="$2"
+    local worker_threads="$3"
+
+    threads="${worker_threads}"
+    sample_metadata_file="${metadata_file}"
+    prepare_sample_reads "${read_file}"
+}
+
+wait_for_sample_batch() {
+    local status
+    local failed=0
+    local pid
+
+    set +e
+    for pid in "${sample_preparation_pids[@]}"; do
+        wait "${pid}"
+        status=$?
+        if [ "${status}" -ne 0 ]; then
+            failed=1
+        fi
+    done
+    set -e
+
+    sample_preparation_pids=()
+    return "${failed}"
+}
+
+run_sample_preparation_jobs() {
+    local sample_count="${#read_files[@]}"
+    local max_parallel_jobs="${threads}"
+    local worker_threads
+    local idx
+    local read_file
+    local metadata_file
+    local log_file
+    local failed=0
+
+    if [ "${max_parallel_jobs}" -gt "${sample_count}" ]; then
+        max_parallel_jobs="${sample_count}"
+    fi
+    if [ "${max_parallel_jobs}" -lt 1 ]; then
+        max_parallel_jobs=1
+    fi
+
+    worker_threads=$((threads / max_parallel_jobs))
+    if [ "${worker_threads}" -lt 1 ]; then
+        worker_threads=1
+    fi
+
+    echo "Sample preparation parallel jobs: ${max_parallel_jobs}"
+    echo "Threads per sample preparation job: ${worker_threads}"
+    echo "Sample preparation includes per-sample quality filtering, primer trimming, length filtering, and optional YACRD filtering."
+
+    sample_preparation_pids=()
+    sample_metadata_files=()
+    sample_log_files=()
+
+    for idx in "${!read_files[@]}"; do
+        read_file="${read_files[$idx]}"
+        metadata_file="${outdir}/sample_metadata/sample_${idx}.metadata.tsv"
+        log_file="${outdir}/sample_metadata/sample_${idx}.log"
+        sample_metadata_files+=("${metadata_file}")
+        sample_log_files+=("${log_file}")
+
+        (
+            prepare_sample_reads_worker "${read_file}" "${metadata_file}" "${worker_threads}"
+        ) > "${log_file}" 2>&1 &
+        sample_preparation_pids+=("$!")
+
+        if [ "${#sample_preparation_pids[@]}" -ge "${max_parallel_jobs}" ]; then
+            if ! wait_for_sample_batch; then
+                failed=1
+            fi
+        fi
+    done
+
+    if [ "${#sample_preparation_pids[@]}" -gt 0 ]; then
+        if ! wait_for_sample_batch; then
+            failed=1
+        fi
+    fi
+
+    for log_file in "${sample_log_files[@]}"; do
+        if [ -s "${log_file}" ]; then
+            cat "${log_file}"
+        fi
+    done
+
+    if [ "${failed}" -ne 0 ]; then
+        echo "At least one sample failed during parallel preparation."
+        echo "Per-sample logs are kept in ${outdir}/sample_metadata."
+        exit 1
+    fi
+}
+
 checkpoint "isONclust3 input validation done"
 echo "Input FASTQ files:"
 printf '  %s\n' "${read_files[@]}"
@@ -1368,6 +1550,13 @@ else
     echo "Primers FASTA: none"
 fi
 
+if [ "${run_mode}" = "prepare" ]; then
+    checkpoint "isONclust3 sample preparation started"
+    prepare_sample_reads_worker "${single_read_file}" "${metadata_file_arg}" "${threads}"
+    checkpoint "isONclust3 sample preparation done"
+    exit 0
+fi
+
 sample_names=()
 sample_filtered_fastqs=()
 sample_raw_reads=()
@@ -1379,9 +1568,17 @@ sample_final_reads=()
 pooled_fastq="${outdir}/pooled/pooled.${platform}.fastq"
 : > "${pooled_fastq}"
 
-for read_file in "${read_files[@]}"; do
-    prepare_sample_reads "${read_file}"
-    idx=$((${#sample_names[@]} - 1))
+sample_metadata_files=()
+if [ "${run_mode}" = "all" ]; then
+    run_sample_preparation_jobs
+else
+    for idx in $(seq 0 $((sample_count - 1))); do
+        sample_metadata_files+=("${outdir}/sample_metadata/sample_${idx}.metadata.tsv")
+    done
+fi
+
+for idx in "${!sample_metadata_files[@]}"; do
+    load_sample_metadata "${sample_metadata_files[$idx]}"
     append_fastq_with_sample_prefix "${sample_filtered_fastqs[$idx]}" "${pooled_fastq}" "${sample_names[$idx]}"
 done
 
