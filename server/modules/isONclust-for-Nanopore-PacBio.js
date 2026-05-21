@@ -14,6 +14,7 @@ exports.run = function (os, config, callback) {
     const minLength = params.minlength || '';
     const maxLength = params.maxlength || '';
     const primerErrorRate = params.primer_error_rate || '0.20';
+    const primerTrimming = params.primer_trimming !== false ? 'yes' : 'no';
     const minClusterSize = params.min_cluster_size || '5';
     const raconIterations = params.racon_iterations || '3';
     const spoaMatch = params.spoa_match || (platform === 'pacbio' ? '1' : '5');
@@ -31,6 +32,7 @@ exports.run = function (os, config, callback) {
         '-m', minLength,
         '-M', maxLength,
         '-E', primerErrorRate,
+        '-T', primerTrimming,
         '-R', raconIterations,
         '-s', minClusterSize,
         '-A', spoaMatch,

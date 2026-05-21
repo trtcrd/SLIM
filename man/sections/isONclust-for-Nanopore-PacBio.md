@@ -19,7 +19,7 @@ The module does not perform taxonomy. The representative FASTA and OTU table can
 6. One Racon seed draft per retained cluster, using the first read in the isONclust3 cluster FASTQ as the module-visible isONclust3 representative.
 7. 1 to 4 minimap2 + Racon polishing iterations per cluster, mapping reads back to the current draft each round. Default: `3`.
 8. Primer-based reorientation of polished consensus sequences, when a primer FASTA is supplied.
-9. Primer trimming on oriented polished consensus sequences with cutadapt, when a primer FASTA is supplied.
+9. Optional primer trimming on oriented polished consensus sequences with cutadapt, when a primer FASTA is supplied.
 10. De novo chimera filtering on polished consensus sequences with `vsearch --uchime_denovo`.
 11. Final Nanopore polished OTU representatives.
 
@@ -28,12 +28,12 @@ The module does not perform taxonomy. The representative FASTA and OTU table can
 1. Raw PacBio HiFi reads.
 2. Quality filtering with `vsearch --fastq_maxee_rate`.
 3. Optional length filtering with VSEARCH.
-4. Primer trimming on raw HiFi reads with cutadapt, when a primer FASTA is supplied.
+4. Optional primer trimming on raw HiFi reads with cutadapt, when a primer FASTA is supplied.
 5. De novo chimera filtering on HiFi reads with `vsearch --uchime_denovo`.
 6. Sample pooling by concatenating retained reads.
 7. OTU clustering with `isONclust3 --mode pacbio`.
 8. One SPOA consensus per retained isONclust3 cluster.
-9. Primer-based reorientation and final primer trimming of representative sequences, when a primer FASTA is supplied.
+9. Primer-based reorientation and optional final primer trimming of representative sequences, when a primer FASTA is supplied.
 10. Final PacBio cluster/OTU representatives.
 
 For OTU-table counting, SLIM maps each sample's retained reads back to the final representative FASTA with minimap2. The preset is `map-ont` for Nanopore and `map-hifi` for PacBio.
@@ -83,7 +83,7 @@ Optional FASTA file containing the forward primer as the first sequence and the 
 
 The first primer record is always interpreted as the forward primer. The second primer record is interpreted as the reverse primer, and SLIM uses its reverse-complement when looking for the 3' primer site on forward-oriented sequences.
 
-When a primer FASTA is supplied, final representative sequences are oriented before OTU ID normalization. SLIM uses the MSI-style linked primer patterns `forward...reverse-complement(reverse)` and `reverse...reverse-complement(forward)` to label orientation with cutadapt when available, then explicitly reverse-complements reverse-labelled records before trimming. If the installed cutadapt lacks `--action=none`, SLIM falls back to exact IUPAC-aware orientation before trimming. SLIM trims the forward primer and reverse-complemented reverse primer independently, and keeps records even when one or both primer matches are not found. When minimum and/or maximum length filters are set, the same length window is also applied to Nanopore representative sequences after primer trimming, similar to MSI's centroid filtering.
+When a primer FASTA is supplied, final representative sequences are oriented before OTU ID normalization. SLIM uses the MSI-style linked primer patterns `forward...reverse-complement(reverse)` and `reverse...reverse-complement(forward)` to label orientation with cutadapt when available, then explicitly reverse-complements reverse-labelled records before optional trimming. If the installed cutadapt lacks `--action=none`, SLIM falls back to exact IUPAC-aware orientation before optional trimming. Primer trimming is enabled by default and can be disabled in the module options. When enabled, SLIM trims the forward primer and reverse-complemented reverse primer independently, and keeps records even when one or both primer matches are not found. When minimum and/or maximum length filters are set, the same length window is also applied to Nanopore representative sequences after primer trimming, similar to MSI's centroid filtering.
 
 **Minimap2 + Racon iterations**
 
@@ -118,6 +118,12 @@ A `.tar.gz` archive containing filtered reads, primer-orientation and primer-tri
 Default: `0.20`.
 
 This is passed to cutadapt as its maximum allowed error rate for matching primers.
+
+**Primer trimming**
+
+Default: enabled.
+
+When enabled and a primer FASTA is supplied, SLIM trims primers from PacBio HiFi reads before chimera filtering and from final oriented representatives before OTU ID normalization. When disabled, primer sequences are still used for final representative orientation, but trimming is skipped.
 
 **Minimum reads per retained isONclust3 cluster**
 

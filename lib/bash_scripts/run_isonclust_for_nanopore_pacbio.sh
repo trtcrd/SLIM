@@ -9,6 +9,7 @@ maxee_rate=""
 min_cluster_size="5"
 primer_file=""
 primer_error_rate="0.20"
+primer_trimming="yes"
 racon_iterations="3"
 spoa_match=""
 spoa_mismatch=""
@@ -21,10 +22,10 @@ checkpoint() {
 }
 
 usage() {
-    echo "usage: run_isonclust_for_nanopore_pacbio.sh -i dir -y reads_pattern [-p primers.fasta] -t threads -P nanopore|pacbio -q maxee_rate -m min_len -M max_len -E primer_error_rate -R racon_iterations -s min_cluster_size -A spoa_match -N spoa_mismatch -B spoa_gap_open -C spoa_gap_extend -o representatives.fasta -O otu_table.tsv -S stats.tsv -a archive.tar.gz"
+    echo "usage: run_isonclust_for_nanopore_pacbio.sh -i dir -y reads_pattern [-p primers.fasta] -t threads -P nanopore|pacbio -q maxee_rate -m min_len -M max_len -E primer_error_rate -T yes|no -R racon_iterations -s min_cluster_size -A spoa_match -N spoa_mismatch -B spoa_gap_open -C spoa_gap_extend -o representatives.fasta -O otu_table.tsv -S stats.tsv -a archive.tar.gz"
 }
 
-while getopts i:y:p:t:m:M:q:E:P:R:s:A:N:B:C:o:O:S:a: flag
+while getopts i:y:p:t:m:M:q:E:T:P:R:s:A:N:B:C:o:O:S:a: flag
 do
     case "${flag}" in
         i) dir="${OPTARG}";;
@@ -35,6 +36,7 @@ do
         M) max_length="${OPTARG}";;
         q) maxee_rate="${OPTARG}";;
         E) primer_error_rate="${OPTARG}";;
+        T) primer_trimming="${OPTARG}";;
         P) platform="${OPTARG}";;
         R) racon_iterations="${OPTARG}";;
         s) min_cluster_size="${OPTARG}";;
@@ -96,6 +98,20 @@ spoa_match="${spoa_match:-${default_spoa_match}}"
 spoa_mismatch="${spoa_mismatch:-${default_spoa_mismatch}}"
 spoa_gap_open="${spoa_gap_open:-${default_spoa_gap_open}}"
 spoa_gap_extend="${spoa_gap_extend:-${default_spoa_gap_extend}}"
+
+primer_trimming="$(printf '%s\n' "${primer_trimming}" | tr '[:upper:]' '[:lower:]')"
+case "${primer_trimming}" in
+    yes|y|true|1|on)
+        primer_trimming="yes"
+        ;;
+    no|n|false|0|off)
+        primer_trimming="no"
+        ;;
+    *)
+        echo "Invalid primer trimming option: ${primer_trimming}. Expected yes or no."
+        exit 1
+        ;;
+esac
 
 if ! [[ "${racon_iterations}" =~ ^[0-9]+$ ]]; then
     echo "Racon iterations must be an integer between 1 and 4."
@@ -162,9 +178,9 @@ if [ -n "${primer_file}" ] && [ ! -f "${primer_file}" ]; then
 fi
 
 cutadapt_bin="$(command -v cutadapt || true)"
-if [ -n "${primer_file}" ] && [ -z "${cutadapt_bin}" ]; then
-    echo "Primer trimming was requested because a primer FASTA was provided, but cutadapt was not found."
-    echo "Rebuild the image with cutadapt in the Nanopore/PacBio environment."
+if [ -n "${primer_file}" ] && [ "${primer_trimming}" = "yes" ] && [ -z "${cutadapt_bin}" ]; then
+    echo "Primer trimming is enabled and a primer FASTA was provided, but cutadapt was not found."
+    echo "Rebuild the image with cutadapt in the Nanopore/PacBio environment, or disable primer trimming."
     exit 1
 fi
 
@@ -252,10 +268,12 @@ load_primers() {
 }
 
 cutadapt_supports_revcomp() {
+    [ -n "${cutadapt_bin}" ] || return 1
     "${cutadapt_bin}" --help 2>/dev/null | grep -q -- '--revcomp'
 }
 
 cutadapt_supports_action_none() {
+    [ -n "${cutadapt_bin}" ] || return 1
     "${cutadapt_bin}" --help 2>/dev/null | grep -q -- '--action'
 }
 
@@ -681,6 +699,7 @@ run_uchime_fasta() {
     local input_fasta="$1"
     local output_fasta="$2"
     local label="$3"
+    local allow_empty="${4:-no}"
     local records
 
     records="$(count_fasta_records "${input_fasta}")"
@@ -699,6 +718,10 @@ run_uchime_fasta() {
 
     if [ ! -s "${output_fasta}" ]; then
         echo "No non-chimeric records were retained for ${label}."
+        if [ "${allow_empty}" = "yes" ]; then
+            : > "${output_fasta}"
+            return 1
+        fi
         exit 1
     fi
 }
@@ -707,18 +730,26 @@ chimera_filter_fastq() {
     local input_fastq="$1"
     local output_fastq="$2"
     local label="$3"
+    local allow_empty="${4:-no}"
     local input_fasta="${outdir}/chimera_filtered/${label}.input.fasta"
     local nonchimera_fasta="${outdir}/chimera_filtered/${label}.nonchimeras.fasta"
     local ids_file="${outdir}/chimera_filtered/${label}.nonchimera_ids.txt"
 
     fastq_to_fasta "${input_fastq}" "${input_fasta}"
-    run_uchime_fasta "${input_fasta}" "${nonchimera_fasta}" "${label}"
+    if ! run_uchime_fasta "${input_fasta}" "${nonchimera_fasta}" "${label}" "${allow_empty}"; then
+        : > "${output_fastq}"
+        return 1
+    fi
 
     grep '^>' "${nonchimera_fasta}" | sed 's/^>//; s/[[:space:]].*$//' > "${ids_file}"
     extract_fastq_by_ids "${input_fastq}" "${ids_file}" "${output_fastq}"
 
     if [ ! -s "${output_fastq}" ]; then
         echo "No FASTQ reads remained after chimera filtering for ${label}."
+        if [ "${allow_empty}" = "yes" ]; then
+            : > "${output_fastq}"
+            return 1
+        fi
         exit 1
     fi
 }
@@ -998,6 +1029,14 @@ write_otu_table() {
         mapping_file="${outdir}/otu_counts/${sample}.reads_to_consensus.paf"
         counts_file="${outdir}/otu_counts/${sample}.counts.tsv"
 
+        if [ ! -s "${sample_filtered_fastqs[$idx]}" ]; then
+            checkpoint "${sample}: final-consensus mapping skipped because no reads survived filtering"
+            : > "${mapping_file}"
+            : > "${counts_file}"
+            sample_final_reads[$idx]="0"
+            continue
+        fi
+
         checkpoint "${sample}: minimap2 final-consensus mapping for OTU counts started"
         run_minimap2 -x "${minimap_preset}" -t "${threads}" "${consensus_fasta}" "${sample_filtered_fastqs[$idx]}" > "${mapping_file}"
         checkpoint "${sample}: minimap2 final-consensus mapping for OTU counts done"
@@ -1174,6 +1213,23 @@ validate_representatives_and_otu_table() {
     fi
 }
 
+register_sample_for_otu_table() {
+    local sample="$1"
+    local filtered_fastq="$2"
+    local raw_reads="$3"
+    local quality_reads="$4"
+    local length_reads="$5"
+    local chimera_reads="$6"
+
+    sample_names+=("${sample}")
+    sample_filtered_fastqs+=("${filtered_fastq}")
+    sample_raw_reads+=("${raw_reads}")
+    sample_quality_reads+=("${quality_reads}")
+    sample_length_reads+=("${length_reads}")
+    sample_chimera_reads+=("${chimera_reads}")
+    sample_final_reads+=("0")
+}
+
 prepare_sample_reads() {
     local read_file="$1"
     local sample
@@ -1185,6 +1241,8 @@ prepare_sample_reads() {
     local primer_trimmed_fastq
     local chimera_fastq
     local chimera_reads
+    local selected_fastq
+    local selected_reads
 
     sample="$(sample_name_from_file "${read_file}")"
     quality_fastq="${outdir}/quality_filtered/${sample}.quality.fastq"
@@ -1200,19 +1258,23 @@ prepare_sample_reads() {
     run_fastq_filter "${read_file}" "${quality_fastq}" "${sample}" "quality"
     quality_reads="$(count_fastq_reads "${quality_fastq}")"
     if [ "${quality_reads}" -eq 0 ]; then
-        echo "No reads survived quality filtering for sample ${sample}."
-        exit 1
+        echo "No reads survived quality filtering for sample ${sample}; retaining sample with zero OTU counts."
+        : > "${quality_fastq}"
+        register_sample_for_otu_table "${sample}" "${quality_fastq}" "${raw_reads}" "0" "0" "0"
+        return
     fi
 
     run_fastq_filter "${quality_fastq}" "${length_fastq}" "${sample}" "length"
     length_reads="$(count_fastq_reads "${length_fastq}")"
     if [ "${length_reads}" -eq 0 ]; then
-        echo "No reads survived length filtering for sample ${sample}."
-        exit 1
+        echo "No reads survived length filtering for sample ${sample}; retaining sample with zero OTU counts."
+        : > "${length_fastq}"
+        register_sample_for_otu_table "${sample}" "${length_fastq}" "${raw_reads}" "${quality_reads}" "0" "0"
+        return
     fi
 
     if [ "${platform}" = "pacbio" ]; then
-        if [ -n "${primer_file}" ]; then
+        if [ -n "${primer_file}" ] && [ "${primer_trimming}" = "yes" ]; then
             checkpoint "${sample}: raw HiFi primer trimming started"
             trim_primers "${length_fastq}" "${primer_trimmed_fastq}" "${sample}.raw_hifi_reads"
             checkpoint "${sample}: raw HiFi primer trimming done"
@@ -1220,25 +1282,27 @@ prepare_sample_reads() {
             cp "${length_fastq}" "${primer_trimmed_fastq}"
         fi
 
-        chimera_filter_fastq "${primer_trimmed_fastq}" "${chimera_fastq}" "${sample}.hifi_reads"
-        chimera_reads="$(count_fastq_reads "${chimera_fastq}")"
-        if [ "${chimera_reads}" -eq 0 ]; then
-            echo "No reads remained after chimera filtering for sample ${sample}."
-            exit 1
+        if ! chimera_filter_fastq "${primer_trimmed_fastq}" "${chimera_fastq}" "${sample}.hifi_reads" "yes"; then
+            echo "No reads remained after chimera filtering for sample ${sample}; retaining sample with zero OTU counts."
+            register_sample_for_otu_table "${sample}" "${chimera_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "0"
+            return
         fi
 
-        sample_filtered_fastqs+=("${chimera_fastq}")
-        sample_chimera_reads+=("${chimera_reads}")
+        chimera_reads="$(count_fastq_reads "${chimera_fastq}")"
+        if [ "${chimera_reads}" -eq 0 ]; then
+            echo "No reads remained after chimera filtering for sample ${sample}; retaining sample with zero OTU counts."
+            register_sample_for_otu_table "${sample}" "${chimera_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "0"
+            return
+        fi
+
+        selected_fastq="${chimera_fastq}"
+        selected_reads="${chimera_reads}"
     else
-        sample_filtered_fastqs+=("${length_fastq}")
-        sample_chimera_reads+=("${length_reads}")
+        selected_fastq="${length_fastq}"
+        selected_reads="${length_reads}"
     fi
 
-    sample_names+=("${sample}")
-    sample_raw_reads+=("${raw_reads}")
-    sample_quality_reads+=("${quality_reads}")
-    sample_length_reads+=("${length_reads}")
-    sample_final_reads+=("0")
+    register_sample_for_otu_table "${sample}" "${selected_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "${selected_reads}"
 }
 
 checkpoint "isONclust-for-Nanopore-PacBio input validation done"
@@ -1257,6 +1321,7 @@ echo "Quality filter max expected error rate: ${maxee_rate}"
 echo "Minimum read length: ${min_length:-none}"
 echo "Maximum read length: ${max_length:-none}"
 echo "Minimum reads per cluster: ${min_cluster_size}"
+echo "Primer trimming: ${primer_trimming}"
 if [ "${platform}" = "nanopore" ]; then
     echo "Nanopore initial draft: first isONclust3 cluster read used as the Racon seed"
     echo "Racon: $(command -v racon)"
@@ -1272,7 +1337,11 @@ if [ -n "${primer_file}" ]; then
     echo "Forward primer loaded from first FASTA record: ${primer_f}"
     echo "Reverse primer loaded from second FASTA record: ${primer_r}"
     echo "Primer max error rate: ${primer_error_rate}"
-    echo "Final representative post-processing: orient by primers, then trim forward and reverse primers"
+    if [ "${primer_trimming}" = "yes" ]; then
+        echo "Final representative post-processing: orient by primers, then trim forward and reverse primers"
+    else
+        echo "Final representative post-processing: orient by primers; primer trimming disabled"
+    fi
 else
     echo "Primers FASTA: none"
 fi
@@ -1299,6 +1368,11 @@ if [ "${#sample_names[@]}" -eq 0 ]; then
     exit 1
 fi
 
+if [ "$(count_fastq_reads "${pooled_fastq}")" -eq 0 ]; then
+    echo "No reads from any sample survived filtering; cannot build OTU representatives."
+    exit 1
+fi
+
 process_cluster_set "pooled" "${pooled_fastq}" "${preliminary_representatives}"
 
 postprocessed_representatives="${preliminary_representatives}"
@@ -1310,11 +1384,15 @@ if [ -n "${primer_file}" ]; then
     orient_fasta_by_primers "${preliminary_representatives}" "${oriented_representatives}" "${platform}_representatives"
     checkpoint "Post-consensus primer orientation done"
 
-    checkpoint "Post-consensus primer trimming started"
-    trim_primers "${oriented_representatives}" "${primer_trimmed_representatives}" "${platform}_representatives" "no"
-    checkpoint "Post-consensus primer trimming done"
-
-    postprocessed_representatives="${primer_trimmed_representatives}"
+    if [ "${primer_trimming}" = "yes" ]; then
+        checkpoint "Post-consensus primer trimming started"
+        trim_primers "${oriented_representatives}" "${primer_trimmed_representatives}" "${platform}_representatives" "no"
+        checkpoint "Post-consensus primer trimming done"
+        postprocessed_representatives="${primer_trimmed_representatives}"
+    else
+        echo "Primer trimming disabled; keeping oriented representative sequences untrimmed."
+        postprocessed_representatives="${oriented_representatives}"
+    fi
 fi
 
 representatives_for_normalization="${postprocessed_representatives}"
