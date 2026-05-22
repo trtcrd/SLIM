@@ -46,12 +46,10 @@ class Isonclust3Module extends Module {
     setupPlatformDefaults() {
         const defaults = {
             nanopore: {
-                maxee_rate: "0.05",
-                yacrd_min_coverage: "4"
+                maxee_rate: "0.05"
             },
             pacbio: {
-                maxee_rate: "0.01",
-                yacrd_min_coverage: "3"
+                maxee_rate: "0.01"
             }
         };
 

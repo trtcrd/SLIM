@@ -22,7 +22,7 @@
 </p>
 
 <p>Primers fasta file</p>
-<p>(first forward primer, then reverse primer; IUPAC supported)</p>
+<p>(optional; first forward primer, then reverse primer; used for cluster-orientation votes only)</p>
 <input type="text" name="primers" class="input_file fasta">
 
 <p class="nanopore_only">
@@ -56,30 +56,7 @@
 
 <div class="options">
     <p>
-        Primer max error rate 
-        <input type="text" name="primer_error_rate" class="number param_value" value="0.20">
-    </p>
-
-    <p>
-        <label>Trim primers from reads/representatives when a primer FASTA is provided <input type="checkbox" name="primer_trimming" class="param_value" checked></label>
-    </p>
-
-    <p>
         Minimum reads per retained isONclust3 cluster 
         <input type="text" name="min_cluster_size" class="integer number param_value" value="5">
-    </p>
-
-    <p>
-        <label>Run experimental YACRD chimera/read-coverage filtering <input type="checkbox" name="yacrd_filtering" class="param_value"></label>
-    </p>
-
-    <p>
-        YACRD minimum overlap coverage 
-        <input type="text" name="yacrd_min_coverage" class="integer number param_value platform_default" value="4">
-    </p>
-
-    <p>
-        YACRD minimum covered read fraction 
-        <input type="text" name="yacrd_min_read_coverage" class="number param_value" value="0.4">
     </p>
 </div>

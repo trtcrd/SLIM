@@ -19,12 +19,7 @@ async function runModule(os, config) {
     const maxExpectedErrorRate = params.maxee_rate || (platform === 'pacbio' ? '0.01' : '0.05');
     const minLength = params.minlength || '';
     const maxLength = params.maxlength || '';
-    const primerErrorRate = params.primer_error_rate || '0.20';
-    const primerTrimming = params.primer_trimming !== false ? 'yes' : 'no';
     const minClusterSize = params.min_cluster_size || '5';
-    const yacrdFiltering = params.yacrd_filtering === true || params.yacrd_filtering === 'true' ? 'yes' : 'no';
-    const yacrdMinCoverage = params.yacrd_min_coverage || (platform === 'pacbio' ? '3' : '4');
-    const yacrdMinReadCoverage = params.yacrd_min_read_coverage || '0.4';
     const raconIterations = params.racon_iterations || '3';
     const cores = Math.max(1, Number(os.cores) || 1);
     const runner = '/app/lib/bash_scripts/run_isonclust3.sh';
@@ -43,13 +38,8 @@ async function runModule(os, config) {
         '-q', maxExpectedErrorRate,
         '-m', minLength,
         '-M', maxLength,
-        '-E', primerErrorRate,
-        '-T', primerTrimming,
         '-R', raconIterations,
         '-s', minClusterSize,
-        '-Y', yacrdFiltering,
-        '-c', yacrdMinCoverage,
-        '-n', yacrdMinReadCoverage,
         '-O', config.params.outputs.otus_table,
         '-o', config.params.outputs.centroids,
         '-S', config.params.outputs.stats,
@@ -98,8 +88,8 @@ function resolveFastqFiles(directory, inputPattern) {
 async function runParallelSamplePreparation({ runner, directory, logFile, baseOptions, readFiles, cores, outputs }) {
     cleanPreviousOutputs(directory, outputs);
 
-    const maxParallel = Math.max(1, Math.min(cores, readFiles.length));
-    const workerThreads = Math.max(1, Math.floor(cores / maxParallel));
+    const maxParallel = Math.max(1, Math.min(8, cores, readFiles.length));
+    const workerThreads = 1;
     const prepLogs = readFiles.map((_, idx) => directory + 'isonclust3_results/sample_metadata/sample_' + idx + '.server_prepare.log');
     const mainLogPath = directory + logFile;
 
@@ -108,6 +98,7 @@ async function runParallelSamplePreparation({ runner, directory, logFile, baseOp
     fs.appendFileSync(mainLogPath, 'Samples: ' + readFiles.length + '\n');
     fs.appendFileSync(mainLogPath, 'Parallel jobs: ' + maxParallel + '\n');
     fs.appendFileSync(mainLogPath, 'Threads per sample preparation job: ' + workerThreads + '\n');
+    fs.appendFileSync(mainLogPath, 'VSEARCH quality/length filtering is parallelized by sample batches, not by VSEARCH threads.\n');
 
     const jobs = readFiles.map((readFile, idx) => {
         const metadataFile = 'isonclust3_results/sample_metadata/sample_' + idx + '.metadata.tsv';

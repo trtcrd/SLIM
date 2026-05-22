@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+# Primer-trimming-free workflow: no cutadapt primer trimming and no chimera filtering.
+# Cluster reads are oriented to the first isONclust3 seed, then optionally flipped as
+# a whole cluster using primer-majority votes.
+
 platform="nanopore"
 min_length=""
 max_length=""
@@ -25,7 +29,8 @@ checkpoint() {
 }
 
 usage() {
-    echo "usage: run_isonclust3.sh -i dir -y reads_pattern [-p primers.fasta] -t threads -P nanopore|pacbio -q maxee_rate -m min_len -M max_len -E primer_error_rate -T yes|no -R racon_iterations -s min_cluster_size -Y yes|no -c yacrd_min_coverage -n yacrd_min_read_coverage -o representatives.fasta -O otu_table.tsv -S stats.tsv -a archive.tar.gz [-X all|prepare|cluster -F read_file -D metadata_file -K sample_count]"
+    echo "usage: run_isonclust3.sh -i dir -y reads_pattern [-p primers.fasta] -t threads -P nanopore|pacbio -q maxee_rate -m min_len -M max_len -R racon_iterations -s min_cluster_size -o representatives.fasta -O otu_table.tsv -S stats.tsv -a archive.tar.gz [-X all|prepare|cluster -F read_file -D metadata_file -K sample_count]"
+    echo "legacy options -E, -T, -Y, -c and -n are accepted for backward compatibility but primer trimming and chimera filtering are not performed."
 }
 
 while getopts i:y:p:t:m:M:q:E:T:P:R:s:Y:c:n:o:O:S:a:X:F:D:K: flag
@@ -106,10 +111,7 @@ case "${platform}" in
         platform="nanopore"
         isonclust_mode="ont"
         minimap_preset="map-ont"
-        yacrd_minimap_preset="ava-ont"
-        yacrd_minimap_gap="500"
         default_maxee_rate="0.05"
-        default_yacrd_min_coverage="4"
         isonclust_k_label="13"
         isonclust_w_label="21"
         ;;
@@ -117,10 +119,7 @@ case "${platform}" in
         platform="pacbio"
         isonclust_mode="pacbio"
         minimap_preset="map-hifi"
-        yacrd_minimap_preset="ava-pb"
-        yacrd_minimap_gap="5000"
         default_maxee_rate="0.01"
-        default_yacrd_min_coverage="3"
         isonclust_k_label="15"
         isonclust_w_label="51"
         ;;
@@ -131,36 +130,10 @@ case "${platform}" in
 esac
 
 maxee_rate="${maxee_rate:-${default_maxee_rate}}"
-yacrd_min_coverage="${yacrd_min_coverage:-${default_yacrd_min_coverage}}"
-yacrd_min_read_coverage="${yacrd_min_read_coverage:-0.4}"
-
-primer_trimming="$(printf '%s\n' "${primer_trimming}" | tr '[:upper:]' '[:lower:]')"
-case "${primer_trimming}" in
-    yes|y|true|1|on)
-        primer_trimming="yes"
-        ;;
-    no|n|false|0|off)
-        primer_trimming="no"
-        ;;
-    *)
-        echo "Invalid primer trimming option: ${primer_trimming}. Expected yes or no."
-        exit 1
-        ;;
-esac
-
-yacrd_filtering="$(printf '%s\n' "${yacrd_filtering}" | tr '[:upper:]' '[:lower:]')"
-case "${yacrd_filtering}" in
-    yes|y|true|1|on)
-        yacrd_filtering="yes"
-        ;;
-    no|n|false|0|off)
-        yacrd_filtering="no"
-        ;;
-    *)
-        echo "Invalid YACRD filtering option: ${yacrd_filtering}. Expected yes or no."
-        exit 1
-        ;;
-esac
+legacy_primer_trimming_requested="${primer_trimming}"
+legacy_yacrd_filtering_requested="${yacrd_filtering}"
+primer_trimming="no"
+yacrd_filtering="no"
 
 if ! [[ "${racon_iterations}" =~ ^[0-9]+$ ]]; then
     echo "Racon iterations must be an integer between 1 and 4."
@@ -169,16 +142,6 @@ fi
 
 if [ "${racon_iterations}" -lt 1 ] || [ "${racon_iterations}" -gt 4 ]; then
     echo "Racon iterations must be between 1 and 4."
-    exit 1
-fi
-
-if ! [[ "${yacrd_min_coverage}" =~ ^[0-9]+$ ]]; then
-    echo "YACRD minimum overlap coverage must be a non-negative integer."
-    exit 1
-fi
-
-if ! [[ "${yacrd_min_read_coverage}" =~ ^(0(\.[0-9]+)?|1(\.0+)?)$ ]]; then
-    echo "YACRD minimum covered read fraction must be between 0 and 1."
     exit 1
 fi
 
@@ -219,9 +182,6 @@ if [ -z "${vsearch_bin}" ] || [ ! -x "${vsearch_bin}" ]; then
 fi
 
 required_tools=(minimap2 isONclust3)
-if [ "${yacrd_filtering}" = "yes" ]; then
-    required_tools+=(yacrd)
-fi
 if [ "${platform}" = "nanopore" ]; then
     required_tools+=(racon)
 fi
@@ -239,20 +199,13 @@ if [ -n "${primer_file}" ] && [ ! -f "${primer_file}" ]; then
     exit 1
 fi
 
-cutadapt_bin="$(command -v cutadapt || true)"
-if [ -n "${primer_file}" ] && [ "${primer_trimming}" = "yes" ] && [ -z "${cutadapt_bin}" ]; then
-    echo "Primer trimming is enabled and a primer FASTA was provided, but cutadapt was not found."
-    echo "Rebuild the image with cutadapt in the Nanopore/PacBio environment, or disable primer trimming."
-    exit 1
-fi
-
 outdir="isonclust3_results"
 if [ "${run_mode}" = "all" ]; then
     rm -rf "${outdir}" "${consensus_fasta}" "${otu_table}" "${stats_tsv}" "${results_archive}"
 elif [ "${run_mode}" = "cluster" ]; then
     rm -f "${consensus_fasta}" "${otu_table}" "${stats_tsv}" "${results_archive}"
 fi
-mkdir -p "${outdir}"/{primer_oriented,primer_trimmed,quality_filtered,length_filtered,chimera_filtered,drafts,mappings,racon,per_cluster,otu_counts,pooled,isonclust3,sample_metadata}
+mkdir -p "${outdir}"/{quality_filtered,length_filtered,oriented_reads,primer_orientation,drafts,mappings,racon,per_cluster,otu_counts,pooled,isonclust3,sample_metadata}
 
 preliminary_representatives="${outdir}/preliminary_representatives.fasta"
 : > "${preliminary_representatives}"
@@ -333,16 +286,6 @@ load_primers() {
     primer_r_rc="$(reverse_complement "${primer_r}")"
 }
 
-cutadapt_supports_revcomp() {
-    [ -n "${cutadapt_bin}" ] || return 1
-    "${cutadapt_bin}" --help 2>/dev/null | grep -q -- '--revcomp'
-}
-
-cutadapt_supports_action_none() {
-    [ -n "${cutadapt_bin}" ] || return 1
-    "${cutadapt_bin}" --help 2>/dev/null | grep -q -- '--action'
-}
-
 run_vsearch() {
     "${vsearch_bin}" --quiet "$@"
 }
@@ -363,7 +306,6 @@ run_fastq_filter() {
         --fastq_qmin 0
         --fastq_qmax 93
         --fastqout "${output}"
-        --threads "${threads}"
     )
 
     if [ "${stage}" = "quality" ] && [ -n "${maxee_rate}" ] && [ "${maxee_rate}" != "0" ] && [ "${maxee_rate}" != "0.0" ]; then
@@ -382,209 +324,6 @@ run_fastq_filter() {
     checkpoint "${label}: VSEARCH ${stage} filtering started"
     run_vsearch "${options[@]}"
     checkpoint "${label}: VSEARCH ${stage} filtering done"
-}
-
-trim_primers() {
-    local input="$1"
-    local output="$2"
-    local label="$3"
-    local allow_revcomp="${4:-yes}"
-    local log_file="${outdir}/primer_trimmed/${label}.cutadapt.log"
-    local status
-    local -a cutadapt_options
-
-    cutadapt_options=(
-        -e "${primer_error_rate}"
-        --cores "${threads}"
-        -g "${primer_f}"
-        -a "${primer_r_rc}"
-        -o "${output}"
-    )
-
-    echo "Trimming primers with cutadapt: ${label}"
-    echo "Forward primer: ${primer_f}"
-    echo "Reverse primer: ${primer_r}"
-    echo "Reverse primer reverse-complement used for trimming: ${primer_r_rc}"
-    echo "Primer max error rate: ${primer_error_rate}"
-    echo "cutadapt mode: independent primer trimming, keeping records without primer matches"
-    echo "cutadapt reverse-complement orientation during trimming: ${allow_revcomp}"
-    echo "cutadapt executable: ${cutadapt_bin}"
-    echo "cutadapt log: ${log_file}"
-
-    set +e
-    if [ "${allow_revcomp}" = "yes" ] && cutadapt_supports_revcomp; then
-        "${cutadapt_bin}" --revcomp "${cutadapt_options[@]}" "${input}" > "${log_file}" 2>&1
-        status=$?
-    else
-        if [ "${allow_revcomp}" = "yes" ]; then
-            echo "cutadapt --revcomp is not available; trimming only records already in forward orientation." | tee "${log_file}"
-        else
-            echo "Sequences were already oriented before trimming; cutadapt --revcomp disabled for this trimming call." | tee "${log_file}"
-        fi
-        "${cutadapt_bin}" "${cutadapt_options[@]}" "${input}" >> "${log_file}" 2>&1
-        status=$?
-    fi
-    set -e
-
-    if [ "${status}" -ne 0 ]; then
-        echo
-        echo "cutadapt failed for ${label} with exit code ${status}."
-        echo "--- cutadapt log ---"
-        cat "${log_file}" || true
-        echo "--- end cutadapt log ---"
-        exit "${status}"
-    fi
-
-    echo "cutadapt finished for ${label}."
-    echo "--- cutadapt summary ---"
-    grep -E "^(Total reads processed|Reads with adapters|Reads written|Total basepairs processed|Quality-trimmed|Total written|Pairs written)" "${log_file}" || tail -n 20 "${log_file}" || true
-    echo "--- end cutadapt summary ---"
-}
-
-write_msi_style_orientation_adapters() {
-    local output="$1"
-
-    {
-        printf '>forward:F-RCR\n%s...%s\n' "${primer_f}" "${primer_r_rc}"
-        printf '>reverse:R-RCF\n%s...%s\n' "${primer_r}" "${primer_f_rc}"
-    } > "${output}"
-}
-
-orient_labeled_fasta_by_primers() {
-    local input="$1"
-    local output="$2"
-
-    awk -v primer_f="${primer_f}" -v primer_r="${primer_r}" -v primer_f_rc="${primer_f_rc}" -v primer_r_rc="${primer_r_rc}" '
-        function comp(base) {
-            base = toupper(base)
-            if (base == "A") return "T"
-            if (base == "C") return "G"
-            if (base == "G") return "C"
-            if (base == "T") return "A"
-            if (base == "R") return "Y"
-            if (base == "Y") return "R"
-            if (base == "K") return "M"
-            if (base == "M") return "K"
-            if (base == "S") return "S"
-            if (base == "W") return "W"
-            if (base == "B") return "V"
-            if (base == "D") return "H"
-            if (base == "H") return "D"
-            if (base == "V") return "B"
-            return "N"
-        }
-        function revcomp(seq,   idx,out) {
-            out = ""
-            for (idx = length(seq); idx >= 1; idx--)
-                out = out comp(substr(seq, idx, 1))
-            return out
-        }
-        function base_matches(code, base) {
-            code = toupper(code)
-            base = toupper(base)
-            if (code == "A") return base == "A"
-            if (code == "C") return base == "C"
-            if (code == "G") return base == "G"
-            if (code == "T") return base == "T"
-            if (code == "R") return base == "A" || base == "G"
-            if (code == "Y") return base == "C" || base == "T"
-            if (code == "S") return base == "G" || base == "C"
-            if (code == "W") return base == "A" || base == "T"
-            if (code == "K") return base == "G" || base == "T"
-            if (code == "M") return base == "A" || base == "C"
-            if (code == "B") return base == "C" || base == "G" || base == "T"
-            if (code == "D") return base == "A" || base == "G" || base == "T"
-            if (code == "H") return base == "A" || base == "C" || base == "T"
-            if (code == "V") return base == "A" || base == "C" || base == "G"
-            if (code == "N") return base ~ /^[ACGTN]$/
-            return base == code
-        }
-        function has_iupac_match(seq, primer,   idx,jdx,ok) {
-            seq = toupper(seq)
-            primer = toupper(primer)
-            if (length(primer) == 0 || length(seq) < length(primer))
-                return 0
-            for (idx = 1; idx <= length(seq) - length(primer) + 1; idx++) {
-                ok = 1
-                for (jdx = 1; jdx <= length(primer); jdx++) {
-                    if (!base_matches(substr(primer, jdx, 1), substr(seq, idx + jdx - 1, 1))) {
-                        ok = 0
-                        break
-                    }
-                }
-                if (ok)
-                    return 1
-            }
-            return 0
-        }
-        function forward_score(seq) {
-            return has_iupac_match(seq, primer_f) + has_iupac_match(seq, primer_r_rc)
-        }
-        function reverse_score(seq) {
-            return has_iupac_match(seq, primer_r) + has_iupac_match(seq, primer_f_rc)
-        }
-        function annotate_header(value) {
-            return header (header ~ /;$/ ? value : ";" value)
-        }
-        function flush_record(   score_fwd,score_rev) {
-            if (header == "")
-                return
-
-            if (header ~ /adapter=reverse:/ || header ~ /adapter=reverse;/ || header ~ /adapter=reverse$/) {
-                print annotate_header("reoriented=reverse_complement;orientation_source=cutadapt")
-                print revcomp(seq)
-                reoriented++
-                cutadapt_reverse++
-            } else if (header ~ /adapter=forward:/ || header ~ /adapter=forward;/ || header ~ /adapter=forward$/) {
-                print annotate_header("reoriented=forward;orientation_source=cutadapt")
-                print seq
-                cutadapt_forward++
-            } else {
-                score_fwd = forward_score(seq)
-                score_rev = reverse_score(seq)
-                if (score_rev > score_fwd) {
-                    print annotate_header("reoriented=reverse_complement;orientation_source=iupac_fallback")
-                    print revcomp(seq)
-                    reoriented++
-                    fallback_reverse++
-                } else if (score_fwd > score_rev) {
-                    print annotate_header("reoriented=forward;orientation_source=iupac_fallback")
-                    print seq
-                    fallback_forward++
-                } else if (score_fwd == 0) {
-                    print annotate_header("reoriented=unoriented;orientation_source=no_primer_match")
-                    print seq
-                    fallback_unoriented++
-                } else {
-                    print annotate_header("reoriented=unoriented;orientation_source=ambiguous_primer_match")
-                    print seq
-                    fallback_ambiguous++
-                }
-            }
-            total++
-        }
-        /^>/ {
-            flush_record()
-            header = $0
-            seq = ""
-            next
-        }
-        {
-            gsub(/[[:space:]]/, "")
-            seq = seq toupper($0)
-        }
-        END {
-            flush_record()
-            print "FASTA records oriented: " (total + 0) > "/dev/stderr"
-            print "Records reverse-complemented: " (reoriented + 0) > "/dev/stderr"
-            print "Cutadapt forward-orientation labels: " (cutadapt_forward + 0) > "/dev/stderr"
-            print "Cutadapt reverse-orientation labels: " (cutadapt_reverse + 0) > "/dev/stderr"
-            print "Fallback forward-orientation calls: " (fallback_forward + 0) > "/dev/stderr"
-            print "Fallback reverse-orientation calls: " (fallback_reverse + 0) > "/dev/stderr"
-            print "Fallback no-primer-match records kept: " (fallback_unoriented + 0) > "/dev/stderr"
-            print "Fallback ambiguous-primer-match records kept: " (fallback_ambiguous + 0) > "/dev/stderr"
-        }
-    ' "${input}" > "${output}"
 }
 
 select_isonclust3_representative_as_fasta() {
@@ -607,81 +346,6 @@ select_isonclust3_representative_as_fasta() {
             exit
         }
     ' "${input_fastq}" > "${output_fasta}"
-}
-
-orient_fasta_by_primers() {
-    local input="$1"
-    local output="$2"
-    local label="$3"
-    local log_file="${outdir}/primer_oriented/${label}.orientation.log"
-    local adapters_file="${outdir}/primer_oriented/${label}.orientation_adapters.fasta"
-    local labeled_fasta="${outdir}/primer_oriented/${label}.cutadapt_labeled.fasta"
-    local status
-
-    echo "Orienting FASTA records with primers: ${label}"
-    echo "Primer FASTA convention: first sequence is forward primer; second sequence is reverse primer."
-    echo "Forward primer: ${primer_f}"
-    echo "Reverse primer: ${primer_r}"
-    echo "Forward primer reverse-complement expected on reverse-oriented records: ${primer_f_rc}"
-    echo "Reverse primer reverse-complement expected at the 3' end: ${primer_r_rc}"
-    echo "Primer max error rate: ${primer_error_rate}"
-    echo "orientation log: ${log_file}"
-
-    write_msi_style_orientation_adapters "${adapters_file}"
-
-    if cutadapt_supports_action_none; then
-        {
-            echo "cutadapt orientation mode: MSI-style linked primer labels with --action=none"
-            echo "cutadapt executable: ${cutadapt_bin}"
-            echo "orientation adapters: ${adapters_file}"
-            cat "${adapters_file}"
-        } > "${log_file}"
-
-        set +e
-        "${cutadapt_bin}" \
-            --fasta \
-            --action=none \
-            -e "${primer_error_rate}" \
-            --cores "${threads}" \
-            -g "file:${adapters_file}" \
-            -y ";adapter={name};" \
-            -o "${labeled_fasta}" \
-            "${input}" >> "${log_file}" 2>&1
-        status=$?
-        set -e
-
-        if [ "${status}" -ne 0 ]; then
-            echo
-            echo "cutadapt orientation failed for ${label} with exit code ${status}."
-            echo "--- cutadapt orientation log ---"
-            cat "${log_file}" || true
-            echo "--- end cutadapt orientation log ---"
-            exit "${status}"
-        fi
-
-        orient_labeled_fasta_by_primers "${labeled_fasta}" "${output}" 2>> "${log_file}"
-    else
-        {
-            echo "cutadapt --action=none is not available."
-            echo "Using exact IUPAC-aware MSI-style primer-orientation fallback."
-            echo "The fallback does not apply primer_error_rate mismatches."
-        } > "${log_file}"
-
-        orient_labeled_fasta_by_primers "${input}" "${output}" 2>> "${log_file}"
-    fi
-
-    if [ ! -s "${output}" ]; then
-        echo "Primer orientation finished without creating a non-empty output for ${label}."
-        echo "--- orientation log ---"
-        cat "${log_file}" || true
-        echo "--- end orientation log ---"
-        exit 1
-    fi
-
-    echo "Primer orientation finished for ${label}."
-    echo "--- orientation summary ---"
-    grep -E "^(Total reads processed|Reads with adapters|Reads written|FASTA records oriented|Records reverse-complemented|Cutadapt forward-orientation labels|Cutadapt reverse-orientation labels|Fallback forward-orientation calls|Fallback reverse-orientation calls|Fallback no-primer-match records kept|Fallback ambiguous-primer-match records kept)" "${log_file}" || tail -n 20 "${log_file}" || true
-    echo "--- end orientation summary ---"
 }
 
 filter_fasta_by_length() {
@@ -732,92 +396,6 @@ filter_fasta_by_length() {
         echo "No representative sequences remained after length filtering for ${label}."
         echo "Minimum length: ${min_length:-none}"
         echo "Maximum length: ${max_length:-none}"
-        exit 1
-    fi
-}
-
-skip_yacrd_filter_fastq() {
-    local input_fastq="$1"
-    local output_fastq="$2"
-    local label="$3"
-
-    echo "${label}: YACRD filtering disabled; keeping reads after quality/length filtering."
-    cp "${input_fastq}" "${output_fastq}"
-}
-
-yacrd_filter_fastq() {
-    local input_fastq="$1"
-    local output_fastq="$2"
-    local label="$3"
-    local allow_empty="${4:-no}"
-    local overlap_paf="${outdir}/chimera_filtered/${label}.yacrd_overlaps.paf"
-    local yacrd_report="${outdir}/chimera_filtered/${label}.yacrd"
-    local yacrd_log="${outdir}/chimera_filtered/${label}.yacrd.log"
-    local records
-    local min_records
-    local retained_records
-    local status
-
-    records="$(count_fastq_reads "${input_fastq}")"
-    min_records=$((yacrd_min_coverage + 1))
-
-    if [ "${records}" -lt 2 ]; then
-        echo "${label}: fewer than two FASTQ reads; skipping YACRD chimera filtering."
-        cp "${input_fastq}" "${output_fastq}"
-        return
-    fi
-
-    if [ "${yacrd_min_coverage}" -gt 0 ] && [ "${records}" -lt "${min_records}" ]; then
-        echo "${label}: ${records} reads is below YACRD minimum inference size (${min_records} reads for -c ${yacrd_min_coverage}); keeping reads unfiltered."
-        cp "${input_fastq}" "${output_fastq}"
-        return
-    fi
-
-    checkpoint "${label}: minimap2 all-vs-all overlap mapping for YACRD started"
-    echo "minimap2 command: minimap2 -v 1 -x ${yacrd_minimap_preset} -g ${yacrd_minimap_gap} -t ${threads} ${input_fastq} ${input_fastq}"
-    minimap2 -v 1 -x "${yacrd_minimap_preset}" -g "${yacrd_minimap_gap}" -t "${threads}" "${input_fastq}" "${input_fastq}" > "${overlap_paf}"
-    checkpoint "${label}: minimap2 all-vs-all overlap mapping for YACRD done"
-
-    checkpoint "${label}: YACRD chimera filtering started"
-    echo "YACRD command: yacrd -i ${overlap_paf} -o ${yacrd_report} -c ${yacrd_min_coverage} -n ${yacrd_min_read_coverage} filter -i ${input_fastq} -o ${output_fastq}"
-
-    set +e
-    yacrd \
-        -i "${overlap_paf}" \
-        -o "${yacrd_report}" \
-        -c "${yacrd_min_coverage}" \
-        -n "${yacrd_min_read_coverage}" \
-        filter \
-        -i "${input_fastq}" \
-        -o "${output_fastq}" > "${yacrd_log}" 2>&1
-    status=$?
-    set -e
-
-    if [ -s "${yacrd_log}" ]; then
-        cat "${yacrd_log}"
-    fi
-
-    if [ "${status}" -ne 0 ]; then
-        echo "YACRD failed for ${label} with exit code ${status}."
-        exit "${status}"
-    fi
-
-    checkpoint "${label}: YACRD chimera filtering done"
-
-    if [ -s "${yacrd_report}" ]; then
-        echo "YACRD report summary for ${label}:"
-        awk '{ counts[$1] += 1 } END { for (type in counts) print "  " type ": " counts[type] }' "${yacrd_report}" | sort
-    fi
-
-    retained_records="$(count_fastq_reads "${output_fastq}")"
-    echo "${label}: YACRD retained ${retained_records}/${records} reads."
-
-    if [ "${retained_records}" -eq 0 ]; then
-        echo "No FASTQ reads remained after YACRD chimera filtering for ${label}."
-        if [ "${allow_empty}" = "yes" ]; then
-            : > "${output_fastq}"
-            return 1
-        fi
         exit 1
     fi
 }
@@ -886,7 +464,7 @@ select_nanopore_racon_seed() {
         echo "Cluster FASTQ: ${input_fastq}"
         echo "Cluster read count: ${read_count}"
         echo "Seed policy: use the first read emitted in the isONclust3 per-cluster FASTQ."
-        echo "Rationale: sample-level YACRD filtering, when enabled, was already applied before pooling and clustering."
+        echo "Rationale: quality and length filtering were already applied before pooling and clustering."
     } > "${seed_log}"
 
     select_isonclust3_representative_as_fasta "${input_fastq}" "${output_fasta}" "${label}" "${read_count}" 2>> "${seed_log}"
@@ -897,6 +475,405 @@ select_nanopore_racon_seed() {
         echo "Could not create Nanopore Racon seed draft for ${label} from ${input_fastq}."
         exit 1
     fi
+}
+
+orient_cluster_reads_to_seed() {
+    local label="$1"
+    local reads="$2"
+    local seed_fasta="$3"
+    local output_fastq="$4"
+    local orient_paf="${outdir}/oriented_reads/${label}.to_seed_orientation.paf"
+    local orient_log="${outdir}/oriented_reads/${label}.orientation.log"
+
+    checkpoint "${label}: minimap2 read-to-seed orientation mapping started"
+    echo "minimap2 orientation command: minimap2 -v 1 --secondary=no -x ${minimap_preset} -t ${threads} ${seed_fasta} ${reads}"
+    run_minimap2 -x "${minimap_preset}" -t "${threads}" "${seed_fasta}" "${reads}" > "${orient_paf}"
+    checkpoint "${label}: minimap2 read-to-seed orientation mapping done"
+
+    awk -v paf="${orient_paf}" '
+        BEGIN {
+            while ((getline line < paf) > 0) {
+                split(line, f, "\t")
+                read_id = f[1]
+                strand = f[5]
+                matches = f[10] + 0
+                mapq = f[12] + 0
+                if (!(read_id in best_matches) || matches > best_matches[read_id] || (matches == best_matches[read_id] && mapq > best_mapq[read_id])) {
+                    best_matches[read_id] = matches
+                    best_mapq[read_id] = mapq
+                    best_strand[read_id] = strand
+                }
+            }
+            close(paf)
+        }
+        function revcomp(seq,    idx, base, out) {
+            out = ""
+            for (idx = length(seq); idx >= 1; idx--) {
+                base = substr(seq, idx, 1)
+                if (base == "A") base = "T"
+                else if (base == "a") base = "t"
+                else if (base == "C") base = "G"
+                else if (base == "c") base = "g"
+                else if (base == "G") base = "C"
+                else if (base == "g") base = "c"
+                else if (base == "T") base = "A"
+                else if (base == "t") base = "a"
+                else if (base == "U") base = "A"
+                else if (base == "u") base = "a"
+                else if (base == "R") base = "Y"
+                else if (base == "r") base = "y"
+                else if (base == "Y") base = "R"
+                else if (base == "y") base = "r"
+                else if (base == "K") base = "M"
+                else if (base == "k") base = "m"
+                else if (base == "M") base = "K"
+                else if (base == "m") base = "k"
+                else if (base == "S") base = "S"
+                else if (base == "s") base = "s"
+                else if (base == "W") base = "W"
+                else if (base == "w") base = "w"
+                else if (base == "B") base = "V"
+                else if (base == "b") base = "v"
+                else if (base == "D") base = "H"
+                else if (base == "d") base = "h"
+                else if (base == "H") base = "D"
+                else if (base == "h") base = "d"
+                else if (base == "V") base = "B"
+                else if (base == "v") base = "b"
+                out = out base
+            }
+            return out
+        }
+        function reverse_string(value,    idx, out) {
+            out = ""
+            for (idx = length(value); idx >= 1; idx--)
+                out = out substr(value, idx, 1)
+            return out
+        }
+        NR % 4 == 1 {
+            header = $0
+            read_id = header
+            sub(/^@/, "", read_id)
+            sub(/[[:space:]].*$/, "", read_id)
+            next
+        }
+        NR % 4 == 2 { seq = $0; next }
+        NR % 4 == 3 { plus = $0; next }
+        NR % 4 == 0 {
+            qual = $0
+            strand = best_strand[read_id]
+            if (strand == "-") {
+                print header ";oriented_to_seed=reverse_complement"
+                print revcomp(seq)
+                print plus
+                print reverse_string(qual)
+                reversed++
+            } else {
+                if (strand == "+") {
+                    print header ";oriented_to_seed=forward"
+                    forward++
+                } else {
+                    print header ";oriented_to_seed=unmapped_kept"
+                    unmapped++
+                }
+                print seq
+                print plus
+                print qual
+            }
+            total++
+        }
+        END {
+            print "FASTQ records oriented to seed: " (total + 0) > "/dev/stderr"
+            print "Forward-strand records kept: " (forward + 0) > "/dev/stderr"
+            print "Reverse-strand records reverse-complemented: " (reversed + 0) > "/dev/stderr"
+            print "Unmapped records kept unchanged: " (unmapped + 0) > "/dev/stderr"
+        }
+    ' "${reads}" > "${output_fastq}" 2> "${orient_log}"
+
+    cat "${orient_log}"
+
+    if [ ! -s "${output_fastq}" ]; then
+        echo "Read orientation did not create a non-empty FASTQ for ${label}."
+        exit 1
+    fi
+}
+
+reverse_complement_fastq_file() {
+    local input_fastq="$1"
+    local output_fastq="$2"
+    local reason="$3"
+
+    awk -v reason="${reason}" '
+        function revcomp(seq,    idx, base, out) {
+            out = ""
+            for (idx = length(seq); idx >= 1; idx--) {
+                base = substr(seq, idx, 1)
+                if (base == "A") base = "T"; else if (base == "a") base = "t"
+                else if (base == "C") base = "G"; else if (base == "c") base = "g"
+                else if (base == "G") base = "C"; else if (base == "g") base = "c"
+                else if (base == "T") base = "A"; else if (base == "t") base = "a"
+                else if (base == "U") base = "A"; else if (base == "u") base = "a"
+                else if (base == "R") base = "Y"; else if (base == "r") base = "y"
+                else if (base == "Y") base = "R"; else if (base == "y") base = "r"
+                else if (base == "K") base = "M"; else if (base == "k") base = "m"
+                else if (base == "M") base = "K"; else if (base == "m") base = "k"
+                else if (base == "S") base = "S"; else if (base == "s") base = "s"
+                else if (base == "W") base = "W"; else if (base == "w") base = "w"
+                else if (base == "B") base = "V"; else if (base == "b") base = "v"
+                else if (base == "D") base = "H"; else if (base == "d") base = "h"
+                else if (base == "H") base = "D"; else if (base == "h") base = "d"
+                else if (base == "V") base = "B"; else if (base == "v") base = "b"
+                out = out base
+            }
+            return out
+        }
+        function reverse_string(value,    idx, out) {
+            out = ""
+            for (idx = length(value); idx >= 1; idx--)
+                out = out substr(value, idx, 1)
+            return out
+        }
+        NR % 4 == 1 { header = $0; next }
+        NR % 4 == 2 { seq = $0; next }
+        NR % 4 == 3 { plus = $0; next }
+        NR % 4 == 0 {
+            print header ";cluster_oriented=" reason
+            print revcomp(seq)
+            print plus
+            print reverse_string($0)
+            total++
+        }
+        END { print "FASTQ records reverse-complemented by primer majority: " (total + 0) > "/dev/stderr" }
+    ' "${input_fastq}" > "${output_fastq}"
+}
+
+reverse_complement_fasta_file() {
+    local input_fasta="$1"
+    local output_fasta="$2"
+    local reason="$3"
+
+    awk -v reason="${reason}" '
+        function comp(base) {
+            if (base == "A") return "T"; if (base == "a") return "t"
+            if (base == "C") return "G"; if (base == "c") return "g"
+            if (base == "G") return "C"; if (base == "g") return "c"
+            if (base == "T") return "A"; if (base == "t") return "a"
+            if (base == "U") return "A"; if (base == "u") return "a"
+            if (base == "R") return "Y"; if (base == "r") return "y"
+            if (base == "Y") return "R"; if (base == "y") return "r"
+            if (base == "K") return "M"; if (base == "k") return "m"
+            if (base == "M") return "K"; if (base == "m") return "k"
+            if (base == "S") return "S"; if (base == "s") return "s"
+            if (base == "W") return "W"; if (base == "w") return "w"
+            if (base == "B") return "V"; if (base == "b") return "v"
+            if (base == "D") return "H"; if (base == "d") return "h"
+            if (base == "H") return "D"; if (base == "h") return "d"
+            if (base == "V") return "B"; if (base == "v") return "b"
+            return base
+        }
+        function revcomp(seq,   idx,out) {
+            out = ""
+            for (idx = length(seq); idx >= 1; idx--)
+                out = out comp(substr(seq, idx, 1))
+            return out
+        }
+        function flush_record() {
+            if (header != "") {
+                print header ";cluster_oriented=" reason
+                print revcomp(seq)
+                total++
+            }
+        }
+        /^>/ {
+            flush_record()
+            header = $0
+            seq = ""
+            next
+        }
+        {
+            gsub(/[[:space:]]/, "")
+            seq = seq $0
+        }
+        END {
+            flush_record()
+            print "FASTA records reverse-complemented by primer majority: " (total + 0) > "/dev/stderr"
+        }
+    ' "${input_fasta}" > "${output_fasta}"
+}
+
+orient_cluster_by_primer_majority() {
+    local label="$1"
+    local input_fastq="$2"
+    local input_seed_fasta="$3"
+    local output_fastq="$4"
+    local output_seed_fasta="$5"
+    local vote_file="${outdir}/primer_orientation/${label}.primer_majority_vote.tsv"
+    local vote_log="${outdir}/primer_orientation/${label}.primer_majority_orientation.log"
+    local decision
+
+    if [ -z "${primer_file}" ]; then
+        cp "${input_fastq}" "${output_fastq}"
+        cp "${input_seed_fasta}" "${output_seed_fasta}"
+        return
+    fi
+
+    checkpoint "${label}: primer-majority cluster orientation started"
+    echo "Primer-majority orientation uses already seed-oriented reads." > "${vote_log}"
+    echo "Forward evidence: forward primer in first third + reverse-primer reverse-complement in last third." >> "${vote_log}"
+    echo "Reverse evidence: reverse primer in first third + forward-primer reverse-complement in last third." >> "${vote_log}"
+    echo "Forward primer: ${primer_f}" >> "${vote_log}"
+    echo "Reverse primer: ${primer_r}" >> "${vote_log}"
+    echo "Forward primer reverse-complement: ${primer_f_rc}" >> "${vote_log}"
+    echo "Reverse primer reverse-complement: ${primer_r_rc}" >> "${vote_log}"
+
+    awk \
+        -v primer_f="${primer_f}" \
+        -v primer_r="${primer_r}" \
+        -v primer_f_rc="${primer_f_rc}" \
+        -v primer_r_rc="${primer_r_rc}" \
+        'BEGIN { OFS = "\t" }
+        function base_matches(code, base) {
+            code = toupper(code); base = toupper(base)
+            if (code == "A") return base == "A"
+            if (code == "C") return base == "C"
+            if (code == "G") return base == "G"
+            if (code == "T") return base == "T"
+            if (code == "R") return base == "A" || base == "G"
+            if (code == "Y") return base == "C" || base == "T"
+            if (code == "S") return base == "G" || base == "C"
+            if (code == "W") return base == "A" || base == "T"
+            if (code == "K") return base == "G" || base == "T"
+            if (code == "M") return base == "A" || base == "C"
+            if (code == "B") return base == "C" || base == "G" || base == "T"
+            if (code == "D") return base == "A" || base == "G" || base == "T"
+            if (code == "H") return base == "A" || base == "C" || base == "T"
+            if (code == "V") return base == "A" || base == "C" || base == "G"
+            if (code == "N") return base ~ /^[ACGTN]$/
+            return base == code
+        }
+        function has_iupac_match(seq, primer,   idx,jdx,ok) {
+            seq = toupper(seq); primer = toupper(primer)
+            if (length(primer) == 0 || length(seq) < length(primer)) return 0
+            for (idx = 1; idx <= length(seq) - length(primer) + 1; idx++) {
+                ok = 1
+                for (jdx = 1; jdx <= length(primer); jdx++) {
+                    if (!base_matches(substr(primer, jdx, 1), substr(seq, idx + jdx - 1, 1))) { ok = 0; break }
+                }
+                if (ok) return 1
+            }
+            return 0
+        }
+        NR % 4 == 2 {
+            seq = toupper($0)
+            one_third = int(length(seq) / 3)
+            if (one_third < 1) next
+            first = substr(seq, 1, one_third)
+            last = substr(seq, length(seq) - one_third + 1)
+            f_first += has_iupac_match(first, primer_f)
+            rr_last += has_iupac_match(last, primer_r_rc)
+            r_first += has_iupac_match(first, primer_r)
+            fr_last += has_iupac_match(last, primer_f_rc)
+            total++
+        }
+        END {
+            forward = f_first + rr_last
+            reverse = r_first + fr_last
+            decision = (reverse > forward) ? "reverse_complement" : "keep"
+            print "metric", "count"
+            print "reads_scored", total + 0
+            print "forward_primer_first_third", f_first + 0
+            print "reverse_primer_rc_last_third", rr_last + 0
+            print "reverse_primer_first_third", r_first + 0
+            print "forward_primer_rc_last_third", fr_last + 0
+            print "forward_evidence", forward + 0
+            print "reverse_evidence", reverse + 0
+            print "decision", decision
+        }' "${input_fastq}" > "${vote_file}"
+
+    cat "${vote_file}" >> "${vote_log}"
+    decision="$(awk -F'\t' '$1 == "decision" { print $2 }' "${vote_file}")"
+
+    if [ -z "${decision}" ]; then
+        echo "Primer-majority orientation did not produce a decision for ${label}."
+        cat "${vote_log}" || true
+        exit 1
+    fi
+
+    if [ "${decision}" = "reverse_complement" ]; then
+        echo "Primer-majority decision for ${label}: reverse-complement whole cluster FASTQ and seed FASTA." | tee -a "${vote_log}"
+        reverse_complement_fastq_file "${input_fastq}" "${output_fastq}" "primer_majority_reverse_complement" >> "${vote_log}" 2>&1
+        reverse_complement_fasta_file "${input_seed_fasta}" "${output_seed_fasta}" "primer_majority_reverse_complement" >> "${vote_log}" 2>&1
+    else
+        echo "Primer-majority decision for ${label}: keep cluster orientation." | tee -a "${vote_log}"
+        cp "${input_fastq}" "${output_fastq}"
+        cp "${input_seed_fasta}" "${output_seed_fasta}"
+    fi
+
+    cat "${vote_log}"
+    checkpoint "${label}: primer-majority cluster orientation done"
+}
+
+write_cluster_count_header() {
+    local sample
+
+    printf "candidate_otu\tsize" > "${cluster_counts_table}"
+    for sample in "${sample_names[@]}"; do
+        printf "\t%s" "${sample}" >> "${cluster_counts_table}"
+    done
+    printf "\n" >> "${cluster_counts_table}"
+}
+
+record_cluster_sample_counts() {
+    local label="$1"
+    local cluster_fastq="$2"
+    local counts_file="${outdir}/otu_counts/${label}.header_sample_counts.tsv"
+    local sample
+    local count
+    local total
+    local unknown_count
+    local idx
+
+    awk '
+        NR % 4 == 1 {
+            sample = $0
+            sub(/^@/, "", sample)
+            if (sample !~ /__SLIM_SAMPLE__/) {
+                counts["__UNKNOWN__"] += 1
+            } else {
+                sub(/__SLIM_SAMPLE__.*/, "", sample)
+                counts[sample] += 1
+            }
+            total += 1
+        }
+        END {
+            print "__TOTAL__\t" (total + 0)
+            for (sample in counts)
+                print sample "\t" counts[sample]
+        }
+    ' "${cluster_fastq}" > "${counts_file}"
+
+    total="$(awk -F'\t' '$1 == "__TOTAL__" { print $2 + 0 }' "${counts_file}")"
+    unknown_count="$(awk -F'\t' '$1 == "__UNKNOWN__" { print $2 + 0 }' "${counts_file}")"
+
+    if [ "${total}" -eq 0 ]; then
+        echo "Cannot count sample abundances for ${label}: cluster FASTQ has no reads."
+        exit 1
+    fi
+
+    if [ "${unknown_count:-0}" -gt 0 ]; then
+        echo "Cannot count sample abundances for ${label}: ${unknown_count} reads lack the __SLIM_SAMPLE__ header prefix."
+        echo "Cluster FASTQ: ${cluster_fastq}"
+        exit 1
+    fi
+
+    printf "%s\t%s" "${label}" "${total}" >> "${cluster_counts_table}"
+    for idx in "${!sample_names[@]}"; do
+        sample="${sample_names[$idx]}"
+        count="$(awk -F'\t' -v sample="${sample}" '$1 == sample { print $2 + 0; found = 1 } END { if (!found) print 0 }' "${counts_file}")"
+        sample_final_reads[$idx]=$((sample_final_reads[$idx] + count))
+        printf "\t%s" "${count}" >> "${cluster_counts_table}"
+    done
+    printf "\n" >> "${cluster_counts_table}"
 }
 
 run_racon_iterations() {
@@ -963,6 +940,9 @@ process_cluster_set() {
     local cluster_label
     local centroid_fasta
     local polished_fasta
+    local oriented_cluster_fastq
+    local primer_oriented_cluster_fastq
+    local oriented_centroid_fasta
 
     : > "${output_fasta}"
     run_isonclust3_clustering "${label}" "${reads}"
@@ -986,13 +966,24 @@ process_cluster_set() {
             select_nanopore_racon_seed "${cluster_fastq}" "${centroid_fasta}" "${cluster_label}" "${cluster_read_count}"
             checkpoint "${cluster_label}: Nanopore Racon seed selection done"
 
+            oriented_cluster_fastq="${outdir}/oriented_reads/${cluster_label}.seed_oriented.fastq"
+            checkpoint "${cluster_label}: cluster read orientation to seed started"
+            orient_cluster_reads_to_seed "${cluster_label}" "${cluster_fastq}" "${centroid_fasta}" "${oriented_cluster_fastq}"
+            checkpoint "${cluster_label}: cluster read orientation to seed done"
+
+            primer_oriented_cluster_fastq="${outdir}/primer_orientation/${cluster_label}.primer_oriented.fastq"
+            oriented_centroid_fasta="${outdir}/primer_orientation/${cluster_label}.primer_oriented_seed.fasta"
+            orient_cluster_by_primer_majority "${cluster_label}" "${oriented_cluster_fastq}" "${centroid_fasta}" "${primer_oriented_cluster_fastq}" "${oriented_centroid_fasta}"
+
+            record_cluster_sample_counts "${cluster_label}" "${primer_oriented_cluster_fastq}"
+
             if [ "${cluster_read_count}" -lt 2 ]; then
                 checkpoint "${cluster_label}: Racon polishing skipped for singleton cluster"
-                echo "Cluster ${cluster_label} contains one read; keeping the isONclust3 representative seed as the OTU draft."
-                cp "${centroid_fasta}" "${polished_fasta}"
+                echo "Cluster ${cluster_label} contains one read; keeping the oriented isONclust3 representative seed as the OTU draft."
+                cp "${oriented_centroid_fasta}" "${polished_fasta}"
             else
                 checkpoint "${cluster_label}: Racon polishing loop started"
-                run_racon_iterations "${cluster_label}" "${cluster_fastq}" "${centroid_fasta}" "${polished_fasta}"
+                run_racon_iterations "${cluster_label}" "${primer_oriented_cluster_fastq}" "${oriented_centroid_fasta}" "${polished_fasta}"
                 checkpoint "${cluster_label}: Racon polishing loop done"
             fi
             cat "${polished_fasta}" >> "${output_fasta}"
@@ -1001,7 +992,20 @@ process_cluster_set() {
             checkpoint "${cluster_label}: PacBio isONclust3 representative selection started"
             select_isonclust3_representative_as_fasta "${cluster_fastq}" "${centroid_fasta}" "${cluster_label}" "${cluster_read_count}"
             checkpoint "${cluster_label}: PacBio isONclust3 representative selection done"
-            cat "${centroid_fasta}" >> "${output_fasta}"
+
+            oriented_cluster_fastq="${outdir}/oriented_reads/${cluster_label}.seed_oriented.fastq"
+            checkpoint "${cluster_label}: cluster read orientation to representative started"
+            orient_cluster_reads_to_seed "${cluster_label}" "${cluster_fastq}" "${centroid_fasta}" "${oriented_cluster_fastq}"
+            checkpoint "${cluster_label}: cluster read orientation to representative done"
+
+            primer_oriented_cluster_fastq="${outdir}/primer_orientation/${cluster_label}.primer_oriented.fastq"
+            oriented_centroid_fasta="${outdir}/primer_orientation/${cluster_label}.primer_oriented_representative.fasta"
+            orient_cluster_by_primer_majority "${cluster_label}" "${oriented_cluster_fastq}" "${centroid_fasta}" "${primer_oriented_cluster_fastq}" "${oriented_centroid_fasta}"
+
+            record_cluster_sample_counts "${cluster_label}" "${primer_oriented_cluster_fastq}"
+
+            cp "${oriented_centroid_fasta}" "${polished_fasta}"
+            cat "${polished_fasta}" >> "${output_fasta}"
         fi
     done
 
@@ -1015,118 +1019,30 @@ process_cluster_set() {
     cluster_retained_count="${retained_count_local}"
 }
 
-normalize_representative_ids() {
-    local input="$1"
-    local output="$2"
-    local map_file="$3"
-
-    : > "${map_file}"
-
-    awk -v map_file="${map_file}" '
-        /^>/ {
-            old = $0
-            sub(/^>/, "", old)
-            sub(/[[:space:]].*$/, "", old)
-            count += 1
-            new_id = "OTU" count
-            print old "\t" new_id >> map_file
-            print ">" new_id
-            next
-        }
-        { print }
-    ' "${input}" > "${output}"
-}
-
-write_otu_table() {
-    local table="$1"
-    local otu_ids_file="${outdir}/otu_counts/otu_ids.txt"
-    local sample_order_file="${outdir}/otu_counts/sample_order.txt"
-    local raw_table="${outdir}/otu_counts/all_candidate_otu_table.tsv"
+write_representatives_and_otu_table_from_cluster_counts() {
+    local input_fasta="$1"
+    local output_fasta="$2"
+    local table="$3"
     local assigned_map="${outdir}/otu_counts/assigned_representative_id_map.tsv"
-    local zero_ids="${outdir}/otu_counts/zero_assigned_candidate_otus.txt"
-    local filtered_fasta="${outdir}/otu_counts/assigned_representatives.fasta"
-    local mapping_file
-    local counts_file
-    local otu_id
+    local zero_ids="${outdir}/otu_counts/zero_count_candidate_otus.txt"
     local sample
-    local count
+    local candidate
     local total
-    local new_index
+    local new_index=0
     local new_id
+    local row_id
+    local row_counts_text
     local -a row_counts
 
-    grep '^>' "${consensus_fasta}" | sed 's/^>//; s/[[:space:]].*$//' > "${otu_ids_file}"
-    printf '%s\n' "${sample_names[@]}" > "${sample_order_file}"
-
-    if [ ! -s "${otu_ids_file}" ]; then
-        echo "No representative sequences were available for OTU table creation."
+    if [ ! -s "${input_fasta}" ]; then
+        echo "No representative sequences were available for final FASTA creation."
         exit 1
     fi
 
-    for idx in "${!sample_names[@]}"; do
-        sample="${sample_names[$idx]}"
-        mapping_file="${outdir}/otu_counts/${sample}.reads_to_consensus.paf"
-        counts_file="${outdir}/otu_counts/${sample}.counts.tsv"
-
-        if [ ! -s "${sample_filtered_fastqs[$idx]}" ]; then
-            checkpoint "${sample}: final-consensus mapping skipped because no reads survived filtering"
-            : > "${mapping_file}"
-            : > "${counts_file}"
-            sample_final_reads[$idx]="0"
-            continue
-        fi
-
-        checkpoint "${sample}: minimap2 final-consensus mapping for OTU counts started"
-        run_minimap2 -x "${minimap_preset}" -t "${threads}" "${consensus_fasta}" "${sample_filtered_fastqs[$idx]}" > "${mapping_file}"
-        checkpoint "${sample}: minimap2 final-consensus mapping for OTU counts done"
-
-        checkpoint "${sample}: best-hit read counting started"
-        awk '
-            BEGIN { OFS = "\t" }
-            {
-                read = $1
-                target = $6
-                matches = $10 + 0
-                mapq = $12 + 0
-
-                if (!(read in best_matches) || matches > best_matches[read] || (matches == best_matches[read] && mapq > best_mapq[read])) {
-                    best_matches[read] = matches
-                    best_mapq[read] = mapq
-                    best_target[read] = target
-                }
-            }
-            END {
-                for (read in best_target)
-                    counts[best_target[read]] += 1
-                for (target in counts)
-                    print target, counts[target]
-            }
-        ' "${mapping_file}" > "${counts_file}"
-        checkpoint "${sample}: best-hit read counting done"
-
-        total="$(awk '{sum += $2} END {print sum + 0}' "${counts_file}")"
-        sample_final_reads[$idx]="${total}"
-    done
-
-    {
-        printf "OTU"
-        for sample in "${sample_names[@]}"; do
-            printf "\t%s" "${sample}"
-        done
-        printf "\n"
-
-        while IFS= read -r otu_id; do
-            printf "%s" "${otu_id}"
-
-            for sample in "${sample_names[@]}"; do
-                counts_file="${outdir}/otu_counts/${sample}.counts.tsv"
-                count="$(awk -v otu="${otu_id}" '$1 == otu { print $2; found = 1 } END { if (!found) print 0 }' "${counts_file}")"
-                printf "\t%s" "${count}"
-            done
-
-            printf "\n"
-        done < "${otu_ids_file}"
-    } > "${raw_table}"
+    if [ ! -s "${cluster_counts_table}" ]; then
+        echo "Cluster count table is missing or empty: ${cluster_counts_table}"
+        exit 1
+    fi
 
     : > "${assigned_map}"
     : > "${zero_ids}"
@@ -1138,38 +1054,42 @@ write_otu_table() {
         done
         printf "\n"
 
-        new_index=0
-        while IFS= read -r otu_id; do
-            total=0
-            row_counts=()
+        while IFS=$'\t' read -r candidate total row_counts_text; do
+            if [ "${candidate}" = "candidate_otu" ]; then
+                continue
+            fi
 
-            for sample in "${sample_names[@]}"; do
-                counts_file="${outdir}/otu_counts/${sample}.counts.tsv"
-                count="$(awk -v otu="${otu_id}" '$1 == otu { print $2; found = 1 } END { if (!found) print 0 }' "${counts_file}")"
-                row_counts+=("${count}")
-                total=$((total + count))
-            done
+            if [ -z "${candidate}" ]; then
+                continue
+            fi
 
             if [ "${total}" -eq 0 ]; then
-                printf "%s\n" "${otu_id}" >> "${zero_ids}"
+                printf "%s\n" "${candidate}" >> "${zero_ids}"
                 continue
+            fi
+
+            IFS=$'\t' read -r -a row_counts <<< "${row_counts_text}"
+            if [ "${#row_counts[@]}" -ne "${#sample_names[@]}" ]; then
+                echo "Cluster count row for ${candidate} does not match the sample count."
+                echo "Expected ${#sample_names[@]} sample columns but found ${#row_counts[@]}."
+                exit 1
             fi
 
             new_index=$((new_index + 1))
             new_id="OTU${new_index}"
-            printf "%s\t%s\n" "${otu_id}" "${new_id}" >> "${assigned_map}"
+            row_id="${new_id};size=${total}"
+            printf "%s\t%s\t%s\n" "${candidate}" "${row_id}" "${total}" >> "${assigned_map}"
 
-            printf "%s" "${new_id}"
+            printf "%s" "${row_id}"
             for count in "${row_counts[@]}"; do
                 printf "\t%s" "${count}"
             done
             printf "\n"
-        done < "${otu_ids_file}"
+        done < "${cluster_counts_table}"
     } > "${table}"
 
     if [ ! -s "${assigned_map}" ]; then
-        echo "No representatives had reads assigned during final OTU counting."
-        echo "All candidate representatives and mappings are kept in ${outdir}/otu_counts for debugging."
+        echo "No retained clusters had read counts for final OTU creation."
         exit 1
     fi
 
@@ -1184,19 +1104,23 @@ write_otu_table() {
         /^>/ {
             old = $0
             sub(/^>/, "", old)
-            sub(/[[:space:]].*$/, "", old)
-            keep = old in id_map
+            label = old
+            sub(/[[:space:];].*$/, "", label)
+            keep = label in id_map
             if (keep)
-                print ">" id_map[old]
+                print ">" id_map[label]
             next
         }
         keep { print }
-    ' "${consensus_fasta}" > "${filtered_fasta}"
+    ' "${input_fasta}" > "${output_fasta}"
 
-    mv "${filtered_fasta}" "${consensus_fasta}"
+    if [ ! -s "${output_fasta}" ]; then
+        echo "Final representative FASTA is empty after applying cluster-count IDs."
+        exit 1
+    fi
 
     if [ -s "${zero_ids}" ]; then
-        echo "Dropped candidate OTUs with zero final read assignments:"
+        echo "Dropped candidate OTUs with zero cluster read counts:"
         sed 's/^/  /' "${zero_ids}"
     fi
 }
@@ -1204,7 +1128,7 @@ write_otu_table() {
 write_stats_table() {
     local final_otus="$1"
 
-    printf "sample\tplatform\traw_reads\tquality_filtered_reads\tlength_filtered_reads\tchimera_filtered_reads\tfinal_assigned_reads\tclustering_method\tminimap2_preset\tisONclust3_mode\tisONclust3_implied_k\tisONclust3_implied_w\tdraft_clusters\tretained_clusters\tfinal_otus\tracon_iterations\n" > "${stats_tsv}"
+    printf "sample\tplatform\traw_reads\tquality_filtered_reads\tlength_filtered_reads\tpost_length_filter_reads\tfinal_assigned_reads\tclustering_method\tminimap2_preset\tisONclust3_mode\tisONclust3_implied_k\tisONclust3_implied_w\tdraft_clusters\tretained_clusters\tfinal_otus\tracon_iterations\n" > "${stats_tsv}"
 
     for idx in "${!sample_names[@]}"; do
         printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
@@ -1213,7 +1137,7 @@ write_stats_table() {
             "${sample_raw_reads[$idx]}" \
             "${sample_quality_reads[$idx]}" \
             "${sample_length_reads[$idx]}" \
-            "${sample_chimera_reads[$idx]}" \
+            "${sample_post_length_reads[$idx]}" \
             "${sample_final_reads[$idx]:-0}" \
             "isONclust3" \
             "${minimap_preset}" \
@@ -1258,7 +1182,7 @@ register_sample_for_otu_table() {
     local raw_reads="$3"
     local quality_reads="$4"
     local length_reads="$5"
-    local chimera_reads="$6"
+    local post_length_reads="$6"
 
     if [ -n "${sample_metadata_file:-}" ]; then
         printf "%s\t%s\t%s\t%s\t%s\t%s\n" \
@@ -1267,7 +1191,7 @@ register_sample_for_otu_table() {
             "${raw_reads}" \
             "${quality_reads}" \
             "${length_reads}" \
-            "${chimera_reads}" > "${sample_metadata_file}"
+            "${post_length_reads}" > "${sample_metadata_file}"
         return
     fi
 
@@ -1276,7 +1200,7 @@ register_sample_for_otu_table() {
     sample_raw_reads+=("${raw_reads}")
     sample_quality_reads+=("${quality_reads}")
     sample_length_reads+=("${length_reads}")
-    sample_chimera_reads+=("${chimera_reads}")
+    sample_post_length_reads+=("${post_length_reads}")
     sample_final_reads+=("0")
 }
 
@@ -1287,15 +1211,15 @@ load_sample_metadata() {
     local raw_reads
     local quality_reads
     local length_reads
-    local chimera_reads
+    local post_length_reads
 
     if [ ! -s "${metadata}" ]; then
         echo "Sample preparation metadata missing or empty: ${metadata}"
         exit 1
     fi
 
-    IFS=$'\t' read -r sample filtered_fastq raw_reads quality_reads length_reads chimera_reads < "${metadata}"
-    register_sample_for_otu_table "${sample}" "${filtered_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "${chimera_reads}"
+    IFS=$'\t' read -r sample filtered_fastq raw_reads quality_reads length_reads post_length_reads < "${metadata}"
+    register_sample_for_otu_table "${sample}" "${filtered_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "${post_length_reads}"
 }
 
 prepare_sample_reads() {
@@ -1306,17 +1230,12 @@ prepare_sample_reads() {
     local quality_reads
     local length_fastq
     local length_reads
-    local primer_trimmed_fastq
-    local chimera_fastq
-    local chimera_reads
     local selected_fastq
     local selected_reads
 
     sample="$(sample_name_from_file "${read_file}")"
     quality_fastq="${outdir}/quality_filtered/${sample}.quality.fastq"
     length_fastq="${outdir}/length_filtered/${sample}.length.fastq"
-    primer_trimmed_fastq="${outdir}/primer_trimmed/${sample}.primer_trimmed.fastq"
-    chimera_fastq="${outdir}/chimera_filtered/${sample}.nonchimeras.fastq"
 
     echo
     echo "Processing sample: ${sample}"
@@ -1332,73 +1251,17 @@ prepare_sample_reads() {
         return
     fi
 
-    if [ "${platform}" = "pacbio" ]; then
-        if [ -n "${primer_file}" ] && [ "${primer_trimming}" = "yes" ]; then
-            checkpoint "${sample}: quality-filtered HiFi primer trimming started"
-            trim_primers "${quality_fastq}" "${primer_trimmed_fastq}" "${sample}.quality_filtered_hifi_reads"
-            checkpoint "${sample}: quality-filtered HiFi primer trimming done"
-        else
-            cp "${quality_fastq}" "${primer_trimmed_fastq}"
-        fi
-
-        run_fastq_filter "${primer_trimmed_fastq}" "${length_fastq}" "${sample}" "length"
-        length_reads="$(count_fastq_reads "${length_fastq}")"
-        if [ "${length_reads}" -eq 0 ]; then
-            echo "No reads survived primer-aware length filtering for sample ${sample}; retaining sample with zero OTU counts."
-            : > "${length_fastq}"
-            register_sample_for_otu_table "${sample}" "${length_fastq}" "${raw_reads}" "${quality_reads}" "0" "0"
-            return
-        fi
-
-        if [ "${yacrd_filtering}" = "yes" ]; then
-            if ! yacrd_filter_fastq "${length_fastq}" "${chimera_fastq}" "${sample}.hifi_reads" "yes"; then
-                echo "No reads remained after chimera filtering for sample ${sample}; retaining sample with zero OTU counts."
-                register_sample_for_otu_table "${sample}" "${chimera_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "0"
-                return
-            fi
-        else
-            skip_yacrd_filter_fastq "${length_fastq}" "${chimera_fastq}" "${sample}.hifi_reads"
-        fi
-
-        chimera_reads="$(count_fastq_reads "${chimera_fastq}")"
-        if [ "${chimera_reads}" -eq 0 ]; then
-            echo "No reads remained after chimera filtering for sample ${sample}; retaining sample with zero OTU counts."
-            register_sample_for_otu_table "${sample}" "${chimera_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "0"
-            return
-        fi
-
-        selected_fastq="${chimera_fastq}"
-        selected_reads="${chimera_reads}"
-    else
-        run_fastq_filter "${quality_fastq}" "${length_fastq}" "${sample}" "length"
-        length_reads="$(count_fastq_reads "${length_fastq}")"
-        if [ "${length_reads}" -eq 0 ]; then
-            echo "No reads survived length filtering for sample ${sample}; retaining sample with zero OTU counts."
-            : > "${length_fastq}"
-            register_sample_for_otu_table "${sample}" "${length_fastq}" "${raw_reads}" "${quality_reads}" "0" "0"
-            return
-        fi
-
-        if [ "${yacrd_filtering}" = "yes" ]; then
-            if ! yacrd_filter_fastq "${length_fastq}" "${chimera_fastq}" "${sample}.nanopore_reads" "yes"; then
-                echo "No reads remained after chimera filtering for sample ${sample}; retaining sample with zero OTU counts."
-                register_sample_for_otu_table "${sample}" "${chimera_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "0"
-                return
-            fi
-        else
-            skip_yacrd_filter_fastq "${length_fastq}" "${chimera_fastq}" "${sample}.nanopore_reads"
-        fi
-
-        chimera_reads="$(count_fastq_reads "${chimera_fastq}")"
-        if [ "${chimera_reads}" -eq 0 ]; then
-            echo "No reads remained after chimera filtering for sample ${sample}; retaining sample with zero OTU counts."
-            register_sample_for_otu_table "${sample}" "${chimera_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "0"
-            return
-        fi
-
-        selected_fastq="${chimera_fastq}"
-        selected_reads="${chimera_reads}"
+    run_fastq_filter "${quality_fastq}" "${length_fastq}" "${sample}" "length"
+    length_reads="$(count_fastq_reads "${length_fastq}")"
+    if [ "${length_reads}" -eq 0 ]; then
+        echo "No reads survived length filtering for sample ${sample}; retaining sample with zero OTU counts."
+        : > "${length_fastq}"
+        register_sample_for_otu_table "${sample}" "${length_fastq}" "${raw_reads}" "${quality_reads}" "0" "0"
+        return
     fi
+
+    selected_fastq="${length_fastq}"
+    selected_reads="${length_reads}"
 
     register_sample_for_otu_table "${sample}" "${selected_fastq}" "${raw_reads}" "${quality_reads}" "${length_reads}" "${selected_reads}"
 }
@@ -1445,18 +1308,19 @@ run_sample_preparation_jobs() {
     if [ "${max_parallel_jobs}" -gt "${sample_count}" ]; then
         max_parallel_jobs="${sample_count}"
     fi
+    if [ "${max_parallel_jobs}" -gt 8 ]; then
+        max_parallel_jobs=8
+    fi
     if [ "${max_parallel_jobs}" -lt 1 ]; then
         max_parallel_jobs=1
     fi
 
-    worker_threads=$((threads / max_parallel_jobs))
-    if [ "${worker_threads}" -lt 1 ]; then
-        worker_threads=1
-    fi
+    worker_threads=1
 
     echo "Sample preparation parallel jobs: ${max_parallel_jobs}"
+    echo "VSEARCH filtering jobs are batched by sample, capped at 8 concurrent jobs or available cores."
     echo "Threads per sample preparation job: ${worker_threads}"
-    echo "Sample preparation includes per-sample quality filtering, primer trimming, length filtering, and optional YACRD filtering."
+    echo "Sample preparation includes per-sample quality filtering and length filtering. No primer trimming or chimera filtering is performed."
 
     sample_preparation_pids=()
     sample_metadata_files=()
@@ -1507,16 +1371,6 @@ echo "Sequencing platform: ${platform}"
 echo "VSEARCH: ${vsearch_bin}"
 echo "minimap2: $(command -v minimap2)"
 echo "minimap2 preset: ${minimap_preset}"
-echo "YACRD filtering: ${yacrd_filtering}"
-if [ "${yacrd_filtering}" = "yes" ]; then
-    echo "YACRD: $(command -v yacrd)"
-else
-    echo "YACRD: disabled"
-fi
-echo "YACRD minimap2 preset: ${yacrd_minimap_preset}"
-echo "YACRD minimap2 max gap: ${yacrd_minimap_gap}"
-echo "YACRD minimum overlap coverage: ${yacrd_min_coverage}"
-echo "YACRD minimum covered read fraction: ${yacrd_min_read_coverage}"
 echo "isONclust3: $(command -v isONclust3)"
 echo "isONclust3 mode: ${isonclust_mode}"
 echo "isONclust3 implied k: ${isonclust_k_label}"
@@ -1526,28 +1380,28 @@ echo "Quality filter max expected error rate: ${maxee_rate}"
 echo "Minimum read length: ${min_length:-none}"
 echo "Maximum read length: ${max_length:-none}"
 echo "Minimum reads per cluster: ${min_cluster_size}"
-echo "Primer trimming: ${primer_trimming}"
+echo "Primer trimming: disabled/removed"
+echo "Chimera filtering: disabled/removed"
+if [ "${legacy_primer_trimming_requested}" != "yes" ] || [ "${legacy_yacrd_filtering_requested}" != "no" ] || [ -n "${yacrd_min_coverage}" ] || [ -n "${yacrd_min_read_coverage}" ]; then
+    echo "Legacy primer-trimming/YACRD options were provided and ignored by this workflow."
+fi
 if [ "${platform}" = "nanopore" ]; then
-    echo "Nanopore initial draft: first isONclust3 cluster read used as the Racon seed after optional sample-level YACRD filtering"
+    echo "Nanopore initial draft: first isONclust3 cluster read used as the Racon seed after quality/length filtering"
     echo "Racon: $(command -v racon)"
     echo "Racon iterations: ${racon_iterations}"
 else
-    echo "PacBio representative policy: first isONclust3 cluster read is used directly as the OTU representative; no SPOA consensus is run"
+    echo "PacBio representative policy: first isONclust3 cluster read is oriented by the cluster-orientation steps and used as the OTU representative; no SPOA consensus is run"
 fi
 if [ -n "${primer_file}" ]; then
     load_primers "${primer_file}"
-    echo "Primers FASTA: ${primer_file}"
+    echo "Primers FASTA for cluster-majority orientation: ${primer_file}"
     echo "Primer FASTA convention: first sequence is forward primer; second sequence is reverse primer"
     echo "Forward primer loaded from first FASTA record: ${primer_f}"
     echo "Reverse primer loaded from second FASTA record: ${primer_r}"
-    echo "Primer max error rate: ${primer_error_rate}"
-    if [ "${primer_trimming}" = "yes" ]; then
-        echo "Final representative post-processing: orient by primers, then trim forward and reverse primers"
-    else
-        echo "Final representative post-processing: orient by primers; primer trimming disabled"
-    fi
+    echo "Primer use: exact IUPAC-aware cluster-majority orientation voting only"
+    echo "Primer max error rate legacy value ignored: ${primer_error_rate}"
 else
-    echo "Primers FASTA: none"
+    echo "Primers FASTA: none; primer-majority orientation disabled"
 fi
 
 if [ "${run_mode}" = "prepare" ]; then
@@ -1562,7 +1416,7 @@ sample_filtered_fastqs=()
 sample_raw_reads=()
 sample_quality_reads=()
 sample_length_reads=()
-sample_chimera_reads=()
+sample_post_length_reads=()
 sample_final_reads=()
 
 pooled_fastq="${outdir}/pooled/pooled.${platform}.fastq"
@@ -1592,45 +1446,14 @@ if [ "$(count_fastq_reads "${pooled_fastq}")" -eq 0 ]; then
     exit 1
 fi
 
+cluster_counts_table="${outdir}/otu_counts/cluster_sample_counts.tsv"
+write_cluster_count_header
+
 process_cluster_set "pooled" "${pooled_fastq}" "${preliminary_representatives}"
 
-postprocessed_representatives="${preliminary_representatives}"
-if [ -n "${primer_file}" ]; then
-    oriented_representatives="${outdir}/primer_oriented/preliminary_representatives.oriented.fasta"
-    primer_trimmed_representatives="${outdir}/primer_trimmed/preliminary_representatives.primer_trimmed.fasta"
-
-    checkpoint "Post-representative primer orientation started"
-    orient_fasta_by_primers "${preliminary_representatives}" "${oriented_representatives}" "${platform}_representatives"
-    checkpoint "Post-representative primer orientation done"
-
-    if [ "${primer_trimming}" = "yes" ]; then
-        checkpoint "Post-representative primer trimming started"
-        trim_primers "${oriented_representatives}" "${primer_trimmed_representatives}" "${platform}_representatives" "no"
-        checkpoint "Post-representative primer trimming done"
-        postprocessed_representatives="${primer_trimmed_representatives}"
-    else
-        echo "Primer trimming disabled; keeping oriented representative sequences untrimmed."
-        postprocessed_representatives="${oriented_representatives}"
-    fi
-fi
-
-representatives_for_normalization="${postprocessed_representatives}"
-if [ "${platform}" = "nanopore" ]; then
-    length_filtered_representatives="${outdir}/length_filtered/preliminary_representatives.length_filtered.fasta"
-    checkpoint "Nanopore representative length filtering started"
-    filter_fasta_by_length "${postprocessed_representatives}" "${length_filtered_representatives}" "nanopore_polished_consensus"
-    checkpoint "Nanopore representative length filtering done"
-
-    representatives_for_normalization="${length_filtered_representatives}"
-fi
-
-checkpoint "Representative FASTA ID normalization started"
-normalize_representative_ids "${representatives_for_normalization}" "${consensus_fasta}" "${outdir}/otu_counts/representative_id_map.tsv"
-checkpoint "Representative FASTA ID normalization done"
-
-checkpoint "OTU table read-to-consensus mapping/counting started"
-write_otu_table "${otu_table}"
-checkpoint "OTU table read-to-consensus mapping/counting done"
+checkpoint "Representative FASTA and OTU table writing from cluster counts started"
+write_representatives_and_otu_table_from_cluster_counts "${preliminary_representatives}" "${consensus_fasta}" "${otu_table}"
+checkpoint "Representative FASTA and OTU table writing from cluster counts done"
 
 final_otu_count="$(count_fasta_records "${consensus_fasta}")"
 
