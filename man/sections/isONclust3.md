@@ -20,7 +20,7 @@ The module does not perform taxonomy. The representative FASTA and OTU table can
 7. Cluster reads are oriented to the seed with minimap2 PAF strand calls.
 8. When a primer FASTA is supplied, the whole cluster is kept or reverse-complemented by primer-majority voting.
 9. For clusters with at least two reads, minimap2 maps the oriented cluster reads to the oriented seed emitted by isONclust3, then Racon polishes from that seed. The minimap2 + Racon loop runs 1 to 4 times. Default: `3`. Singleton clusters skip Racon and keep the oriented seed directly.
-10. Final Nanopore polished OTU representatives are written with abundance-aware IDs.
+10. Final Nanopore polished OTU representatives are written with plain sequential OTU IDs.
 
 **PacBio HiFi**
 
@@ -101,13 +101,13 @@ Nanopore only. The module allows `1` to `4` polishing iterations per retained cl
 
 Default output: `otus-isonclust.tsv`.
 
-A TSV table with OTU IDs as rows and samples as columns. Counts are generated from the sample prefixes in retained cluster read headers. OTU row names include total abundance, for example `OTU1;size=42`, and exactly match the representative FASTA headers.
+A TSV table with OTU IDs as rows and samples as columns. Counts are generated from the sample prefixes in retained cluster read headers. OTU row names use plain sequential IDs such as `OTU1` and exactly match the representative FASTA headers.
 
 **OTUs representative sequences**
 
 Default output: `representative-isonclust.fasta`.
 
-The final representative FASTA. Sequence IDs are normalized to `OTU1;size=N`, `OTU2;size=N`, etc., where `size` is the total number of retained cluster reads across all samples. The OTU table uses the exact same IDs and the module validates that the FASTA and table match before finishing.
+The final representative FASTA. Sequence IDs are normalized to `OTU1`, `OTU2`, etc., with no additional header annotations. The OTU table uses the exact same IDs and the module validates that both outputs contain exactly `OTU1` through `OTUN` before finishing.
 
 **Run summary statistics**
 
