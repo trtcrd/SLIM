@@ -18,6 +18,8 @@ racon_iterations="3"
 yacrd_filtering="no"
 yacrd_min_coverage=""
 yacrd_min_read_coverage="0.4"
+isonclust_k=""
+isonclust_w=""
 run_mode="all"
 single_read_file=""
 sample_count=""
@@ -29,11 +31,11 @@ checkpoint() {
 }
 
 usage() {
-    echo "usage: run_isonclust3.sh -i dir -y reads_pattern [-p primers.fasta] -t threads -P nanopore|pacbio -q maxee_rate -m min_len -M max_len -R racon_iterations -s min_cluster_size -o representatives.fasta -O otu_table.tsv -S stats.tsv -a archive.tar.gz [-X all|prepare|cluster -F read_file -D metadata_file -K sample_count]"
+    echo "usage: run_isonclust3.sh -i dir -y reads_pattern [-p primers.fasta] -t threads -P nanopore|pacbio -q maxee_rate -m min_len -M max_len -R racon_iterations -s min_cluster_size [-k kmer_size -w window_size] -o representatives.fasta -O otu_table.tsv -S stats.tsv -a archive.tar.gz [-X all|prepare|cluster -F read_file -D metadata_file -K sample_count]"
     echo "legacy options -E, -T, -Y, -c and -n are accepted for backward compatibility but primer trimming and chimera filtering are not performed."
 }
 
-while getopts i:y:p:t:m:M:q:E:T:P:R:s:Y:c:n:o:O:S:a:X:F:D:K: flag
+while getopts i:y:p:t:m:M:q:E:T:P:R:s:Y:c:n:k:w:o:O:S:a:X:F:D:K: flag
 do
     case "${flag}" in
         i) dir="${OPTARG}";;
@@ -51,6 +53,8 @@ do
         Y) yacrd_filtering="${OPTARG}";;
         c) yacrd_min_coverage="${OPTARG}";;
         n) yacrd_min_read_coverage="${OPTARG}";;
+        k) isonclust_k="${OPTARG}";;
+        w) isonclust_w="${OPTARG}";;
         o) consensus_fasta="${OPTARG}";;
         O) otu_table="${OPTARG}";;
         S) stats_tsv="${OPTARG}";;
@@ -110,6 +114,7 @@ case "${platform}" in
     nanopore|ont)
         platform="nanopore"
         isonclust_mode="ont"
+        isonclust_mode_label="ont"
         minimap_preset="map-ont"
         default_maxee_rate="0.05"
         isonclust_k_label="13"
@@ -118,6 +123,7 @@ case "${platform}" in
     pacbio|hifi|ccs)
         platform="pacbio"
         isonclust_mode="pacbio"
+        isonclust_mode_label="pacbio"
         minimap_preset="map-hifi"
         default_maxee_rate="0.01"
         isonclust_k_label="15"
@@ -128,6 +134,37 @@ case "${platform}" in
         exit 1
         ;;
 esac
+
+isonclust_custom_params="no"
+if [ -n "${isonclust_k}" ] || [ -n "${isonclust_w}" ]; then
+    if [ -z "${isonclust_k}" ] || [ -z "${isonclust_w}" ]; then
+        echo "Custom isONclust3 minimizer settings require both -k kmer_size and -w window_size."
+        exit 1
+    fi
+    if ! [[ "${isonclust_k}" =~ ^[0-9]+$ ]] || [ "${isonclust_k}" -lt 1 ]; then
+        echo "Custom isONclust3 k-mer size (-k) must be a positive integer."
+        exit 1
+    fi
+    if [ "${isonclust_k}" -gt 32 ]; then
+        echo "Custom isONclust3 k-mer size (-k) must be less than or equal to 32."
+        exit 1
+    fi
+    if ! [[ "${isonclust_w}" =~ ^[0-9]+$ ]] || [ "${isonclust_w}" -lt 1 ]; then
+        echo "Custom isONclust3 window size (-w) must be a positive integer."
+        exit 1
+    fi
+    if [ "${isonclust_w}" -lt "${isonclust_k}" ]; then
+        echo "Custom isONclust3 window size (-w) must be greater than or equal to -k."
+        exit 1
+    fi
+    if [ $((10#${isonclust_w} % 2)) -eq 0 ]; then
+        echo "Custom isONclust3 window size (-w) must be odd."
+        exit 1
+    fi
+    isonclust_custom_params="yes"
+    isonclust_k_label="${isonclust_k}"
+    isonclust_w_label="${isonclust_w}"
+fi
 
 maxee_rate="${maxee_rate:-${default_maxee_rate}}"
 legacy_primer_trimming_requested="${primer_trimming}"
@@ -431,7 +468,11 @@ run_isonclust3_clustering() {
         --outfolder "${cluster_out}"
     )
 
-    checkpoint "${label}: isONclust3 ${isonclust_mode} clustering started"
+    if [ "${isonclust_custom_params}" = "yes" ]; then
+        options+=(-k "${isonclust_k}" -w "${isonclust_w}")
+    fi
+
+    checkpoint "${label}: isONclust3 ${isonclust_mode_label} clustering started"
     echo "isONclust3 command: isONclust3 ${options[*]}"
     isONclust3 "${options[@]}"
     checkpoint "${label}: isONclust3 clustering done"
@@ -1128,7 +1169,7 @@ write_representatives_and_otu_table_from_cluster_counts() {
 write_stats_table() {
     local final_otus="$1"
 
-    printf "sample\tplatform\traw_reads\tquality_filtered_reads\tlength_filtered_reads\tpost_length_filter_reads\tfinal_assigned_reads\tclustering_method\tminimap2_preset\tisONclust3_mode\tisONclust3_implied_k\tisONclust3_implied_w\tdraft_clusters\tretained_clusters\tfinal_otus\tracon_iterations\n" > "${stats_tsv}"
+    printf "sample\tplatform\traw_reads\tquality_filtered_reads\tlength_filtered_reads\tpost_length_filter_reads\tfinal_assigned_reads\tclustering_method\tminimap2_preset\tisONclust3_mode\tisONclust3_k\tisONclust3_w\tdraft_clusters\tretained_clusters\tfinal_otus\tracon_iterations\n" > "${stats_tsv}"
 
     for idx in "${!sample_names[@]}"; do
         printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
@@ -1141,7 +1182,7 @@ write_stats_table() {
             "${sample_final_reads[$idx]:-0}" \
             "isONclust3" \
             "${minimap_preset}" \
-            "${isonclust_mode}" \
+            "${isonclust_mode_label}" \
             "${isonclust_k_label}" \
             "${isonclust_w_label}" \
             "${cluster_draft_count}" \
@@ -1398,10 +1439,14 @@ echo "VSEARCH: ${vsearch_bin}"
 echo "minimap2: $(command -v minimap2)"
 echo "minimap2 preset: ${minimap_preset}"
 echo "isONclust3: $(command -v isONclust3)"
-echo "isONclust3 mode: ${isonclust_mode}"
-echo "isONclust3 implied k: ${isonclust_k_label}"
-echo "isONclust3 implied w: ${isonclust_w_label}"
-echo "isONclust3 k/w overrides: not passed; this isONclust3 CLI accepts --mode only"
+echo "isONclust3 mode: ${isonclust_mode_label}"
+echo "isONclust3 k: ${isonclust_k_label}"
+echo "isONclust3 w: ${isonclust_w_label}"
+if [ "${isonclust_custom_params}" = "yes" ]; then
+    echo "isONclust3 k/w overrides: enabled; using --mode ${isonclust_mode} with -k ${isonclust_k} -w ${isonclust_w}"
+else
+    echo "isONclust3 k/w overrides: disabled; using --mode ${isonclust_mode}"
+fi
 echo "Quality filter max expected error rate: ${maxee_rate}"
 echo "Minimum read length: ${min_length:-none}"
 echo "Maximum read length: ${max_length:-none}"

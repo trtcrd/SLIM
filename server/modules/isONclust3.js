@@ -21,6 +21,8 @@ async function runModule(os, config) {
     const maxLength = params.maxlength || '';
     const minClusterSize = params.min_cluster_size || '5';
     const raconIterations = params.racon_iterations || '3';
+    const isonclustK = String(params.isonclust_k || '').trim();
+    const isonclustW = String(params.isonclust_w || '').trim();
     const cores = Math.max(1, Number(os.cores) || 1);
     const runner = '/app/lib/bash_scripts/run_isonclust3.sh';
 
@@ -45,6 +47,9 @@ async function runModule(os, config) {
         '-S', config.params.outputs.stats,
         '-a', config.params.outputs.results_archive
     ];
+
+    if (isonclustK || isonclustW)
+        baseOptions.push('-k', isonclustK, '-w', isonclustW);
 
     const readFiles = resolveFastqFiles(directory, config.params.inputs.fastq);
 

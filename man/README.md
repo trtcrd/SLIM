@@ -26,6 +26,7 @@ In these pages you will find tutorials for beginners and programmers, plus detai
   * [Clustering vsearch](/man/sections/OTU-vsearch.md)
   * [SWARM v3](/man/sections/SWARM3-Module.md)
   * [OPTICS](/man/sections/OPTICS.md)
+  * [isONclust3](/man/sections/isONclust3.md)
 
 ### Assignment
   * [FASTA - vsearch](/man/sections/Fasta-assignment-Vsearch.md)
@@ -39,7 +40,6 @@ In these pages you will find tutorials for beginners and programmers, plus detai
 ### Nanopore/PacBio pipeline
   * [ASHURE](/man/sections/ASHURE.md)
   * [MSI](/man/sections/MSI.md)
-  * [isONclust-for-Nanopore-PacBio](/man/sections/isONclust-for-Nanopore-PacBio.md)
 
 ### Shotgun metagenomics
   * [SingleM](/man/sections/SingleM.md)

@@ -15,7 +15,7 @@ The module does not perform taxonomy. The representative FASTA and OTU table can
 2. Quality filtering with `vsearch --fastq_maxee_rate`.
 3. Length filtering with VSEARCH when a minimum and/or maximum length is set.
 4. Sample pooling by concatenating retained reads.
-5. OTU clustering with `isONclust3 --mode ont`.
+5. OTU clustering with `isONclust3 --mode ont`, unless custom `k` and `w` values are provided.
 6. One Racon seed draft per retained cluster, using the first isONclust3 cluster read.
 7. Cluster reads are oriented to the seed with minimap2 PAF strand calls.
 8. When a primer FASTA is supplied, the whole cluster is kept or reverse-complemented by primer-majority voting.
@@ -28,7 +28,7 @@ The module does not perform taxonomy. The representative FASTA and OTU table can
 2. Quality filtering with `vsearch --fastq_maxee_rate`.
 3. Length filtering with VSEARCH when a minimum and/or maximum length is set.
 4. Sample pooling by concatenating retained reads.
-5. OTU clustering with `isONclust3 --mode pacbio`.
+5. OTU clustering with `isONclust3 --mode pacbio`, unless custom `k` and `w` values are provided.
 6. One representative seed read per retained isONclust3 cluster, selected from the per-cluster FASTQ emitted by isONclust3.
 7. Cluster reads are oriented to the seed with minimap2 PAF strand calls.
 8. When a primer FASTA is supplied, the whole cluster and representative seed are kept or reverse-complemented by primer-majority voting.
@@ -58,7 +58,7 @@ Default: `Nanopore`.
 
 Nanopore uses `isONclust3 --mode ont` and minimap2 `-x map-ont`. PacBio uses `isONclust3 --mode pacbio` and minimap2 `-x map-hifi`.
 
-The current isONclust3 command-line interface accepts `--mode` rather than separate `--k` and `--w` flags. `--mode ont` uses the ONT minimizer settings described upstream (`k=13`, `w=21`), while `--mode pacbio` uses the PacBio settings (`k=15`, `w=51`).
+The isONclust3 presets provide recommended default minimizer settings: `--mode ont` uses `-k 13 -w 21`, while `--mode pacbio` uses `-k 15 -w 51`. SLIM always passes the selected platform mode to isONclust3. If both optional custom values are set in **More options**, SLIM adds `-k <value> -w <value>` to the same isONclust3 call. Leave both fields blank to use the platform preset values; setting only one of them is treated as an invalid partial override.
 
 SLIM does not perform primer trimming or chimera filtering in this module. Primer sequences, when supplied, are used only to orient retained clusters.
 
@@ -137,6 +137,15 @@ Default: `5`.
 
 Clusters supported by fewer reads are discarded before Nanopore Racon polishing or PacBio representative-read selection. If this is set to `1`, Nanopore singleton clusters are retained but are not passed through Racon.
 
+**isONclust3 k-mer size k and minimizer window size w**
+
+Default: blank, meaning SLIM uses the platform preset (`--mode ont` or `--mode pacbio`).
+
+Set both fields to override the preset values while still passing the selected platform `--mode` flag. Both values must be positive integers, `k` must be less than or equal to `32`, and `w` must be odd and greater than or equal to `k`.
+
+These parameters control clustering granularity through the minimizers used by isONclust3. Smaller `k` values and/or smaller `w` values make minimizer matches easier or denser, which can increase sensitivity and produce coarser clusters by joining more reads. Higher `k` values make shared minimizer evidence more specific and usually produce more OTUs by splitting borderline groups more finely. Larger `w` values make minimizers sparser and can also increase singleton/small clusters. The platform presets are the recommended starting point unless you have a reason to tune this sensitivity/specificity balance.
+
 ## References
 
 * isONclust3 GitHub: https://github.com/aljpetri/isONclust3
+* isONclust3 Bioinformatics paper: https://doi.org/10.1093/bioinformatics/btaf207

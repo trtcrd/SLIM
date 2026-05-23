@@ -59,4 +59,15 @@
         Minimum reads per retained isONclust3 cluster 
         <input type="text" name="min_cluster_size" class="integer number param_value" value="5">
     </p>
+    <p>
+        isONclust3 k-mer size k (optional; ≤ 32)
+        <input type="text" name="isonclust_k" class="integer number param_value" value="">
+    </p>
+    <p>
+        isONclust3 minimizer window size w (optional; odd and ≥ k)
+        <input type="text" name="isonclust_w" class="integer number param_value" value="">
+    </p>
+    <p>
+        Leave both fields empty to use the platform preset. If both are set, SLIM passes them to isONclust3 together with the platform mode flag.
+    </p>
 </div>
