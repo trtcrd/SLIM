@@ -16,14 +16,14 @@ SWARM3	3.1.6	get_dependencies_slim_v1.0.0.sh
 DADA2	1.26	get_dependencies_slim_v1.0.0.sh
 DECIPHER	2.16.0	get_dependencies_slim_v1.0.0.sh
 lulu	build-time	cloned from https://github.com/tobiasgf/lulu
-chopper	0.8.0	conda/bioconda pinned
+chopper	0.10.0	conda/bioconda pinned for linux-64 and linux-aarch64
 fastp	build-time	conda/bioconda package in Kraken2-Bracken environment; used by SingleM preprocessing through PATH
 MSI	build-time	cloned from https://github.com/adriantich/msi
 fastq_utils	build-time	cloned from https://github.com/adriantich/fastq_utils for MSI
 seqtk	build-time	cloned from https://github.com/lh3/seqtk for MSI
 ASHURE	1.0.0	get_dependencies_slim_v1.0.0.sh
 spoa	4.1.0	bundled with ASHURE build
-SingleM	0.20.3	conda/bioconda pinned
+SingleM	0.20.3	conda/bioconda pinned on x86_64; PyPI install with conda non-Python dependencies on ARM64
 polars-lts-cpu	build-time	pip-installed replacement for polars in SingleM environment
 Kraken2	build-time	conda/bioconda package in Kraken2-Bracken environment
 Bracken	build-time	conda/bioconda package in Kraken2-Bracken environment

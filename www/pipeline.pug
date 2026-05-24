@@ -18,6 +18,7 @@ body
   // Managed in css/pipeline.css
   div#slim_logo
     img.image(src='/imgs/slim_logo.svg')
+    a#github_repo(href='https://github.com/trtcrd/SLIM', target='_blank', rel='noopener noreferrer') GitHub repository
   div#server_health_alert
   // Managed in css/pipeline.css
   div#main_frame
@@ -43,7 +44,7 @@ body
         input#up_files(type='file', name='uploaded' multiple)
         // up_submit will run in www/js/upload.js
         button#up_submit Upload
-        p (Max 60Gb at the same time)
+        p   
         div.progress
           div.progress-bar(role="progressbar")
 

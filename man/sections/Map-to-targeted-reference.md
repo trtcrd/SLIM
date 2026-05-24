@@ -1,4 +1,4 @@
-# Map To Targeted Reference
+# Map to Targeted Reference
 
 The `map-to-targeted-reference` module maps FASTQ reads to a targeted reference FASTA and produces BAM files with `MD:Z` tags for metaDMG.
 

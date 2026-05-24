@@ -13,6 +13,18 @@
     margin-top: 10px;
 }
 
+#github_repo {
+	display: inline-block;
+	margin-top: 4px;
+	color: #335b78;
+	font-size: 14px;
+	text-decoration: none;
+}
+
+#github_repo:hover {
+	text-decoration: underline;
+}
+
 body {
 	background-color: #f5f5f5;
 }
@@ -53,6 +65,8 @@ select {
     font-size: 14px;
     margin-top: 2px;
     margin-bottom: 25px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
 }
 
 input[type="radio"] {
@@ -63,6 +77,11 @@ input[type="radio"] {
 input[type="checkbox"] {
     margin-top: 2px;
     margin-bottom: 25px;
+}
+
+input[type="checkbox"].checklist {
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 #module_list {
@@ -216,6 +235,8 @@ input[type="text"].number {
 	width: 80%;
 	margin: auto;
 	padding: 5px;
+	border-radius: 8px;
+    border: 1px solid #ccc;
 }
 
 .illumina_read {
@@ -297,6 +318,8 @@ input[type="text"].number {
 	border: solid black 1px;
 	margin-right: 50px;
 	margin-left: 50px;
+	border-radius: 8px;
+    border: 1px solid #ccc;
 }
 
 .file_list p, .input_list p {
@@ -349,12 +372,20 @@ input[type="text"].number {
 
 #mail {
 	margin-right: 10px;
-	width: 250px;
+	width: 280px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    height: 20px;
+	font-size: 14px;
 }
 
 #job_title {
 	margin-right: 10px;
 	width: 180px;
+	border-radius: 8px;
+    border: 1px solid #ccc;
+    height: 20px;
+	font-size: 14px;
 }
 
 #start_area {

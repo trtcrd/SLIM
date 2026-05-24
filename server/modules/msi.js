@@ -45,7 +45,6 @@ exports.run = function (os, config, callback) {
 		'-q', options.minqual, // MIN_QUAL
 		'-x', options.minmap, // CLUST_MAPPED_THRESHOLD
 		// '-X', options.minaligned, // CLUST_ALIGNED_THRESHOLD
-		// refdb_option]; // blast_refdb
 		'-X', options.minaligned]; // CLUST_ALIGNED_THRESHOLD
 
 

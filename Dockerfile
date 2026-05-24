@@ -100,13 +100,27 @@ RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu noble-c
 #RUN apt-key add /app/jranke.asc
 #RUN apt-key adv --keyserver keys.gnupg.net --recv-key 'E19F5F87128899B192B1A2C2AD5F960A256A04AF'
 
-# ----- install conda ----- #
-COPY lib/miniforge3/miniforge3.sh /tmp/miniforge3.sh
-RUN bash /tmp/miniforge3.sh -b && \
-    rm -f /tmp/miniforge3.sh && \
-    /root/miniforge3/bin/conda clean -afy
+# ----- install mamba ----- #
+COPY lib/miniforge3 /tmp/miniforge3
+RUN case "$(uname -m)" in \
+        x86_64) miniforge_installer="/tmp/miniforge3/Miniforge3-Linux-x86_64.sh" ;; \
+        aarch64|arm64) miniforge_installer="/tmp/miniforge3/Miniforge3-Linux-aarch64.sh" ;; \
+        *) echo "Unsupported build architecture: $(uname -m)" >&2; exit 1 ;; \
+    esac && \
+    if [ ! -f "${miniforge_installer}" ]; then \
+        echo "Missing Miniforge installer for $(uname -m): ${miniforge_installer}" >&2; \
+        exit 1; \
+    fi && \
+    bash "${miniforge_installer}" -b -p /root/miniforge3 && \
+    rm -rf /tmp/miniforge3 && \
+    /root/miniforge3/bin/conda config --system --set channel_priority strict && \
+    if ! /root/miniforge3/bin/mamba --version >/dev/null 2>&1; then \
+        /root/miniforge3/bin/conda install -n base -y -c conda-forge mamba; \
+    fi && \
+    /root/miniforge3/bin/mamba clean -afy
 ENV PATH="/root/miniforge3/bin:${PATH}"
 ENV CONDA_NO_PLUGINS=true
+ENV MAMBA_NO_BANNER=1
 
 
 # ----- Libraries deployments -----
@@ -114,6 +128,12 @@ ENV CONDA_NO_PLUGINS=true
 # install app dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm && \
     rm -rf /var/lib/apt/lists/*
+
+# Install npm dependencies before copying server source so code-only changes can
+# reuse this layer.
+COPY package*.json /app/
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi && \
+    rm -rf /root/.npm
 
 # Copy libraries
 COPY lib/DTD /app/lib/DTD
@@ -142,24 +162,24 @@ RUN R -e 'install.packages("/app/lib/dada2",repos=NULL, dependencies = TRUE)' &&
 RUN R -e 'install.packages("/app/lib/DECIPHER",repos=NULL, dependencies = TRUE)' && \
     rm -rf /tmp/downloaded_packages /root/.cache/R
 
-# ----- install conda dependencies ----- #
+# ----- install mamba dependencies ----- #
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	clang && \
     rm -rf /var/lib/apt/lists/*
 
-# for those packages that require conda install create a new environment
+# for those packages that require mamba install create a new environment
 # for each to avoid incompatibilities
 
 # ----- install chopper ----- #
-RUN conda create --solver=classic -n chopper -y \
+RUN mamba create -n chopper -y \
     -c conda-forge \
     -c bioconda \
     python=3.9 \
     libgcc-ng \
     libstdcxx-ng \
     zlib \
-    chopper=0.8.0 && \
-    conda clean -afy
+    chopper=0.10.0 && \
+    mamba clean -afy
 
 
 # ----- install msi ----- #
@@ -178,8 +198,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     default-jdk && \
     rm -rf /var/lib/apt/lists/*
 
-# --- create conda environment and install conda packages --- #
-RUN conda create --solver=classic -n msi -y \
+# --- create mamba environment and install mamba packages --- #
+RUN mamba create -n msi -y \
     -c conda-forge \
     -c bioconda \
         python=3.9 \
@@ -188,7 +208,7 @@ RUN conda create --solver=classic -n msi -y \
         wget \
         openjdk \
         r-base=4.1.0 && \
-    conda clean -afy
+    mamba clean -afy
 
 # --- fix BiocManager path issue --- #
 RUN conda run -n msi bash -c "\
@@ -201,7 +221,7 @@ RUN CC=/usr/bin/gcc CXX=/usr/bin/g++ \
     /app/lib/msi/scripts/msi_install.sh -i /app/lib/msi
     
 # ----- correction on msi source code -----
-RUN sed -i 's/\/dev\/stderr/stderr_msi/g' /app/lib/msi/bin/bam_annotate.sh /app/lib/msi/bin/fastq2bam /app/lib/msi/bin/fastq_validator.sh /app/lib/msi/*/msi /app/lib/msi/exe/metabinkit_blastgendb 
+RUN sed -i 's/\/dev\/stderr/stderr_msi/g' /app/lib/msi/bin/bam_annotate.sh /app/lib/msi/bin/fastq2bam /app/lib/msi/bin/fastq_validator.sh /app/lib/msi/*/msi
 # RUN sed -i 's/ nmembers / \$nmembers /g' /app/lib/msi/bin/msi_clustr_add_size.pl /app/lib/msi/scripts/msi_clustr_add_size.pl
 RUN cd /app/lib/msi/seqtk && make && cd /app
     
@@ -209,7 +229,7 @@ RUN cd /app/lib/msi/seqtk && make && cd /app
 COPY lib/ASHURE /app/lib/ASHURE
 
 # Create ASHURE environment with a Python version compatible with pandas 1.3.x.
-RUN conda create --solver=classic -n ashure -y \
+RUN mamba create -n ashure -y \
     -c conda-forge \
     python=3.9 \
     "cmake<4" \
@@ -218,7 +238,7 @@ RUN conda create --solver=classic -n ashure -y \
     pandas=1.3.3 \
     scikit-learn \
     hdbscan && \
-    conda clean -afy
+    mamba clean -afy
 
 # Build spoa.
 RUN cd /app/lib/ASHURE/spoa && \
@@ -238,15 +258,49 @@ RUN conda run -n ashure /app/lib/ASHURE/src/ashure.py prfg -h && \
 
 
 # ----- install SingleM ----- #
-RUN conda create --solver=classic -y \
-    -c conda-forge \
-    -c bioconda \
-    --override-channels \
-    --name singlem \
-    python=3.12 \
-    "singlem=0.20.3" \
-    pip && \
-    conda clean -afy
+# On linux-aarch64, Bioconda's SingleM/GraftM packages still depend on old
+# hmmer 3.2 builds that are not available for ARM, so install HMMER from Ubuntu
+# and install the Python entry points with pip.
+RUN apt-get update && apt-get install -y --no-install-recommends hmmer && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN if [ "$(uname -m)" = "x86_64" ]; then \
+        mamba create -y \
+            -c conda-forge \
+            -c bioconda \
+            --override-channels \
+            --name singlem \
+            python=3.12 \
+            "singlem=0.20.3" \
+            pip; \
+    else \
+        mamba create -y \
+            -c conda-forge \
+            -c bioconda \
+            --override-channels \
+            --name singlem \
+            python=3.12 \
+            pip \
+            "diamond>=2.1.21" \
+            "orfm>=2.1.1" \
+            mfqe \
+            krona \
+            smafa \
+            pplacer \
+            "sra-tools=3.2.1" \
+            ncbi-ngs-sdk \
+            sqlite \
+            mafft \
+            seqmagick \
+            cd-hit \
+            fasttree \
+            prodigal \
+            "galah>=0.4.0" \
+            coreutils \
+            bash && \
+        conda run -n singlem python -m pip install --no-cache-dir "singlem==0.20.3"; \
+    fi && \
+    mamba clean -afy
 
 RUN conda run -n singlem python -m pip uninstall -y polars && \
     conda run -n singlem python -m pip install --no-cache-dir polars-lts-cpu
@@ -256,7 +310,7 @@ ENV PATH=/root/miniforge3/envs/singlem/bin:$PATH
 # ----- install Kraken2/Bracken ----- #
 # Kept at the end on purpose so existing Docker build cache is preserved while
 # adding the new shotgun-metagenomics module.
-RUN conda create --solver=classic -n kraken2 -y \
+RUN mamba create -n kraken2 -y \
     -c conda-forge \
     -c bioconda \
     kraken2 \
@@ -264,12 +318,12 @@ RUN conda create --solver=classic -n kraken2 -y \
     fastp \
     krakentools \
     krona && \
-    conda clean -afy
+    mamba clean -afy
 
 ENV PATH=/root/miniforge3/envs/kraken2/bin:$PATH
 
 # ----- install ancient-DNA targeted-reference/metaDMG tools ----- #
-RUN conda create --solver=classic -n ancientdna -y \
+RUN mamba create -n ancientdna -y \
     -c conda-forge \
     -c bioconda \
     --override-channels \
@@ -280,13 +334,13 @@ RUN conda create --solver=classic -n ancientdna -y \
     fastp \
     pigz \
     unzip && \
-    conda clean -afy
+    mamba clean -afy
 
 ENV PATH=/root/miniforge3/envs/ancientdna/bin:$PATH
 
 # ----- install mOTUs ----- #
 # Kept after metaDMG so mOTUs fixes do not invalidate the ancient-DNA build cache.
-RUN conda create --solver=classic -n motus -y \
+RUN mamba create -n motus -y \
     -c conda-forge \
     -c bioconda \
     --override-channels \
@@ -300,42 +354,27 @@ RUN conda create --solver=classic -n motus -y \
     conda run -n motus python -c "import importlib.util, pathlib; p = pathlib.Path(importlib.util.find_spec('motus.motus').origin); s = p.read_text(); old_cmd = \"command: str = f'bwa mem -a -t {threads} {MOTUS_DB.get_bwa_index()} {readsfile}'\"; new_cmd = \"command: str = f'bwa mem -a -t {threads} {MOTUS_DB.get_bwa_index()} {readsfile} | samtools view -b -'\"; assert old_cmd in s or new_cmd in s, 'mOTUs map_tax command patch target not found'; s = s.replace(old_cmd, new_cmd); s = s.replace(\"pysam.AlignmentFile(process.stdout, 'r')\", \"pysam.AlignmentFile(process.stdout, 'rb')\"); p.write_text(s)" && \
     (conda run -n motus python -m pip uninstall -y polars polars-runtime-32 polars-runtime-64 polars-lts-cpu || true) && \
     conda run -n motus python -m pip install --no-cache-dir "polars[rtcompat]" && \
-    conda clean -afy
+    mamba clean -afy
 
 ENV PATH=/root/miniforge3/envs/motus/bin:$PATH
 
 # ----- install isONclust3 Nanopore/PacBio tools ----- #
 # Kept near the end so adding/revising this modern long-read amplicon module
 # does not invalidate the older amplicon and shotgun build layers.
-RUN if command -v mamba >/dev/null 2>&1; then \
-        mamba create -n isonclust3 -y \
-            -c conda-forge \
-            -c bioconda \
-            --override-channels \
-            python=3.10 \
-            minimap2 \
-            yacrd \
-            cutadapt \
-            samtools \
-            htslib \
-            rust \
-            pip; \
-    else \
-        CONDA_NO_PLUGINS=true conda create --solver=classic -n isonclust3 -y \
-            -c conda-forge \
-            -c bioconda \
-            --override-channels \
-            python=3.10 \
-            minimap2 \
-            yacrd \
-            cutadapt \
-            samtools \
-            htslib \
-            rust \
-            pip; \
-    fi && \
+RUN mamba create -n isonclust3 -y \
+        -c conda-forge \
+        -c bioconda \
+        --override-channels \
+        python=3.10 \
+        minimap2 \
+        yacrd \
+        cutadapt \
+        samtools \
+        htslib \
+        rust \
+        pip && \
     conda run -n isonclust3 cargo install isONclust3 --root /root/miniforge3/envs/isonclust3 && \
-    conda clean -afy
+    mamba clean -afy
 
 ENV PATH=/root/miniforge3/envs/isonclust3/bin:$PATH
 
@@ -372,12 +411,7 @@ COPY man/ /app/man/
 COPY ssl/ /app/ssl/
 EXPOSE 80
 
-# copy npm libraries
-COPY package*.json /app/
-RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi && \
-    rm -rf /root/.npm
-
-# jquery
+# Copy browser libraries from installed packages and vendored sources.
 RUN cp node_modules/jquery/dist/jquery.js /app/www/js/jquery.js
 COPY lib/jquery-autocomplete/dist/jquery.autocomplete.js /app/www/js/jquery.autocomplete.js
 COPY lib/papa/papaparse.js /app/www/js/papaparse.js

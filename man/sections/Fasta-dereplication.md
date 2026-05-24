@@ -1,15 +1,20 @@
-# Fasta dereplication
+# FASTA Dereplication
 
-This module use the dereplication module of the Vsearch tool to merge similar sequences in a FASTA file. The dereplicated sequences are outputted in a FASTA file with the quantity of each read in their header.
+The `fasta-dereplication` module merges identical sequences in a FASTA file with VSEARCH. The output FASTA records sequence abundance in each header.
 
-## Module interactions
+## Inputs
 
-### Main inputs
+### Input FASTA File
 
-* FASTA file: The FASTA containing all the sequences to dereplicate.
-* Dereplicate FASTA file: The file containing all the merged sequences. For each sequence the header contain the the size annotation as _;size=234;_.
+FASTA file containing sequences to dereplicate.
+
+## Output
+
+### Dereplicated FASTA File
+
+FASTA file containing unique sequences. Each header includes a VSEARCH size annotation such as `;size=234;`.
 
 ## References
 
-* Vsearch github: https://github.com/torognes/vsearch
-* Original publication: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3150044/
+* VSEARCH repository: https://github.com/torognes/vsearch
+* VSEARCH publication: https://peerj.com/articles/2584/

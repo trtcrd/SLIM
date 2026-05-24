@@ -27,8 +27,6 @@ do
     esac
 done
 
-SKIP_BLAST="Y"
-
 if [[ "${input_file}" == *'€'* ]]; then
     echo "more than one fastq file"
     output_file=$(echo "${output_file}" | sed 's/\*/\€/g')
@@ -46,10 +44,6 @@ export MSI_DIR=/app/lib/msi
 checkpoint "MSI runtime environment setup started"
 if [ -f "${MSI_DIR}/msi_env.sh" ]; then
     source "${MSI_DIR}/msi_env.sh"
-fi
-
-if [ -f "${MSI_DIR}/metabinkit_env.sh" ]; then
-    source "${MSI_DIR}/metabinkit_env.sh"
 fi
 
 export PATH="${MSI_DIR}/bin:${MSI_DIR}/python/bin:/root/.local/bin:${PATH}"
@@ -82,8 +76,6 @@ TL_DIR="${dir}input_msi"
 OUT_FOLDER="${dir}"
 THREADS=${threads}
 METADATAFILE="metadata.tsv"
-SKIP_BLAST="${SKIP_BLAST}"
-TAXONOMY_DATA_DIR="/app/lib/msi/db"
 CLUSTER_MIN_READS=${cluster_min_reads}
 CD_HIT_CLUSTER_THRESHOLD=${cd_hit_cluster_threshold}
 PRIMER_MAX_ERROR=${primer_max_error}
@@ -95,8 +87,6 @@ MIN_QUAL=${min_quality}
 EXPERIMENT_ID=.
 CLUST_MAPPED_THRESHOLD=${clust_mapped_threshold}
 CLUST_ALIGNED_THRESHOLD=${clust_aligned_threshold}
-
-blast_refdb="refdb/db"
 EOF
 checkpoint "MSI configuration file creation done"
 

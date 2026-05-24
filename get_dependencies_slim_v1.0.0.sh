@@ -195,44 +195,36 @@ prepare_motus_db_dir() {
 
 install_miniforge_installer() {
     local name="Miniforge installer"
-    local arch
-    local installer
     local missing
 
-    if [ -f "miniforge3/miniforge3.sh" ]; then
+    if [ -f "miniforge3/Miniforge3-Linux-x86_64.sh" ] && [ -f "miniforge3/Miniforge3-Linux-aarch64.sh" ]; then
         mark_ok "${name}"
         return 0
     fi
 
-    missing="$(require_cmds curl uname || true)"
+    missing="$(require_cmds curl || true)"
     if [ -n "${missing}" ]; then
         mark_fail "${name}" "missing required command(s): ${missing//$'\n'/, }"
         return 1
     fi
 
-    arch="$(uname -m)"
-    case "${arch}" in
-        x86_64)
-            installer="Miniforge3-Linux-x86_64.sh"
-            ;;
-        aarch64|arm64)
-            installer="Miniforge3-Linux-aarch64.sh"
-            ;;
-        *)
-            mark_fail "${name}" "unsupported architecture: ${arch}"
-            return 1
-            ;;
-    esac
-
     mkdir -p miniforge3
-    (
-        set -e
-        cd miniforge3
-        curl -fLO "https://github.com/conda-forge/miniforge/releases/latest/download/${installer}"
-        mv "${installer}" miniforge3.sh
-    )
 
-    verify_file "${name}" "miniforge3/miniforge3.sh"
+    for installer in Miniforge3-Linux-x86_64.sh Miniforge3-Linux-aarch64.sh; do
+        if [ ! -f "miniforge3/${installer}" ]; then
+            (
+                set -e
+                cd miniforge3
+                curl -fLO "https://github.com/conda-forge/miniforge/releases/latest/download/${installer}"
+            )
+        fi
+    done
+
+    if [ -f "miniforge3/Miniforge3-Linux-x86_64.sh" ] && [ -f "miniforge3/Miniforge3-Linux-aarch64.sh" ]; then
+        mark_ok "${name}"
+    else
+        mark_fail "${name}" "expected x86_64 and aarch64 installers missing under lib/miniforge3"
+    fi
 }
 
 prepare_casper() {
@@ -244,21 +236,29 @@ prepare_casper() {
         return 0
     fi
 
-    if [ ! -f "casper/casper_v0.8.2.tar.xz" ]; then
-        mark_fail "${name}" "missing bundled archive: lib/casper/casper_v0.8.2.tar.xz"
-        return 1
-    fi
-
-    missing="$(require_cmds tar || true)"
+    missing="$(require_cmds curl tar || true)"
     if [ -n "${missing}" ]; then
         mark_fail "${name}" "missing required command(s): ${missing//$'\n'/, }"
         return 1
     fi
 
+    mkdir -p casper
     (
         set -e
         cd casper
-        tar -xf casper_v0.8.2.tar.xz
+        if [ -f casper_v0.8.2.tar.xz ]; then
+            tar -xf casper_v0.8.2.tar.xz
+        else
+            if ! curl -fL -o casper_v0.8.2.tar.xz https://raw.githubusercontent.com/trtcrd/SLIM/master/lib/casper/casper_v0.8.2.tar.xz; then
+                rm -f casper_v0.8.2.tar.xz
+            fi
+            if [ -f casper_v0.8.2.tar.xz ]; then
+                tar -xf casper_v0.8.2.tar.xz
+            else
+                curl -fL -o casper_v0.8.2.tar.gz http://best.snu.ac.kr/casper/program/casper_v0.8.2.tar.gz
+                tar -xzf casper_v0.8.2.tar.gz
+            fi
+        fi
     )
 
     verify_file "${name}" "casper/casper_v0.8.2/Makefile"
@@ -289,6 +289,22 @@ prepare_msi() {
         sed_in_place 's#pushd fastq_utils#pushd "$PATH2SCRIPT/../fastq_utils"#g' scripts/msi_install.sh
         sed_in_place 's#rm -rf fastq_utils tmp.tar.gz#rm -f tmp.tar.gz#g' scripts/msi_install.sh
         sed_in_place 's/ nmembers / \$nmembers /g' scripts/msi_clustr_add_size.pl
+        sed_in_place 's/^ALL_TOOLS=.*/ALL_TOOLS="fastq_utils fastqc cutadapt isONclust minimap2 racon cd-hit R_packages msi"/g' scripts/msi_install.sh
+        sed_in_place 's/^ALL_SOFT=.*/ALL_SOFT="$ALL_TOOLS"/g' scripts/msi_install.sh
+        rm -f scripts/msi_tidyup_results scripts/msi_tidyup_table scripts/msi_incremental.sh scripts/msi_res2*
+        rm -f scripts/msi_cluster2reads scripts/msi_clustr2map.pl scripts/msi_display_report
+        rm -rf template tests
+        cat > README.md <<'EOF'
+# MSI for SLIM
+
+This bundled MSI copy is trimmed for SLIM. It keeps the read filtering,
+clustering, polishing, primer trimming, centroid FASTA export, and run
+statistics steps used by the SLIM MSI module.
+
+SLIM does not use MSI database download or downstream sequence labelling
+features, so those optional upstream components are intentionally omitted
+from this bundled copy.
+EOF
         git clone https://github.com/lh3/seqtk.git
     )
 

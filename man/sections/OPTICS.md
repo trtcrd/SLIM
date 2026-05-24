@@ -1,32 +1,27 @@
 # OPTICS
 
-This module integrates the clustering submodule (clst) from the [ASHURE](/man/sections/ASHURE.md) pipeline.
+The `optics` module runs the clustering submodule (`clst`) from the [ASHURE](/man/sections/ASHURE.md) pipeline.
 
-## Module interactions
+## Inputs
 
-### Main inputs
-* The fastq files to process. To be able to select multiple fastq at the same time, the shared pattern is needed, the wildcard. See [wildcard creator](/man/sections/wildcard_creator.md) module for more information.
+### Input FASTQ Files
 
-#### Optional inputs
-* Minimum cluster size: Number of sequences from the centroid for multi-alignment (integer)
+FASTQ files to process. To select multiple FASTQ files at once, use a wildcard pattern created by the [wildcard creator](/man/sections/wildcard_creator.md).
 
-* Threshold for making clusters to merge (from 0 to 1)
+## Parameters
 
-* Partitions to split the sequences for sweep: during the clustering in each iteration a random set of sequence subsample is chosen for alignment. This subsample is taken from the poorest aligned sequences. This parameter will define how many partitions will be done to select the lowest quantile (integer)
+* Minimum cluster size: minimum number of sequences used for multiple alignment around a centroid.
+* Cluster merge threshold: threshold used to merge clusters.
+* Sweep partitions: number of partitions used when selecting poorly aligned sequence subsets during clustering.
+* Sequence subsample size: number of sequences sampled during clustering sweeps.
+* Clustering iterations: number of clustering iterations to run.
+* Similarity threshold: threshold for merging sequence reads into the center sequence.
 
-* Size of sequence subsample (integer)
+## Outputs
 
-* Iterations to run the clustering (integer)
-
-* Simmilarity threshold for sequence reads to be merged into the center sequence (from 0 to 1)
-
-### Main outputs
-
-* OTU table output file
-
-* Consensus sequences
-
-* Information of which sequence has been clustered to which consensus.
+* OTU table.
+* Consensus sequences.
+* Cluster-membership table recording which sequence belongs to which consensus.
 
 ## References
 

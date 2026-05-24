@@ -40,7 +40,7 @@ Per-sample preparation steps are run in parallel when multiple input FASTQ files
 
 ## Inputs
 
-**Input fastq files**
+**Input FASTQ Files**
 
 A FASTQ file or wildcard pattern. Examples:
 
@@ -81,7 +81,7 @@ Default: no minimum or maximum length filter.
 
 Leave a field blank to disable that side of the length filter. Enter a minimum and/or maximum read length when the expected amplicon size is known.
 
-**Primers fasta file (first sequence forward, second sequence reverse; IUPAC supported)**
+**Primers FASTA File (first sequence forward, second sequence reverse; IUPAC supported)**
 
 Optional FASTA file containing the forward primer as the first sequence and the reverse primer as the second sequence. IUPAC ambiguity codes are supported by the exact primer-vote matcher.
 

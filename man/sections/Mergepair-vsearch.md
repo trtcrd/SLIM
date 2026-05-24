@@ -1,24 +1,24 @@
-# Mergepair vsearch
+# Merge Paired Reads with VSEARCH
 
-This module give you the possibility to get the assembly of the forward and reverse reads.  
-For space efficiency, the reads are dereplicated after the merging process. A size value is added in each read header to keep the abundance.
+The `mergepair-vsearch` module assembles paired-end reads with VSEARCH. For storage efficiency, SLIM dereplicates the merged reads and writes abundance information into the read headers.
 
-## Module interactions
+## Inputs
 
-### Main inputs
+* Forward reads: FASTQ file containing R1 reads.
+* Reverse reads: FASTQ file containing R2 reads.
 
-* Forward reads: The FASTQ file containing the forward reads.
-* Reverse reads: The FASTQ file containing the reverse reads.
-* Output file: The FASTA file within the assembled reads will be outputted.
+## Output
 
-### Options
+Merged FASTA file containing assembled reads.
 
-* Quality extremum: The limit quality thresholds. If a nucleotide is over the max or under the min the sequence will be rejected.
-* Merged read size extremum: Minimum and maximum length for assembled read.
-* Read maximum differences: Maximum mismatches in the forward/reverse overlap.
-* Read minimum overlap: Minimum length of the forward/reverse overlap.
+## Parameters
+
+* Quality range: minimum and maximum quality values accepted by VSEARCH.
+* Merged read length range: minimum and maximum length for assembled reads.
+* Maximum differences: maximum number of mismatches allowed in the overlap.
+* Minimum overlap: minimum overlap length required to merge a pair.
 
 ## References
 
-* Vsearch github: https://github.com/torognes/vsearch
-* Vsearch publication: https://peerj.com/articles/2584/
+* VSEARCH repository: https://github.com/torognes/vsearch
+* VSEARCH publication: https://peerj.com/articles/2584/

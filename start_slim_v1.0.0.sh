@@ -6,29 +6,100 @@ IMAGE_NAME="slim"
 CONTAINER_NAME="slim"
 DEFAULT_PORT="8080:80"
 MAIL_ENV_FILE="slim_mail.env"
+SCRIPT_START_TIME="$(date +%s)"
 
 Help()
 {
     echo "start_slim.sh destroys the current running SLIM webserver and replaces it with a new one."
     echo
-    echo "Syntax: start_slim.sh [-h] [-d] [-P port]"
+    echo "Syntax: start_slim.sh [-h] [-d] [-P port] [-S] [-K kraken2_db]"
     echo "options:"
-    echo "-h --help       Print this help."
-    echo "-d --docker     Use docker instead of podman."
-    echo "-P --port       <host:container> port mapping. Default: 8080:80"
+    echo "-h --help                 Print this help."
+    echo "-d --docker               Use docker instead of podman."
+    echo "-P --port                 <host:container> port mapping. Default: 8080:80"
+    echo "-S --shotgun-databases    Enable shotgun modules and download/mount Kraken2, mOTUs, and SingleM databases."
+    echo "-K --kraken-db            Kraken2 database to download when -S is used. Default: pluspf_16"
     echo
+}
+
+format_duration()
+{
+    local total_seconds="$1"
+    local hours
+    local minutes
+    local seconds
+
+    hours=$((total_seconds / 3600))
+    minutes=$(((total_seconds % 3600) / 60))
+    seconds=$((total_seconds % 60))
+
+    if [ "${hours}" -gt 0 ]; then
+        printf "%dh %02dm %02ds" "${hours}" "${minutes}" "${seconds}"
+    elif [ "${minutes}" -gt 0 ]; then
+        printf "%dm %02ds" "${minutes}" "${seconds}"
+    else
+        printf "%ds" "${seconds}"
+    fi
 }
 
 engine="podman"
 port="${DEFAULT_PORT}"
+enable_shotgun_databases="no"
+kraken2_database="pluspf_16"
 
-while getopts "hdP:" flag
-do
-    case "${flag}" in
-        h) Help; exit 0 ;;
-        d) engine="docker" ;;
-        P) port="${OPTARG}" ;;
-        \?) Help; exit 1 ;;
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -h|--help)
+            Help
+            exit 0
+            ;;
+        -d|--docker)
+            engine="docker"
+            shift
+            ;;
+        -P|--port)
+            if [ "$#" -lt 2 ]; then
+                echo "Error: -P/--port requires a <host:container> value."
+                Help
+                exit 1
+            fi
+            port="$2"
+            shift 2
+            ;;
+        --port=*)
+            port="${1#*=}"
+            shift
+            ;;
+        -P*)
+            port="${1#-P}"
+            shift
+            ;;
+        -S|--shotgun-databases|--with-shotgun-databases)
+            enable_shotgun_databases="yes"
+            shift
+            ;;
+        -K|--kraken-db)
+            if [ "$#" -lt 2 ]; then
+                echo "Error: -K/--kraken-db requires a database name."
+                Help
+                exit 1
+            fi
+            kraken2_database="$2"
+            shift 2
+            ;;
+        --kraken-db=*)
+            kraken2_database="${1#*=}"
+            shift
+            ;;
+        -K*)
+            kraken2_database="${1#-K}"
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            Help
+            exit 1
+            ;;
     esac
 done
 
@@ -44,6 +115,12 @@ fi
 
 echo "Running with ${engine}"
 echo "Using port ${port}"
+if [ "${enable_shotgun_databases}" = "yes" ]; then
+    echo "Shotgun databases/modules: enabled"
+    echo "Kraken2 database: ${kraken2_database}"
+else
+    echo "Shotgun databases/modules: disabled"
+fi
 
 is_slim_container()
 {
@@ -168,19 +245,31 @@ ensure_singlem_db()
     echo "SingleM metapackage: ${SINGLEM_METAPACKAGE_CONTAINER}"
 }
 
-ensure_kraken2_db_dir()
+ensure_kraken2_db()
 {
+    local choice="$1"
+
     KRAKEN2_DB_HOST="$(pwd)/lib/kraken2/db"
     mkdir -p "${KRAKEN2_DB_HOST}"
     export KRAKEN2_DB_HOST
 
-    if find "${KRAKEN2_DB_HOST}" -mindepth 2 -maxdepth 2 -name "hash.k2d" | grep -q .; then
-        echo "Kraken2 database directory: ${KRAKEN2_DB_HOST}"
+    if [ -f "${KRAKEN2_DB_HOST}/${choice}/hash.k2d" ] && \
+       [ -f "${KRAKEN2_DB_HOST}/${choice}/opts.k2d" ] && \
+       [ -f "${KRAKEN2_DB_HOST}/${choice}/taxo.k2d" ]; then
+        echo "Kraken2 database already present: ${KRAKEN2_DB_HOST}/${choice}"
     else
-        echo "No Kraken2 database found in ${KRAKEN2_DB_HOST}"
-        echo "Kraken2-Bracken will be available after manually downloading a database, e.g.:"
-        echo "  ./download_kraken2_db.sh pluspf_16"
+        echo "Downloading Kraken2 database '${choice}'."
+        ./download_kraken2_db.sh "${choice}"
     fi
+
+    if [ ! -f "${KRAKEN2_DB_HOST}/${choice}/hash.k2d" ] || \
+       [ ! -f "${KRAKEN2_DB_HOST}/${choice}/opts.k2d" ] || \
+       [ ! -f "${KRAKEN2_DB_HOST}/${choice}/taxo.k2d" ]; then
+        echo "Error: Kraken2 database '${choice}' is missing or incomplete after download."
+        exit 1
+    fi
+
+    echo "Kraken2 database directory: ${KRAKEN2_DB_HOST}"
 }
 
 ensure_motus_db()
@@ -369,21 +458,44 @@ stop_existing_slim_containers "${engine}"
 cleanup_old_containers_and_images "${engine}"
 
 echo "Building SLIM image."
+build_start_time="$(date +%s)"
 if [ "${engine}" = "podman" ]; then
     if ! "${engine}" build --jobs 4 -t "${IMAGE_NAME}" .; then
+        build_elapsed=$(( $(date +%s) - build_start_time ))
+        echo "SLIM image build failed after $(format_duration "${build_elapsed}")."
         echo "Error: SLIM image build failed. Database download and container start were skipped."
         exit 1
     fi
 else
     if ! DOCKER_BUILDKIT=1 "${engine}" build --progress=plain -t "${IMAGE_NAME}" .; then
+        build_elapsed=$(( $(date +%s) - build_start_time ))
+        echo "SLIM image build failed after $(format_duration "${build_elapsed}")."
         echo "Error: SLIM image build failed. Database download and container start were skipped."
         exit 1
     fi
 fi
+build_elapsed=$(( $(date +%s) - build_start_time ))
+echo "SLIM image build finished in $(format_duration "${build_elapsed}")."
 
-ensure_singlem_db "${engine}" "${IMAGE_NAME}"
-ensure_kraken2_db_dir
-ensure_motus_db "${engine}" "${IMAGE_NAME}"
+DATABASE_RUNTIME_ARGS=(-e "SLIM_ENABLE_SHOTGUN_DATABASES=0")
+if [ "${enable_shotgun_databases}" = "yes" ]; then
+    ensure_singlem_db "${engine}" "${IMAGE_NAME}"
+    ensure_kraken2_db "${kraken2_database}"
+    ensure_motus_db "${engine}" "${IMAGE_NAME}"
+
+    DATABASE_RUNTIME_ARGS=(
+        -v "${SINGLEM_DB_HOST}:/app/lib/singleM/db:ro"
+        -v "${KRAKEN2_DB_HOST}:/app/lib/kraken2/db:ro"
+        -v "${MOTUS_DB_HOST}:/app/lib/mOTUs/db:ro"
+        -e "SINGLEM_METAPACKAGE_PATH=${SINGLEM_METAPACKAGE_CONTAINER}"
+        -e "KRAKEN2_DB_ROOT=/app/lib/kraken2/db"
+        -e "MOTUS_DB_PATH=${MOTUS_DB_CONTAINER}"
+        -e "SLIM_ENABLE_SHOTGUN_DATABASES=1"
+    )
+else
+    echo "Skipping shotgun database downloads and mounts."
+    echo "Kraken2-Bracken, SingleM, mOTUs, and ancient-DNA modules will be hidden from the module list."
+fi
 build_mail_env_args
 
 echo "Starting SLIM."
@@ -391,13 +503,10 @@ echo "Starting SLIM."
     --name "${CONTAINER_NAME}" \
     --restart unless-stopped \
     -p "${port}" \
-    -v "${SINGLEM_DB_HOST}:/app/lib/singleM/db:ro" \
-    -v "${KRAKEN2_DB_HOST}:/app/lib/kraken2/db:ro" \
-    -v "${MOTUS_DB_HOST}:/app/lib/mOTUs/db:ro" \
-    -e "SINGLEM_METAPACKAGE_PATH=${SINGLEM_METAPACKAGE_CONTAINER}" \
-    -e "KRAKEN2_DB_ROOT=/app/lib/kraken2/db" \
-    -e "MOTUS_DB_PATH=${MOTUS_DB_CONTAINER}" \
+    "${DATABASE_RUNTIME_ARGS[@]}" \
     "${MAIL_ENV_ARGS[@]}" \
     -d "${IMAGE_NAME}"
 
 echo "SLIM is running at http://localhost:${port%%:*}"
+script_elapsed=$(( $(date +%s) - SCRIPT_START_TIME ))
+echo "start_slim finished in $(format_duration "${script_elapsed}")."

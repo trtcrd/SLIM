@@ -1,134 +1,148 @@
+# SLIM
 
 <p align="center">
-  <img src="https://github.com/yoann-dufresne/SLIM/blob/master/www/imgs/slim_logo.svg" alt="SLIM logo" width="250px"/>
+  <img src="https://github.com/trtcrd/SLIM/blob/master/www/imgs/slim_logo.svg" alt="SLIM logo" width="250px"/>
 </p>
 
-**What is it?**
+SLIM is a browser-based workflow builder for DNA metabarcoding and selected shotgun-metagenomics analyses. It wraps command-line bioinformatics tools in a graphical web interface so users can upload files, chain modules, run analyses, and download results without writing shell scripts.
 
-SLIM is a web application that aims to facilitate the access to state-of-art bioinfirmatic tools to non-specialist and to command-line reluctant for the processing of raw amplicon sequencing data, i.e. DNA metabarcoding, from illumina paired-end or nanopore FASTQ to annotated ASV/OTU matrix.
+The current repository is [trtcrd/SLIM](https://github.com/trtcrd/SLIM). The full manual starts at [man/README.md](man/README.md).
 
-SLIM is based on the node.js framework, and provide a Graphical User Interface (GUI) to interact with bioinformatic softwares. It simplifies the creation and deployment of a processing pipeline and is accessible within an internet browser over the internet. It is maintened by [Adrià Antich](mailto:a.antich@ceab.csic.es) and [Tristan Cordier](mailto:tristan.cordier@gmail.com).
-The application is embedded in a [podman](https://podman.io/).
+## What SLIM Does
 
-The full documentation is available [here](https://github.com/adriantich/SLIM/blob/master/man/README.md#tutorials).
+SLIM provides:
 
-# Install and deploy the web app
+* a Node.js web interface for configuring pipelines;
+* a scheduler that runs modules inside a container;
+* modules for demultiplexing or grouping samples manually, paired-end read merging, chimera removal, ASV/OTU inference, taxonomic assignment, filtering, and post-processing;
+* long-read amplicon modules for Nanopore/PacBio workflows;
+* optional shotgun metagenomics modules for taxonomic profiling using Kraken2-Bracken, mOTUs, and SingleM.
 
-First of all, podman needs to be installed on the machine. You can find instructions here :
-* [podman for Ubuntu](https://podman.io/docs/installation#ubuntu)
-* [podman for Debian](https://podman.io/docs/installation#debian)
-* [podman for macOS](https://podman.io/docs/installation#macos)
+SLIM is maintained by [Adrià Antich](mailto:a.antich@ceab.csic.es) and [Tristan Cordier](mailto:tristan.cordier@gmail.com).
 
-To install SLIM, get the last stable release [here](https://github.com/trtcrd/SLIM/archive/v1.0.0.tar.gz) or, using terminal :
+## Requirements
+
+Install and start either [Podman](https://podman.io/docs/installation) or Docker before deploying SLIM. Podman is the default.
+
+SLIM is a CPU-only container image. The dependency script downloads both Linux `x86_64` and Linux `aarch64` Miniforge installers, and the Dockerfile selects the matching installer at build time. Native builds are recommended on both x86_64 machines and ARM-based Macs running Linux ARM64 containers. Cross-building an x86_64 image on an ARM Mac may work through emulation, but it is expected to be much slower.
+
+## Install
+
+Download the latest stable archive:
+
 ```bash
-sudo apt-get update && apt-get install git curl
+sudo apt-get update
+sudo apt-get install -y git curl
 curl -OL https://github.com/trtcrd/SLIM/archive/v1.0.0.tar.gz
 tar -xzvf v1.0.0.tar.gz
 cd SLIM-1.0.0
 ```
 
-Email notifications are optional. To send messages with Gmail, enable 2-Step Verification on the Gmail account and create a Gmail app password. Then create a local file named `slim_mail.env` at the root of the SLIM folder:
-
-```
-SLIM_MAIL_USER=your.gmail.account@gmail.com
-SLIM_MAIL_PASSWORD=your16digitapppassword
-SLIM_MAIL_FROM=your.gmail.account@gmail.com
-```
-
-The `start_slim_v1.0.0.sh` script passes this file to the container at runtime. Do not commit `slim_mail.env`.
-
-Kraken2/Bracken databases are optional and are kept outside the Docker image. The Kraken2-Bracken module uses PlusPF-16 by default, which adds protozoa and fungi to the standard archaea/bacteria/viral/plasmid/human database. To download it:
-
-```bash
-./download_kraken2_db.sh pluspf_16
-```
-
-Available choices are `viral`, `standard_8`, `standard_16`, `pluspf_8`, and `pluspf_16`. The database will be stored under `lib/kraken2/db/` and mounted into the SLIM container by `start_slim_v1.0.0.sh`. The Kraken2-Bracken module can trim adapters and low-quality bases with fastp before classification; this option is enabled by default for FASTQ input.
-
-The SingleM module can also trim paired-end FASTQ files with fastp before profiling. This option is enabled by default and produces a small fastp reports archive.
-
-The mOTUs module is another shotgun metagenomics profiler. Its marker-gene database is kept outside the Docker image and is downloaded by `start_slim_v1.0.0.sh` after the image is built and before the webserver is started. The standalone downloader also uses the `motus` executable inside the built SLIM image, so it is only useful after the image exists. To download it manually after a build:
-
-```bash
-./download_motus_db.sh
-```
-
-The database is stored under `lib/mOTUs/db/` and mounted into the container at runtime. The mOTUs module can also trim FASTQ files with fastp before profiling; this option is enabled by default.
-
-Experimental ancient-DNA modules are also available. A practical end-to-end workflow is:
-
-```text
-kraken2-bracken
--> targeted-reference-builder
--> map-to-targeted-reference
--> metaDMG
-```
-
-This workflow uses Kraken2/Bracken taxids to download a small targeted RefSeq reference, maps reads with BWA, adds `MD:Z` tags with samtools, and estimates DNA damage with metaDMG-cpp.
-
-
-As soon as podman is installed and running and the SLIM archive downloaded, it can be deployed by using the two scripts `get_dependencies_slim_v1.0.0.sh` and `start_slim_v1.0.0.sh`.
-* `get_dependencies_slim_v1.0.0.sh` fetches all the bioinformatics tools needed from their respective repositories.
-* `start_slim_v1.0.0.sh` builds the SLIM image, downloads missing external databases such as SingleM and mOTUs, mounts those databases into the container, and destroys the current running webserver to replace it with a new one. **/!\\** All the files previously uploaded and the results of analysis will be detroyed during the process.
+Then fetch bundled dependencies and build/start the container:
 
 ```bash
 bash get_dependencies_slim_v1.0.0.sh
 bash start_slim_v1.0.0.sh
 ```
 
-The server is configured to use up to 8 CPU cores per job. The amount of available cores will determine the amount of job that can be executed in parallel (1-8 -> 1 job, 16 -> 2 jobs, etc.). The number of cores is defined in the [scheduler.js](https://github.com/adriantich/SLIM/blob/master/server/scheduler.js) script in the line:
-```javascript
-const CORES_BY_RUN = 8;
+`get_dependencies_slim_v1.0.0.sh` downloads third-party source archives and prepares local dependency folders. `start_slim_v1.0.0.sh` builds the image, stops/replaces any running SLIM container, removes dangling images, and starts the web server.
+
+> Restarting SLIM replaces the current container. Files uploaded to the previous container and analysis results stored there are removed.
+
+## Start Options
+
+Show all options:
+
+```bash
+bash start_slim_v1.0.0.sh --help
 ```
 
+Common options:
 
-# Accessing the webserver
+```bash
+# Use Docker instead of Podman
+bash start_slim_v1.0.0.sh --docker
 
-The execution of the `start_slim_v1.0.0.sh` script deploys and start the webserver.
-By default, the webserver is accessible on the 8080 port but can be modified using the -P option:
-```
-> bash start_slim_v1.0.0.sh -h
-start_slim_v1.0.0.sh destroys the current running webserver to replace it with a new one.
-/!\ All the files previously uploaded and the results of analysis will be detroyed during the process.
+# Expose SLIM on another host port
+bash start_slim_v1.0.0.sh --port 8081:80
 
-Syntax: start_slim_v1.0.0.sh [-h] [-p] [-P] [port]
-options:
--h --help       Print this Help.
+# Enable shotgun modules and download/mount their databases
+bash start_slim_v1.0.0.sh --shotgun-databases
 
--d --docker     Use docker instead of podman
-
--P --port       <numeric:numeric> Specify the port that has to be opened for the container. 8080:80 by default
+# Choose a Kraken2 database when shotgun modules are enabled
+bash start_slim_v1.0.0.sh --shotgun-databases --kraken-db viral
 ```
 
+Available Kraken2 choices are `viral`, `standard_8`, `standard_16`, `pluspf_8`, and `pluspf_16`. The default is `pluspf_16`.
 
-* To access it on a remote server from your machine, type the server IP address followed by ":8080" (for example `156.241.0.12:8080`) from an internet browser (prefer Firefox and Google Chrome).
-* If SLIM is deployed on your own machine, type `localhost:8080/`
+## Optional Email Notifications
 
-If the server is correctly set, you should see this:
+Email notifications are disabled unless a local `slim_mail.env` file exists at the root of the SLIM folder. For Gmail, enable 2-Step Verification and create an app password, then add:
+
+```text
+SLIM_MAIL_USER=your.gmail.account@gmail.com
+SLIM_MAIL_PASSWORD=your16digitapppassword
+SLIM_MAIL_FROM=your.gmail.account@gmail.com
+```
+
+Do not commit `slim_mail.env`.
+
+## Optional Shotgun Databases
+
+Shotgun databases are large and are kept outside the Docker image. By default, SLIM starts without downloading or mounting Kraken2-Bracken, SingleM, or mOTUs databases, and those modules are hidden from the module list.
+
+Start with `--shotgun-databases` to download/mount the databases and expose the modules:
+
+```bash
+bash start_slim_v1.0.0.sh --shotgun-databases
+```
+
+Manual download helpers are also available after the SLIM image exists:
+
+```bash
+./download_kraken2_db.sh pluspf_16
+./download_motus_db.sh
+```
+
+Database locations:
+
+* Kraken2: `lib/kraken2/db/`
+* mOTUs: `lib/mOTUs/db/`
+* SingleM: `lib/singleM/db/`
+
+## Access the Web Interface
+
+By default, SLIM listens on host port `8080`.
+
+* Local machine: `http://localhost:8080/`
+* Remote server: `http://<server-ip>:8080/`
+
+After the first page load, SLIM adds a session token to the URL. If a gmail emailing service is configured, you will receive an email with a direct lonk to your job, otherwise please bookmark the tokenized URL to return to the same session while it remains available.
 
 <p align="left">
   <img src="https://github.com/trtcrd/SLIM/blob/master/tutos/slim_webpage.png" alt="SLIM homepage" width="800px"/>
 </p>
 
-# Prepare and upload your data
+## Prepare Input Files
 
-You may check by yourself the files and their required format:
-- download an illimina [toy dataset](https://github.com/trtcrd/SLIM/blob/gh-pages/assets/tuto/exemple_tuto.zip).
-- download an nanopore [toy dataset](https://github.com/trtcrd/SLIM/blob/gh-pages/assets/tuto/nanopore_tuto.zip).
+Typical metabarcoding inputs include:
 
+* paired-end FASTQ files for each multiplexed sequencing library;
+* a tag-to-sample CSV describing library, sample, forward tag, and reverse tag;
+* a primer FASTA file;
+* a reference FASTA database for taxonomic assignment;
+* or already-demultiplexed FASTQ files for direct per-sample workflows.
 
-The "file uploader" section allows you to upload all the required files. Usually it consists of:
-- one (or multiple) pair(s) of FASTQ files corresponding to the multiplexed library(ies) (can be zipped)
-- a CSV (Comma-separated values) file containing the correspondance between library, tagged-primers pairs and samples (the so-called tag-to-sample file, see below for an example)
-- alternatively, a list of fastq files that each correspond to a sample (nanopore or illumina)
-- a FASTA file containing the tagged primers sequences and name (see below for an example)
-- a FASTA file containing sequence reference database (see below for an example)
+Toy datasets:
 
-**Example of tag-to-sample file:**
-This file must contain at least the four four fields: run, sample, forward and reverse. "Run" corresponds to your illumina library identification; "sample" corresponds to the names of your samples in the library; "forward" and "reverse" corresponds to the names of your tagged primers.
-**Samples names MUST be unique, even for replicates sequenced in multiples libraries**
+* [Illumina example dataset](https://github.com/trtcrd/SLIM/blob/gh-pages/assets/tuto/exemple_tuto.zip)
+* [Nanopore example dataset](https://github.com/trtcrd/SLIM/blob/gh-pages/assets/tuto/nanopore_tuto.zip)
 
-```
+### Tag-to-Sample CSV
+
+The tag-to-sample CSV must contain at least `run`, `sample`, `forward`, and `reverse` columns. Sample names must be unique, including replicates sequenced in multiple libraries.
+
+```csv
 run,sample,forward,reverse
 library_1,sample_1,forwardPrimer-A,reversePrimer-B
 library_1,sample_2,forwardPrimer-B,reversePrimer-C
@@ -136,11 +150,11 @@ library_2,sample_3,forwardPrimer-A,reversePrimer-B
 library_2,sample_4,forwardPrimer-B,reversePrimer-C
 ```
 
-**Example of primers FASTA file:**
-It contains the names of your tagged primers and their sequences, in a conventional FASTA format. Each primer tag consists of 4 variables nucleotides at the 5' side, prior the template specific part.
-Each primer must contains a specific identifier (by letters in this example). The primers sequences can include IUPAC nucleotide codes, they are taken into account.
+### Primer FASTA
 
-```
+Primer FASTA records must use unique identifiers. Primer sequences may contain IUPAC ambiguity codes.
+
+```fasta
 >forwardPrimer-A
 ACCTGCCTAGCGTYG
 >forwardPrimer-B
@@ -151,53 +165,60 @@ GAATCTYCAAATCGG
 ACTACTYCAAATCGG
 ```
 
-**Example of sequences reference database file**
+### Reference FASTA for Taxonomic Assignment
 
-This FASTA file contains reference sequences with unique identifier and taxonomic path in the header.
-Such database can be downloaded for instance from [SILVA](https://www.arb-silva.de/) for both prokaryotes and eukaryotes (16S and 18S), [EUKREF](https://eukref.org/) or [PR2](https://github.com/pr2database/pr2database) for eukaryotes (18S), [UNITE](https://unite.ut.ee/repository.php) for fungi (ITS), [MIDORI](http://www.reference-midori.info/download.php#) for metazoan (COI).
-Each header include a unique identifier (usually the accession),
-a space ' ', and the taxonomic path separated by a semi-colon (without any space, please use "_" underscore).
-**You should have the same amount of taxonomic rank for each reference sequences**
+Reference FASTA headers must contain a unique identifier, one space, and a semicolon-separated taxonomy path with the same number of ranks for every record.
 
-```
+```fasta
 >AB353770 Eukaryota;Alveolata;Dinophyta;Dinophyceae;Dinophyceae_X;Dinophyceae_XX;Peridiniopsis;Peridiniopsis_kevei
-ATGCTTGTCTCAAAGATTAAGCCATGCATGTCTCAGTATAAGCTTTTACATGGCGAAACTGCGAATGGCTCATTAAAACAGTTACAGTTTATTTGAA
-GGTCATTTTCTACATGGATAACTGTGGTAATTCTAGAGCTAATACATGCGCCCAAACCCGACTCCGTGGAAGGGTTGTATTTATTAGTTACAGAACC
-AACCCAGGTTCGCCTGGCCATTTGGTGATTCATAATAAACGAGCGAATTGCACAGCCTCAGCTGGCGATGTATCATTCAAGTTTCTGACCTATCAGC
-TTCCGACGGTAGGGTATTGGCCTACCGTGGCAATGACGGGTAACGGAGAATTAGGGTTCGATTCCGGAGAGGGAGCCTGA
+ATGCTTGTCTCAAAGATTAAGCCATGCATGTCTCAGTATAAGCTTTTACATGGCGAAACTGCGAATGGCTCATTAAAACAG
 >KC672520 Eukaryota;Opisthokonta;Fungi;Ascomycota;Pezizomycotina;Leotiomycetes;Leotiomycetes_X;Leotiomycetes_X_sp.
-TACCTGGTTGATTCTGCCCCTATTCATATGCTTGTCTCAAAGATTAAGCCATGCATGTCTAAGTATAAGCAATATATACCGTGAAACTGCGAATGGC
-TCATTATATCAGTTATAGTTTATTTGATAGTACCTTACTACT
+TACCTGGTTGATTCTGCCCCTATTCATATGCTTGTCTCAAAGATTAAGCCATGCATGTCTAAGTATAA
 >AB284159 Eukaryota;Alveolata;Dinophyta;Dinophyceae;Dinophyceae_X;Dinophyceae_XX;Protoperidinium;Protoperidinium_bipes
-TGATCCTGCCAGTAGTCATATGCTTGTCTCAAAGATTAAGCCATGCATGTCTCAGTATAAGCTTCAACATGGCAAGACTGTGAATGGCTCATTAAAA
-CAGTTGTAGTTTATTTGGTGGCCTCTTTACATGGATAGCCGTGGTAATTCTAGAACTAATACATGCGCTCAAGCCCGACTTCGCAGAAGGGCTGTGT
-TTATTTGTTACAGAACCATTTCAGGCTCTGCCTGGTTTTTGGTGAATCAAAATACCTTATGGATTGTGTGGCATCAGCTGGTGATGACTCATTCAAG
-CTT
+TGATCCTGCCAGTAGTCATATGCTTGTCTCAAAGATTAAGCCATGCATGTCTCAGTATAAGCTTCAACATGGCAAGACTGTGAATGGC
 ```
 
+Common sources include [SILVA](https://www.arb-silva.de/), [EUKREF](https://eukref.org/), [PR2](https://github.com/pr2database/pr2database), [UNITE](https://unite.ut.ee/repository.php), and [MIDORI](http://www.reference-midori.info/download.php#).
 
-# Analyse your data
+## Build a Pipeline
 
-## Shotgun metagenomics
+Use **Add a new module** to select modules and chain them in order. Each module consumes uploaded files or files created by earlier modules.
 
-SLIM now includes several modules for shotgun metagenomic taxonomic profiling, alongside the original metabarcoding workflows. These modules accept single-end, already-merged, or paired-end FASTQ files depending on the tool. For multiple samples, create file groups with the `wildcard-creator` module, then use those wildcard groups as inputs.
+For a typical metabarcoding workflow:
 
-The currently integrated shotgun taxonomic profilers are:
+1. Demultiplex libraries, unless each file already corresponds to one sample.
+2. Merge paired-end reads.
+3. Remove chimeras.
+4. Infer ASVs or cluster OTUs.
+5. Assign taxonomy.
+6. Filter or post-process the ASV/OTU table.
 
-* [Kraken2-Bracken](man/sections/Kraken2-Bracken.md): fast k-mer/minimizer classification with Kraken2, followed by Bracken abundance estimation at a selected taxonomic rank.
-* [mOTUs](man/sections/mOTUs.md): marker-gene profiling with mOTUs v4, useful for prokaryotic community profiling based on universal marker genes.
-* [singleM](man/sections/SingleM.md): single-copy-marker profiling, mainly for bacterial and archaeal shotgun metagenomes.
+For already-demultiplexed data, use [wildcard creator](man/sections/wildcard_creator.md) to create file groups that can pass through downstream modules.
 
-SLIM also includes experimental ancient-DNA modules that can be chained after shotgun profiling:
+The pipeline can be saved with **Save** and restored with **Load**. When a job starts, SLIM writes a `pipeline.conf` file recording the selected modules and parameters.
+
+## Wildcards
+
+SLIM uses wildcard patterns to pass groups of files between modules. For example:
 
 ```text
-kraken2-bracken
--> targeted-reference-builder
--> map-to-targeted-reference
--> metaDMG
+sample*_R1.fastq
+sample*_R2.fastq
 ```
 
-This workflow uses taxa detected by Kraken2/Bracken to build a smaller targeted reference set, maps reads with BWA, adds `MD:Z` tags with samtools, and estimates DNA damage patterns with [metaDMG](man/sections/metaDMG.md). It is intended for ancient-DNA authentication, not as a taxonomic profiler by itself.
+Wildcards are generated by modules such as the demultiplexer or `wildcard-creator`. Select suggested wildcards from the autocompletion list instead of typing new wildcard expressions manually.
+
+## Shotgun Modules
+
+The integrated shotgun profilers are:
+
+* [Kraken2-Bracken](man/sections/Kraken2-Bracken.md): fast k-mer/minimizer classification followed by Bracken abundance estimation.
+* [mOTUs](man/sections/mOTUs.md): marker-gene profiling for prokaryotic communities.
+* [SingleM](man/sections/SingleM.md): single-copy-marker profiling, mainly for bacterial and archaeal shotgun metagenomes.
+
+For general exploratory shotgun data, `kraken2-bracken` is usually the fastest first screen. For marker-gene-based microbial profiling, compare `mOTUs` and `SingleM`.
+
+Experimental ancient-DNA modules are included in the codebase but are not exposed in the default module list.
 
 ### Choosing a shotgun profiler
 
@@ -209,77 +230,50 @@ This workflow uses taxa detected by Kraken2/Bracken to build a smaller targeted 
 | Best used for | Fast broad screening, especially with PlusPF databases for bacteria, archaea, viruses, plasmids, human, protozoa, and fungi. | Prokaryotic species-level or mOTU-level profiling when marker-gene precision is preferred over broad whole-genome screening. | Bacterial/archaeal community profiling and microbial novelty estimates from conserved marker genes. |
 | Important limitations | Results follow the database content. PlusPF does not include plants by default; use a custom database for other targets. Bracken requires database files built for the selected read length. | Requires enough marker-gene signal and can be memory intensive because mOTUs v4 maps with BWA against a large marker database. | Not intended as a broad eukaryotic, fungal, viral, or plasmid classifier with the default SLIM metapackage. |
 
-For general exploratory shotgun data, `kraken2-bracken` is usually the fastest first-pass screen. For microbial community profiling where marker genes are more appropriate, compare `mOTUs` and `singleM`. For ancient DNA, keep preprocessing permissive, inspect negative controls, and treat taxonomic calls as candidates to authenticate with mapping and damage analysis rather than final proof.
 
-## Metabarcoding
+## Results
 
-Usually, a typical Metabarcoding workflow would include:
-1. Demultiplexing the libraries (if each file corresponds to a single sample, use the wildcard-creator module, and proceed to the joining step)
-2. Joining the paired-end reads
-3. Chimera removal
-4. ASVs inference / OTUs clustering
-5. Taxonomic assignement
+When the job finishes, download icons appear next to module outputs. Uploaded, intermediate, and result files remain available in the session for a limited time.
 
-The "Add a new module" section has a drop-down list containing various modules to pick, set and chain.
-Pick one and hit the "+" button. This will add the module at the bottom of the first section, and prompting you to fill the required fields. For more informations on the modules, you can refer to their manuals on the wiki or by clicking the (i) button on the module interface.
+Module statuses:
 
-**The use of wildcard '*' for file pointing**
+* `waiting`: the module is waiting for required input files;
+* `running`: the module is executing;
+* `warnings`: the module reported warnings but is still running;
+* `aborted`: the module failed and the pipeline stopped;
+* `ended`: the module finished successfully.
 
-The chaining between module is made through the files names used as input / output. To avoid having to select mannually all the samples to be included in an analysis, wildcards '*' (meaning 'all') are generated during demultiplexing (or by using the wildcard-creator module, see below) and used by the application.
-Such wildcards are generated from the compressed libraries fastq files (tar.gz) and by the tag-to-sample file.
-**Users cannot type on their own wildcards in the file names of modules**. Instead, the application has an autocompletion feature and will make wildcards suggestions for the user to select within the GUI.
+## Configure Parallelism
 
-However, when uploading demultiplexed libraries (each FASTQ corresponds to a single sample), the demultiplexing step is not needed. Instead, create a wildcard pattern to pass groups of files through the different processing steps. To do so, use the module [wildcard-creator](man/sections/wildcard_creator.md).
+SLIM currently uses up to 8 CPU cores per module run. This value is set in `server/scheduler.js`:
 
-To point to a set of samples (all samples from the tag-to-sample, or all the samples from the library_1 for instance), there will be a '*', and the application adds the processing step as a suffix incrementaly:
-- all samples from the tag-to-sample file that have been demultiplexed: 'tag_to_sample*_fwd.fastq' and 'tag_to_sample*_rev.fastq'
-- all samples from the library_1 that have been demultiplexed: 'tag_to_sample_Library_1*_fwd.fastq' and 'tag_to_sample_Library_1*_rev.fastq'
-- all samples from the tag-to-sample file that have been joined: 'tag_to_sample*_merge-vsearch.fasta'
-- all samples from the tag-to-sample file that have been joined and chimera filtered: 'tag_to_sample*_merge-vsearch_uchime.fasta'
+```javascript
+const CORES_BY_RUN = 8;
+```
 
-The same principle applies for ASV/OTU matrices, we add the previous processing step as a suffix in the file name.
+The number of concurrent jobs depends on available CPU cores and the scheduler (1-8 -> 1 job, 16 -> 2 jobs, etc.).
 
-see below for the demultiplexing
+## Create a Module
 
-<p align="left">
-  <img src="https://github.com/trtcrd/SLIM/blob/master/tutos/slim_demultiplexer.png" alt="SLIM example" width="800px"/>
-</p>
+To add a module, see:
 
+* [How to write a module](man/sections/How-to-write-a-new-module.md)
+* [ASHURE example: concept and installation](man/sections/How-to-write-a-new-module-IIa.md)
+* [ASHURE example: module scripts](man/sections/How-to-write-a-new-module-IIb.md)
 
-and below for an OTU clustering using vsearch and taxonomic assignement
+## Version History
 
-<p align="left">
-  <img src="https://github.com/trtcrd/SLIM/blob/master/tutos/slim_otu.png" alt="SLIM example" width="800px"/>
-</p>
+### v1.1.0
 
-
-Once your workflow is set, optionally fill the email field, click on the start button, and bookmark the url to allow returning to the job.
-If the server mailer is configured, you will receive an email when your job starts, aborts, and ends.
-
-When the job is over, you will have small icons of download on the right of each output field.
-All the uploaded, intermediate and results files are available to download.
-Your files will remain available on the server during 24h, after what they will be removed for storage optimisation
-
-Each module status is displayed besides its names:
-- waiting: the execution started, the module is waiting for files input.
-- running: the module is busy.
-- warnings: there was some warnings during the execution, but the module is still running.
-- aborted: the module aborted and the pipeline has stopped its execution.
-- ended: the module has finnished its task.
-
-For more details on the app, you can refer to the [wiki pages](https://github.com/yoann-dufresne/SLIM/wiki)
-
-
-# Creating your own module
-
-To contribute by adding new softwares, you will have to know a little bit of HTML and javascript.
-Please refer to the Man pages to learn [how to create a module](https://github.com/adriantich/SLIM/blob/master/man/README.md#tutorials).
-
-# Current modules by category
-
-In the [manual](https://github.com/adriantich/SLIM/blob/master/man/README.md#list-of-the-modules) page you can find a list of the different modules implemented and their help pages.
-
-# Version history
+- Updated version of most dependencies.
+- Updated install scripts for better dependencies handling and for x86_64 and ARM64 container builds.
+- Added a server status monitoring routine (a message will show up if the server is down/restarting).
+- Restored optional email notifications through gmail app-password configuration and job labelling.
+- Improved/fix wildcard-creation module.
+- Nanopore-oriented modules: streamlined the installation of MSI, integrated a module based on isONclust3-minimap2-racon.
+- PacBio-oriented modules: isONclust3.
+- Added optional shotgun modules for Kraken2-Bracken, mOTUs, and SingleM.
+- Fixed multiple interface and deployment issues.
 
 ### v1.0.0
 

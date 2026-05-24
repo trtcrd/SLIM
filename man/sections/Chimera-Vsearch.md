@@ -1,20 +1,19 @@
-# Chimera Vsearch
+# Chimera Removal with VSEARCH
 
-This module use the uchime module of the Vsearch tool to filter the chimeras from an FASTA file.
-For now, only the _de novo_ version is available through the web server.
+The `chimera-vsearch` module removes chimeric sequences from a FASTA file with VSEARCH `uchime_denovo`. The SLIM interface currently exposes the _de novo_ chimera-detection workflow.
 
-## Module interactions
+## Inputs
 
-### Main inputs
+### Input FASTA File
 
-* Input file: The FASTA containing all the sequences to filter.
-* Filtered file: The file without chimeras that will be outputted.
+FASTA file containing sequences to filter.
 
-### Options
+## Outputs
 
-* Chimeras: If not empty, the chimeras will be outputted in this file.
+* Filtered FASTA file without detected chimeras.
+* Optional chimera FASTA file containing removed sequences.
 
 ## References
 
-* Vsearch github: https://github.com/torognes/vsearch
-* Original publication: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3150044/
+* VSEARCH repository: https://github.com/torognes/vsearch
+* Original UCHIME publication: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3150044/

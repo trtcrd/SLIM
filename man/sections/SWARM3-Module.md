@@ -1,34 +1,26 @@
-# SWARM3 Module
+# SWARM3
 
-This module uses Swarm v3 to create an OTU table.
-#### Updates
-swarm 3.0 introduces:
+The `swarm3` module clusters dereplicated FASTA sequences with Swarm v3 and creates an OTU table.
 
-* a much faster default algorithm
-* a reduced memory footprint
-* strict dereplication of input sequences is now mandatory
-* seed outputs are sorted by decreasing abundance and then by alphabetical order of sequence labels
-* the representative sequence is the most abundant in the cluster
+Swarm v3 introduced a faster default algorithm, reduced memory use, mandatory strict dereplication of input sequences, and representative sequences sorted by decreasing abundance and then by sequence label.
 
-## Module interactions
+## Inputs
 
-### Main inputs
+* Sequence files: FASTA files to merge before clustering.
+* Optional tag-to-sample CSV: used to sort samples in the output table when requested.
 
-* Sequence files: Select all the FASTA files that you want to merge before clustering.
-* OTU table: The OTU table in TSV format. Each line is a cluster and each column is a sample.
-The numbers in the matrix are the numbers of reads for each cluster in each sample.
-* Sort the samples: If checked, sort the samples in the matrix using the csv file entered in the following input.
-* Most abundant reads: Each centroid sequence for clusters in FASTA format.
-The first sequence represents cluster 0, the second sequence represents cluster 1, and so on.
-* All reads: A file containing all the reads with their cluster assignment.
+## Parameters
 
-### Options
+* `d` value: maximum distance between two reads in the same cluster. If `d=1`, Swarm's fastidious option is enabled automatically.
 
-* d value: The maximum distance between two reads in the same cluster.
-If d=1, the fastidious option is automatically set (see swarm github).
+## Outputs
+
+* OTU table in TSV format, with clusters as rows and samples as columns.
+* Most abundant reads, one centroid sequence per cluster in FASTA format.
+* All reads with cluster assignments in their headers.
 
 ## References
 
-* Swarm github: https://github.com/torognes/swarm
+* Swarm repository: https://github.com/torognes/swarm
 * Swarm publication: https://peerj.com/articles/593/
 * Swarm v3 publication: https://academic.oup.com/bioinformatics/article/38/1/267/6318385

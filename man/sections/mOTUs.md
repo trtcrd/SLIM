@@ -122,7 +122,7 @@ For Docker Desktop, increase Resources > Memory to at least 16 GB, preferably 24
 
 Use `mOTUs` when you want a marker-gene-based prokaryotic profile from shotgun data. It is a good companion to SingleM because both are marker-gene profilers, but mOTUs produces mOTU species-level units from its own marker-gene database and includes many uncultivated prokaryotic lineages.
 
-Use `singleM` when you want SingleM's single-copy-marker OTU/profile outputs and its GTDB metapackage.
+Use `SingleM` when you want SingleM's single-copy-marker OTU/profile outputs and its GTDB metapackage.
 
 Use `kraken2-bracken` when you want fast k-mer classification against a broad database. With PlusPF databases, Kraken2-Bracken can include bacteria, archaea, viruses, plasmids, human, protozoa, and fungi, but it is more database-match driven.
 

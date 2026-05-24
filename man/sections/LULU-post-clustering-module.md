@@ -1,27 +1,24 @@
-# LULU post clustering module
+# LULU Post-Clustering
 
-This module uses the LULU algorithm for the post clustering of an OTU table.
+The `lulu` module uses the LULU algorithm to curate an OTU table after clustering. It identifies likely erroneous daughter OTUs using sequence similarity and co-occurrence patterns.
 
-## Module interactions
+## Inputs
 
-### Main inputs
+* OTU representative sequences: FASTA file containing one representative sequence per OTU.
+* OTU table: TSV table to curate.
 
-* OTU representative sequences: the representative sequences of each OTU in a fasta format. This is used to produce the pairwise matching list for LULU.
-* OTU table: The OTU table in tsv format to be post clustered by LULU.
+OTU identifiers must match exactly between the representative FASTA file and the OTU table.
 
-! The OTU names need to perfectly match between the two files !  
+## Parameters
 
-### Options
+* Sequence similarity threshold: similarity above which a pair of OTUs can be considered related.
+* Minimum relative co-occurrence: minimum co-occurrence required to consider a lower-abundance OTU a potential daughter.
 
-* Sequence similarity threshold: The similarity above which we consider a pair of sequences as a potential sister.
-* Minimum relative co-occurence: The minimum co-occurence across samples to consider a pair of sequences as a potential sister.
+## Output
 
-### Output
-
-* Post-clustered OTU table in tsv format
-
+Post-clustered OTU table in TSV format.
 
 ## References
 
-* LULU github: https://github.com/tobiasgf/lulu
+* LULU repository: https://github.com/tobiasgf/lulu
 * LULU publication: https://www.nature.com/articles/s41467-017-01312-x

@@ -6,6 +6,21 @@ const fs = require('fs');
 // ---- Software inits -----
 
 let modules = {};
+const shotgunDatabaseModules = new Set(['kraken2-bracken', 'singleM', 'mOTUs']);
+const ancientDnaModules = new Set(['targeted-reference-builder', 'map-to-targeted-reference', 'metaDMG']);
+const shotgunDatabasesEnabled = ['1', 'true', 'yes', 'on'].includes(
+	String(process.env.SLIM_ENABLE_SHOTGUN_DATABASES || '').toLowerCase()
+);
+
+function moduleIsHidden(module) {
+	if (ancientDnaModules.has(module.name) || module.category == '10. Ancient DNA')
+		return true;
+
+	if (!shotgunDatabasesEnabled && shotgunDatabaseModules.has(module.name))
+		return true;
+
+	return false;
+}
 
 fs.readdir('/app/modules/', (err, items) => {
 	// Errors
@@ -23,6 +38,11 @@ fs.readdir('/app/modules/', (err, items) => {
 
 		let module = require('/app/modules/' + filename);
 		if (module.name) {
+			if (moduleIsHidden(module)) {
+				console.log('Skipping module disabled by startup configuration:', module.name);
+				continue;
+			}
+
 			let html = '/app/www/modules/' + module.name + '.html';
 			let js = '/app/www/modules/' + module.name + '.js';
 
@@ -200,8 +220,6 @@ exports.compress_outputs = (token, jokers) => {
         }
     });
 };
-
-
 
 
 

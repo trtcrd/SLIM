@@ -1,53 +1,100 @@
 # Start with SLIM
 
-Welcome to SLIM. 
+SLIM is a browser-based platform for building and running genomics pipelines. It is designed for users who want to process metabarcoding, long-read amplicon, or selected shotgun-metagenomics data without writing command-line workflows.
 
-SLIM is a platform that allows you to run genomics pipelines with a Graphical User Interface (GUI). This documentation is addressed to the user that wants to analyse the data with the available modules but also to the developers and IT people that wants to install the container and/or develop new modules to expand the platform.
+Project repository: [trtcrd/SLIM](https://github.com/trtcrd/SLIM)
 
-# Disclaimer:
-Before starting, SLIM is build in a podman container. The installation and construction of this container can be time consuming and errors derived from requirements in some specific company certificates requires medium to advanced knowledge in IT. Even though, we encourage everybody to try to play with the program and report the issues and bugs found.
-Also remember that this new version has been updated and documented by a Biologist playing bioinformatics. Terminology, explanations and the software itself can be improved. Feel free to open an issue if something is not clear or things can be upgraded. Thus, be awared that this is a documentation from Biologists to Biologists and will try to remain User friendly as possible.
+## Before You Start
 
-# What is SLIM and how it works.
-## General concept
-Imagine that you want to use metabarcoding tools in your experiments. You're knowledge from the sampling to the laboratory is bast and you have managed it very well. However, the black screen is terrifying and your colleagues have shown you their scripts and tried to teach them to you. However, they did not created the scripts to be shared, your time is limited and you have funnier things to do other than learning to code just for one part of the process. On the other hand, that friend of yours that have experience in bioinformatics, is dealing with hundreds of fires at the same time and the promise of processing your data is probably going to be delayed and placed in a long queue of important things to do.
+SLIM runs in a Podman or Docker container. Building the container can take time because several bioinformatics tools and language environments are installed. If the build fails because of network, proxy, certificate, or storage restrictions, ask an IT administrator for help and include the build log in any issue report.
 
-If you are reading this and feel identified, maybe you are close to your solution!!!
+SLIM is CPU-only. It does not require GPU support.
 
-SLIM is a platform that includes a client side (the window to which you interact with), like a website, and a server that will run your analysis. However, even though you can install and run SLIM in a desktop linux/MAC machine is possible, it will demand resources that may not be available in your personal computer. Then, installing SLIM in a HPC or computing server is recommended. Ask your IT responsible to install it for you and tell you how to access to the client.
+## Core Concepts
 
-SLIM follows this philosophy: you will upload your initial data, then you will select the modules that want to run and finally run them.
+### Client and Server
 
-## What is a Module
+The browser page is the client. It lets you upload files, choose modules, set parameters, and start analyses.
 
-In SLIM a Module is referred to a unit of processes that can be run on your data. These Modules can be single software based of multiple processes including different software and/or formatting of your data. As User you will see these Modules as boxes with some fields to fill or select to specify the inputs, outputs and options. You can open many modules in the same session but be aware that these will run in order and it is very important that a Module have as input data that will be available once it starts. That means that if a Module requires a fasta file as input, this must be uploaded by the user or will be an output of previous Modules. In addition, is important a good design of your pipeline for an efficient processing of your data. i.e. If you want to run a dereplication of sequences and a taxonomic assignment, it is better to do it in this order, on the contrary a sequence repeated maybe thousands of times will be compared to the database for each copy while it could be done just one time for unique sequence.
+The server runs inside the container. It receives the pipeline configuration from the browser, executes the requested modules, writes logs, and exposes output files for download.
 
-## What will happen when you use SLIM
-### Start a session
-At the beginning, when you type in your browser the address to the port in that give you access to SLIM, you will be sending a request to start a session. In response, the client will show you a web page like this:
-![](https://github.com/adriantich/SLIM/blob/master/tutos/slim_webpage.png)
-You will see that the link address has also changed and now it has a token in it. Keep this link so it will be the one that will bring you to your session.
+### Sessions
 
-    i.e.
+When you open SLIM, the server creates a session token and adds it to the URL:
 
-    from: http://localhost:8080
+```text
+http://localhost:8080/?token=GxgG6vSsdgrNzYBJ7b99CsvDhmWM7C
+```
 
-    to: http://localhost:8080/?token=GxgG6vSsdgrNzYBJ7b99CsvDhmWM7C
+Bookmark or copy the tokenized URL if you want to return to that session while it remains available.
 
-### Upload data
-When you have started a session in SLIM, in the server side (see this as the computer that really is doing the hard work) a folder will be created. For the generic user this may seem unimportant, but for Module developers this might be useful. You can access to this folder from the server side using docker or podman exec (see podman documentation). 
+### Modules
 
-The files uploaded in SLIM can be called in Modules separately, however, __*when you want to run multiple files together*__, you may need a "joker". This joker is a regular expression which have the common part of the names of the files and an "*" for the unshared part:
+A SLIM module is one processing step. Some modules wrap a single command-line tool, while others run several tools and formatting steps.
 
-    files: file_a.txt file_b.txt
+Modules appear as boxes in the web interface. Each box contains:
 
-    joker: file_*.txt
+* input fields;
+* output file names;
+* parameters and optional advanced settings;
+* download icons after the module finishes.
 
-These jokers are generated by the Modules in the output but if you want them to be generated from multiple uploaded files, __*upload these files together in a .tar.gz compressed object*__.
+Modules run in the order shown in the pipeline. Each module must receive files that already exist, either from upload or from an earlier module.
 
-### Module run
-Once the Modules are chosen and you start the analyis, the code of the Module will run. This is coded in the module script in the [server](https://github.com/adriantich/SLIM/tree/master/server/modules) folder. The scripts in the [www](https://github.com/adriantich/SLIM/tree/master/www/modules) folder are meant to handle the client part of the module with two scripts: the graphical interface with the html script and the specification of the different fields in the module in the js file.
-__If you want to develope a module__, but you are not used to code in JavaScript, you can develop your code in bash/R/python and call this script in the js file in [server](https://github.com/adriantich/SLIM/tree/master/server/modules). (See [How to write a module](https://github.com/adriantich/SLIM/wiki/How-to-write-a-new-module) for further information)
+## Uploading Data
 
-### Download
-Once your analysis is finished you will be able to download the different ouputs using the download icon. In addition, while the Modules were running, a pipeline.conf file will be created with information in json format of all the Modules of the session with their inputs and outputs. This file that you can download with the __*Save*__ button, can also be used in a new session to set the Modules automatically by using the __*Load*__ button.
+Use the file uploader at the top of the page to upload raw data and supporting files.
+
+For many-sample workflows, SLIM relies on wildcard patterns to group files. A wildcard describes the shared file-name pattern:
+
+```text
+files:   file_a.txt file_b.txt
+pattern: file_*.txt
+```
+
+Wildcards are created by modules such as `demultiplexer` and `wildcard-creator`. Prefer selecting a suggested wildcard from autocompletion rather than typing one manually.
+
+If you upload many files that should be grouped together, upload them together in a `.tar.gz` archive or use the `wildcard-creator` module after upload.
+
+## Running an Analysis
+
+1. Upload the required input files.
+2. Add modules with **Add a new module**.
+3. Fill required input, output, and parameter fields.
+4. Check that each module consumes an uploaded file or an output produced by an earlier module.
+5. Optionally enter an email address if the server mailer is configured.
+6. Click **Start analysis**.
+
+During execution, module statuses indicate whether a module is waiting, running, warning, aborted, or ended.
+
+## Saving and Restoring Pipelines
+
+Click **Save** to download the current pipeline configuration. Click **Load** in a new session to restore it.
+
+SLIM also writes a `pipeline.conf` file inside the session folder while modules run. This file records the modules, inputs, outputs, and parameters used for the job.
+
+## Downloading Results
+
+When a module finishes, download icons appear next to its output fields. You can also download uploaded, intermediate, and final result files from the session while they remain on the server.
+
+## Optional Shotgun Modules
+
+By default, SLIM starts without the large shotgun metagenomics databases, so Kraken2-Bracken, SingleM, and mOTUs are hidden from the module list.
+
+Start SLIM with `--shotgun-databases` to download/mount those databases and expose the shotgun modules:
+
+```bash
+bash start_slim_v1.0.0.sh --shotgun-databases
+```
+
+Ancient-DNA helper modules are present in the codebase but are not exposed in the default module list.
+
+## Developing Modules
+
+Module developers usually edit three files:
+
+* `server/modules/<module>.js`: server-side command construction and execution;
+* `www/modules/<module>.js`: client-side module class;
+* `www/modules/<module>.html`: client-side fields shown in the interface.
+
+For details, see [How to write a module](/man/sections/How-to-write-a-new-module.md).
