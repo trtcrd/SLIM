@@ -182,79 +182,7 @@ RUN mamba create -n chopper -y \
     mamba clean -afy
 
 
-# ----- install msi ----- #
-COPY lib/msi /app/lib/msi
-
-# --- system dependencies (DO NOT put inside conda) --- #
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    emboss \
-    time \
-    software-properties-common \
-    libstdc++6 \
-    build-essential \
-    wget \
-    git \
-    cmake \
-    default-jdk && \
-    rm -rf /var/lib/apt/lists/*
-
-# --- create mamba environment and install mamba packages --- #
-RUN mamba create -n msi -y \
-    -c conda-forge \
-    -c bioconda \
-        python=3.9 \
-        cmake \
-        git \
-        wget \
-        openjdk \
-        r-base=4.1.0 && \
-    mamba clean -afy
-
-# --- fix BiocManager path issue --- #
-RUN conda run -n msi bash -c "\
-    mkdir -p /app/lib/msi/Rlibs && \
-    R -e \"install.packages('BiocManager', dependencies=TRUE, repos='https://cran.rstudio.com', lib='/app/lib/msi/Rlibs')\"" && \
-    rm -rf /tmp/downloaded_packages /root/.cache/R
-
-# --- build MSI (CRITICAL: outside conda, force system compiler) --- #
-RUN CC=/usr/bin/gcc CXX=/usr/bin/g++ \
-    /app/lib/msi/scripts/msi_install.sh -i /app/lib/msi
-    
-# ----- correction on msi source code -----
-RUN sed -i 's/\/dev\/stderr/stderr_msi/g' /app/lib/msi/bin/bam_annotate.sh /app/lib/msi/bin/fastq2bam /app/lib/msi/bin/fastq_validator.sh /app/lib/msi/*/msi
-# RUN sed -i 's/ nmembers / \$nmembers /g' /app/lib/msi/bin/msi_clustr_add_size.pl /app/lib/msi/scripts/msi_clustr_add_size.pl
-RUN cd /app/lib/msi/seqtk && make && cd /app
-    
-# ----- install ASHURE ----- #
-COPY lib/ASHURE /app/lib/ASHURE
-
-# Create ASHURE environment with a Python version compatible with pandas 1.3.x.
-RUN mamba create -n ashure -y \
-    -c conda-forge \
-    python=3.9 \
-    "cmake<4" \
-    git \
-    numpy=1.26.4 \
-    pandas=1.3.3 \
-    scikit-learn \
-    hdbscan && \
-    mamba clean -afy
-
-# Build spoa.
-RUN cd /app/lib/ASHURE/spoa && \
-    conda run -n ashure cmake -B build -DCMAKE_BUILD_TYPE=Release && \
-    conda run -n ashure make -C build
-
-# Install/check ASHURE.
-RUN cd /app/lib/ASHURE && \
-    chmod +x src/ashure.py && \
-    conda run -n ashure ./src/ashure.py run -h
-
-# Check ASHURE commands.
-RUN conda run -n ashure /app/lib/ASHURE/src/ashure.py prfg -h && \
-    conda run -n ashure /app/lib/ASHURE/src/ashure.py fgs -h && \
-    conda run -n ashure /app/lib/ASHURE/src/ashure.py msa -h && \
-    conda run -n ashure /app/lib/ASHURE/src/ashure.py fpmr -h
+# MSI/ASHURE block here
 
 
 # ----- install SingleM ----- #
@@ -371,6 +299,7 @@ RUN mamba create -n isonclust3 -y \
         cutadapt \
         samtools \
         htslib \
+        git \
         rust \
         pip && \
     conda run -n isonclust3 cargo install isONclust3 --root /root/miniforge3/envs/isonclust3 && \
@@ -425,6 +354,88 @@ RUN chmod +x /app/lib/bash_scripts/*
 
 # prepare data folder
 RUN mkdir /app/data
+
+
+# ----- install msi ----- #
+COPY lib/msi /app/lib/msi
+
+# --- system dependencies (DO NOT put inside conda) --- #
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    emboss \
+    time \
+    software-properties-common \
+    libstdc++6 \
+    build-essential \
+    wget \
+    git \
+    cmake \
+    default-jdk && \
+    rm -rf /var/lib/apt/lists/*
+
+# --- create mamba environment and install mamba packages --- #
+RUN mamba create -n msi -y \
+    -c conda-forge \
+    -c bioconda \
+        python=3.9 \
+        cmake \
+        git \
+        wget \
+        openjdk \
+        r-base=4.1.0 && \
+    mamba clean -afy
+
+# --- fix BiocManager path issue --- #
+RUN conda run -n msi bash -c "\
+    mkdir -p /app/lib/msi/Rlibs && \
+    R -e \"install.packages('BiocManager', dependencies=TRUE, repos='https://cran.rstudio.com', lib='/app/lib/msi/Rlibs')\"" && \
+    rm -rf /tmp/downloaded_packages /root/.cache/R
+
+# --- build MSI (CRITICAL: outside conda, force system compiler) --- #
+RUN rm -rf /app/lib/msi/bin && \
+    mkdir -p /app/lib/msi/bin && \
+    CC=/usr/bin/gcc CXX=/usr/bin/g++ \
+    /app/lib/msi/scripts/msi_install.sh -i /app/lib/msi
+    
+# ----- correction on msi source code -----
+RUN sed -i 's/\/dev\/stderr/stderr_msi/g' /app/lib/msi/bin/bam_annotate.sh /app/lib/msi/bin/fastq2bam /app/lib/msi/bin/fastq_validator.sh /app/lib/msi/*/msi
+RUN ! grep -Eq "metabinkit|run_blast|blastn|blast_refdb|TAXONOMY_DATA_DIR|SKIP_BLAST" /app/lib/msi/bin/msi /app/lib/msi/scripts/msi
+# RUN sed -i 's/ nmembers / \$nmembers /g' /app/lib/msi/bin/msi_clustr_add_size.pl /app/lib/msi/scripts/msi_clustr_add_size.pl
+RUN cd /app/lib/msi/seqtk && make && cd /app
+RUN /app/lib/msi/bin/minimap2 --version && \
+    /app/lib/msi/bin/racon --version
+    
+# ----- install ASHURE ----- #
+COPY lib/ASHURE /app/lib/ASHURE
+
+# Create ASHURE environment with a Python version compatible with pandas 1.3.x.
+RUN mamba create -n ashure -y \
+    -c conda-forge \
+    python=3.9 \
+    "cmake<4" \
+    git \
+    numpy=1.26.4 \
+    pandas=1.3.3 \
+    scikit-learn \
+    hdbscan && \
+    mamba clean -afy
+
+# Build spoa.
+RUN cd /app/lib/ASHURE/spoa && \
+    conda run -n ashure cmake -B build -DCMAKE_BUILD_TYPE=Release && \
+    conda run -n ashure make -C build
+
+# Install/check ASHURE.
+RUN cd /app/lib/ASHURE && \
+    chmod +x src/ashure.py && \
+    conda run -n ashure ./src/ashure.py run -h
+
+# Check ASHURE commands.
+RUN conda run -n ashure /app/lib/ASHURE/src/ashure.py prfg -h && \
+    conda run -n ashure /app/lib/ASHURE/src/ashure.py fgs -h && \
+    conda run -n ashure /app/lib/ASHURE/src/ashure.py msa -h && \
+    conda run -n ashure /app/lib/ASHURE/src/ashure.py fpmr -h
+
+
 
 # command executed to run the server
 CMD ["bash", "/app/start_slim_server.sh"]

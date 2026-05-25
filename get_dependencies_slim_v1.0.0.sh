@@ -264,37 +264,191 @@ prepare_casper() {
     verify_file "${name}" "casper/casper_v0.8.2/Makefile"
 }
 
-prepare_msi() {
+patch_msi_for_slim() {
     local name="msi"
     local missing
 
-    if [ -f "msi/scripts/msi_install.sh" ] && [ -d "msi/fastq_utils" ] && [ -d "msi/seqtk" ]; then
-        mark_ok "${name}"
-        return 0
-    fi
-
-    missing="$(require_cmds git sed || true)"
+    missing="$(require_cmds python3 || true)"
     if [ -n "${missing}" ]; then
         mark_fail "${name}" "missing required command(s): ${missing//$'\n'/, }"
         return 1
     fi
 
-    rm -rf msi
-    git clone https://github.com/adriantich/msi.git msi
-    (
-        set -e
-        cd msi
-        git clone https://github.com/adriantich/fastq_utils.git
-        sed_in_place 's/git clone/\# git clone/g' scripts/msi_install.sh
-        sed_in_place 's#pushd fastq_utils#pushd "$PATH2SCRIPT/../fastq_utils"#g' scripts/msi_install.sh
-        sed_in_place 's#rm -rf fastq_utils tmp.tar.gz#rm -f tmp.tar.gz#g' scripts/msi_install.sh
-        sed_in_place 's/ nmembers / \$nmembers /g' scripts/msi_clustr_add_size.pl
-        sed_in_place 's/^ALL_TOOLS=.*/ALL_TOOLS="fastq_utils fastqc cutadapt isONclust minimap2 racon cd-hit R_packages msi"/g' scripts/msi_install.sh
-        sed_in_place 's/^ALL_SOFT=.*/ALL_SOFT="$ALL_TOOLS"/g' scripts/msi_install.sh
-        rm -f scripts/msi_tidyup_results scripts/msi_tidyup_table scripts/msi_incremental.sh scripts/msi_res2*
-        rm -f scripts/msi_cluster2reads scripts/msi_clustr2map.pl scripts/msi_display_report
-        rm -rf template tests
-        cat > README.md <<'EOF'
+    if [ ! -f "msi/scripts/msi" ] || [ ! -f "msi/scripts/msi_install.sh" ]; then
+        mark_fail "${name}" "expected MSI scripts missing before SLIM patch"
+        return 1
+    fi
+
+    python3 - <<'PY'
+from pathlib import Path
+import re
+import sys
+
+
+def remove_function(text, name):
+    return re.sub(rf"\nfunction {name} \{{\n.*?\n\}}\n", "\n", text, flags=re.S)
+
+
+msi = Path("msi/scripts/msi")
+text = msi.read_text()
+text = text.replace('SKIP_BLAST="N"\n', "")
+text = text.replace(
+    "## minimum number of reads that a cluster must have to  pass the classification step (blastnig)\n",
+    "## minimum number of reads that a cluster must have.\n",
+)
+text = text.replace("TAXONOMY_DATA_DIR=$MSI_DIR/db\n\n", "")
+text = text.replace("#BLAST_CMD=blastn\nBLAST_CMD=metabinkit_blast\n", "")
+text = re.sub(
+    r"# case sensitive!!\n########\n## blast\n.*?MBK_VALID_PARAMS=\"[^\"]*\"\n\n",
+    "",
+    text,
+    flags=re.S,
+)
+text = text.replace(
+    'COMMANDS_NEEDED="$FASTQ_INFO_CMD $FASTQ_QC_CMD $BLAST_CMD $CLUSTER_ADD_SIZE"',
+    'COMMANDS_NEEDED="$FASTQ_INFO_CMD $FASTQ_QC_CMD $CLUSTER_ADD_SIZE"',
+)
+text = re.sub(r"#taxdb\.tar\.gz.*?#######################################################################################", "#######################################################################################", text, flags=re.S)
+for line in (
+    " -b blast_database - path to the blast database\n",
+    " -B blast_min_id   - value passed to blast (minimum % id - value between 0 and 100)\n",
+    " -E blast_evalue   - value passed to blast (minimum e-value - value < 1)\n",
+    " -S                 - stop execution before running blast\n",
+):
+    text = text.replace(line, "")
+for function_name in ("get_blast_options", "get_metabinkit_options", "run_blast", "run_metabin"):
+    text = remove_function(text, function_name)
+text = text.replace(
+    'while getopts "I:B:T:E:C:c:n:i:m:M:e:q:o:b:t:hdrSV"  Option; do',
+    'while getopts "I:T:C:c:n:i:m:M:e:q:o:t:hdrV"  Option; do',
+)
+for line in (
+    "\tB ) blast_min_id=$OPTARG;;\n",
+    "\tE ) EVALUE=$OPTARG;;\n",
+    "\tb ) blast_refdb=$OPTARG;;\n",
+    '\tS ) SKIP_BLAST="Y";;\n',
+):
+    text = text.replace(line, "")
+text = text.replace(
+    "##\n## metabinkit parameters: mbk_paramname (short or long)\n## -paramname $mbk_paramname will be passed to mbk\n## blast_params: blast_paramname (short long)\n## \n",
+    "##\n",
+)
+text = text.replace("## update some variables\nmbk_db=$TAXONOMY_DATA_DIR\n\n", "")
+text = re.sub(
+    r"## not mandatory\nif \[ \"\$SKIP_BLAST\" != \"Y\" \].*?\n\n\n",
+    "",
+    text,
+    flags=re.S,
+)
+text = text.replace(
+    "touch $CENTROIDS.blast $CENTROIDS.tsv $CENTROIDS-cdhit.clstr.sorted.tree",
+    "touch $CENTROIDS $CENTROIDS-cdhit.clstr.sorted.tree",
+)
+text = re.sub(
+    r"    #####################################################\n    ## blast\n.*?\n\}\n\n\n####################################################\n# Versions",
+    "    pinfo \"Centroid generation complete\"\n}\n\n\n####################################################\n# Versions",
+    text,
+    flags=re.S,
+)
+text = text.replace(
+    "out_file=$OUT_FOLDER/results.tsv.gz\nout_file2=$OUT_FOLDER/binres.tsv.gz\nout_file3=$OUT_FOLDER/bin.tsv.gz\nout_file_fasta=${out_file//.tsv.gz/.fasta.gz}",
+    "out_file_fasta=$OUT_FOLDER/results.fasta.gz",
+)
+text = re.sub(
+    r"\nif \[ \$SKIP_BLAST == \"Y\" \]; then\n.*?pinfo \"Generated \$out_file3\"\n",
+    "\n",
+    text,
+    flags=re.S,
+)
+if re.search(r"metabinkit|run_blast|blastn|blast_refdb|TAXONOMY_DATA_DIR|SKIP_BLAST", text):
+    sys.stderr.write("MSI runtime script still contains taxonomy/BLAST code after patch\n")
+    sys.exit(1)
+msi.write_text(text)
+
+installer = Path("msi/scripts/msi_install.sh")
+text = installer.read_text()
+text = re.sub(r'^ALL_TOOLS=.*$', 'ALL_TOOLS="fastq_utils fastqc cutadapt isONclust minimap2 racon cd-hit R_packages msi"', text, flags=re.M)
+text = re.sub(r'^ALL_SOFT=.*$', 'ALL_SOFT="$ALL_TOOLS"', text, flags=re.M)
+text = re.sub(r"\nmetabinkit_VERSION=.*?\nmetabinkit_URL=.*?\n", "\n", text, flags=re.S)
+text = re.sub(r"\nfunction install_blast_db_slow \{.*?\nfunction install_fastq_utils", "\nfunction install_fastq_utils", text, flags=re.S)
+text = re.sub(r"\nfunction install_metabinkit \{.*?\n\}\n\n", "\n", text, flags=re.S)
+text = re.sub(
+    r'^minimap2_URL=.*$',
+    'minimap2_URL="https://github.com/lh3/minimap2/archive/refs/tags/v$minimap2_VERSION.tar.gz"',
+    text,
+    flags=re.M,
+)
+native_minimap2 = r'''function install_minimap2 {
+    pinfo "Installing minimap2..."
+    pushd $TEMP_FOLDER
+    rm -f tmp.tar.gz
+    wget -c $minimap2_URL -O tmp.tar.gz
+    tar -xzvf tmp.tar.gz --no-same-owner
+    pushd minimap2-${minimap2_VERSION}
+    case "$(uname -m)" in
+        aarch64|arm64) make arm_neon=1 aarch64=1 ;;
+        *) make ;;
+    esac
+    cp minimap2 $INSTALL_BIN
+    if [ -f k8 ]; then cp k8 $INSTALL_BIN; fi
+    if [ -f paftools.js ]; then
+        cp paftools.js $INSTALL_BIN
+    elif [ -f misc/paftools.js ]; then
+        cp misc/paftools.js $INSTALL_BIN
+    fi
+    popd
+    rm -rf minimap2-${minimap2_VERSION} tmp.tar.gz
+    popd
+    pinfo "Installing minimap2...done."
+}
+'''
+text = re.sub(r"function install_minimap2 \{.*?\n\}\n\nfunction install_racon", native_minimap2 + "\nfunction install_racon", text, flags=re.S)
+text = text.replace("    git clone https://github.com/adriantich/fastq_utils.git", "    # git clone https://github.com/adriantich/fastq_utils.git")
+text = text.replace("    pushd fastq_utils", '    pushd "$PATH2SCRIPT/../fastq_utils"')
+text = text.replace("    rm -rf fastq_utils tmp.tar.gz", "    rm -f tmp.tar.gz")
+text = text.replace("    #git clone https://github.com/ksahlin/isONclust.git", "    ## git clone https://github.com/ksahlin/isONclust.git")
+needle = "    pushd $PATH2SCRIPT/..\n"
+guard = """    rm -f \\
+        $INSTALL_BIN/msi \\
+        $INSTALL_BIN/msi_incremental.sh \\
+        $INSTALL_BIN/msi_res2taxatable \\
+        $INSTALL_BIN/msi_tidyup_results \\
+        $INSTALL_BIN/msi_tidyup_table
+"""
+check = """    if grep -Eq "metabinkit|run_blast|blastn|blast_refdb|TAXONOMY_DATA_DIR|SKIP_BLAST" $INSTALL_BIN/msi; then
+        echo "ERROR: Installed MSI still contains taxonomy/BLAST code." >&2
+        exit 1
+    fi
+"""
+if "$INSTALL_BIN/msi_incremental.sh" not in text:
+    text = text.replace(needle, needle + guard, 1)
+if "Installed MSI still contains taxonomy/BLAST code" not in text:
+    text = text.replace("    cp scripts/* $INSTALL_BIN\n", "    cp scripts/* $INSTALL_BIN\n" + check, 1)
+text = re.sub(
+    r"if \[ -e \$MSI_DIR/metabinkit_env\.sh \]; then\n\s+source \$MSI_DIR/metabinkit_env\.sh\nfi\n",
+    "",
+    text,
+)
+text = re.sub(r"\s*conda install -n \$envir_name -c bioconda  -c conda-forge metabinkit=\$metabinkit_VERSION -y\n", "\n", text)
+if re.search(r"^ALL_.*(metabinkit|blast_db)|function install_metabinkit|metabinkit_VERSION|metabinkit_URL", text, flags=re.M):
+    sys.stderr.write("MSI installer still installs taxonomy/BLAST components after patch\n")
+    sys.exit(1)
+installer.write_text(text)
+PY
+
+    if [ "$?" -ne 0 ]; then
+        mark_fail "${name}" "failed to apply SLIM MSI taxonomy/BLAST patch"
+        return 1
+    fi
+
+    if [ -f "msi/scripts/msi_clustr_add_size.pl" ]; then
+        sed_in_place 's/ nmembers / \$nmembers /g' msi/scripts/msi_clustr_add_size.pl
+    fi
+
+    rm -f msi/scripts/msi_tidyup_results msi/scripts/msi_tidyup_table msi/scripts/msi_incremental.sh msi/scripts/msi_res2*
+    rm -f msi/scripts/msi_cluster2reads msi/scripts/msi_clustr2map.pl msi/scripts/msi_display_report
+    rm -rf msi/template msi/tests
+    cat > msi/README.md <<'EOF'
 # MSI for SLIM
 
 This bundled MSI copy is trimmed for SLIM. It keeps the read filtering,
@@ -305,8 +459,49 @@ SLIM does not use MSI database download or downstream sequence labelling
 features, so those optional upstream components are intentionally omitted
 from this bundled copy.
 EOF
+
+    if grep -Eq "metabinkit|run_blast|blastn|blast_refdb|TAXONOMY_DATA_DIR|SKIP_BLAST" msi/scripts/msi; then
+        mark_fail "${name}" "MSI runtime script still contains taxonomy/BLAST code after SLIM patch"
+        return 1
+    fi
+}
+
+prepare_msi() {
+    local name="msi"
+    local missing
+
+    if [ -f "msi/scripts/msi_install.sh" ] && [ -d "msi/fastq_utils" ] && [ -d "msi/seqtk" ]; then
+        if patch_msi_for_slim; then
+            mark_ok "${name}"
+            return 0
+        fi
+        return 1
+    fi
+
+    missing="$(require_cmds git sed python3 || true)"
+    if [ -n "${missing}" ]; then
+        mark_fail "${name}" "missing required command(s): ${missing//$'\n'/, }"
+        return 1
+    fi
+
+    rm -rf msi
+    if ! git clone https://github.com/adriantich/msi.git msi; then
+        mark_fail "${name}" "failed to clone upstream MSI"
+        return 1
+    fi
+    if ! (
+        set -e
+        cd msi
+        git clone https://github.com/adriantich/fastq_utils.git
         git clone https://github.com/lh3/seqtk.git
-    )
+    ); then
+        mark_fail "${name}" "failed to clone MSI helper repositories"
+        return 1
+    fi
+
+    if ! patch_msi_for_slim; then
+        return 1
+    fi
 
     if [ -f "msi/scripts/msi_install.sh" ] && [ -d "msi/fastq_utils" ] && [ -d "msi/seqtk" ]; then
         mark_ok "${name}"

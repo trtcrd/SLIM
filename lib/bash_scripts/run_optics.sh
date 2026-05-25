@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 # this script will run the optics algorithm from ashure
+set -o pipefail
 
 
 while getopts f:d:s:t:T:N:i:S:c:m:o: flag
@@ -105,7 +106,15 @@ EOF
 
 # python3 /app/lib/ASHURE/src/ashure.py clst -i ${concatenated} -o centers.csv -N ${clst_N} -cs ${clst_csize} -tm ${clst_th_m} -ts ${clst_th_s} -iter ${clst_N_iter} -r
 
-python3 /app/lib/ASHURE/src/ashure.py run -c ${config_file} -r clst
+if ! python3 /app/lib/ASHURE/src/ashure.py run -c ${config_file} -r clst; then
+    echo "ERROR: ASHURE clustering failed; centers.csv was not created." >&2
+    exit 1
+fi
+
+if [ ! -s centers.csv ]; then
+    echo "ERROR: ASHURE clustering did not produce centers.csv." >&2
+    exit 1
+fi
 
 mkdir -p fasta_dir_tmp
 
@@ -127,9 +136,10 @@ sed -i "s/\t/;/g" ${directory}/fasta_dir_tmp/*
 # remove also the tags after the first ;size= and the ; after the size
 sed -i 's/\(;size=[0-9]*\);.*/\1/g' ${directory}/fasta_dir_tmp/*
 
-python3 /app/lib/python_scripts/optics.py -dir ${directory} -fasta_path "fasta_dir_tmp/*" -centers centers.csv -otu_table ${otutab} -fasta_out ${fasta_out} -sim_thr ${sim_thr} -merged_out ${merged_out}
-
-rm -r ft_dir_tmp concat_dir_tmp centers.csv ashure.log
+if ! python3 /app/lib/python_scripts/optics.py -dir ${directory} -fasta_path "fasta_dir_tmp/*" -centers centers.csv -otu_table ${otutab} -fasta_out ${fasta_out} -sim_thr ${sim_thr} -merged_out ${merged_out}; then
+    echo "ERROR: OPTICS post-processing failed." >&2
+    exit 1
+fi
 
 # check if there are empty files
 # if empty don't remove the folder to debug manually
@@ -137,7 +147,7 @@ if [ ! -s ${otutab} ]; then
     echo "OTU tab is empty"
     exit 1 # There are empty files
 else
-    rm -r ${dir2}
+    rm -rf ft_dir_tmp concat_dir_tmp centers.csv ashure.log config.json clusters workspace
     exit 0
 fi
 exit 0
