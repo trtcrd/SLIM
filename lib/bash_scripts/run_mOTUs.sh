@@ -330,7 +330,7 @@ make_sequence_subset() {
 
     lower="$(printf '%s\n' "${input}" | tr '[:upper:]' '[:lower:]')"
     if [[ "${lower}" == *.gz ]]; then
-        gzip -dc "${input}" | sed -n '1,4000p' > "${output}"
+        pigz -dc "${input}" | sed -n '1,4000p' > "${output}"
     else
         sed -n '1,4000p' "${input}" > "${output}"
     fi
@@ -596,9 +596,9 @@ cp "${profile_matrix}" "${outdir}/${profile_matrix}"
 cp "${relative_matrix}" "${outdir}/${relative_matrix}"
 rm -rf "${fastp_trim_dir}"
 checkpoint "Compressing mOTUs fastp reports"
-tar -czf "${fastp_report_archive}" "${fastp_report_dir}"
+tar --use-compress-program=pigz -cf "${fastp_report_archive}" "${fastp_report_dir}"
 checkpoint "Compressing mOTUs results archive"
-tar -czf "${results_archive}" "${outdir}"
+tar --use-compress-program=pigz -cf "${results_archive}" "${outdir}"
 checkpoint "mOTUs archives ready"
 
 echo

@@ -158,10 +158,10 @@ singlem summarise \
 checkpoint "SingleM relative-abundance summarise done"
 
 checkpoint "Compressing SingleM relative-abundance tables"
-tar -czf "${relative_abundance_archive}" ${relative_prefix}-*.tsv
+tar --use-compress-program=pigz -cf "${relative_abundance_archive}" ${relative_prefix}-*.tsv
 checkpoint "SingleM relative-abundance archive ready"
 checkpoint "Compressing SingleM fastp reports"
-tar -czf "${fastp_report_archive}" "${fastp_report_dir}"
+tar --use-compress-program=pigz -cf "${fastp_report_archive}" "${fastp_report_dir}"
 checkpoint "SingleM fastp reports archive ready"
 rm -rf "${fastp_trim_dir}" "${fastp_report_dir}"
 

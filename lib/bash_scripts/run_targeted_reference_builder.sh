@@ -200,7 +200,7 @@ append_fasta_for_taxon()
         echo "Adding ${base} for ${taxon_name} (${taxid})"
 
         if [[ "${fasta}" == *.gz ]]; then
-            gzip -dc "${fasta}"
+            pigz -dc "${fasta}"
         else
             cat "${fasta}"
         fi | awk \
@@ -255,7 +255,7 @@ bwa index "${reference_fasta}"
 checkpoint "BWA index done"
 
 checkpoint "Compressing targeted reference archive"
-tar -czf "${archive}" "${reference_fasta}" "${reference_fasta}.fai" "${reference_fasta}".* "${manifest}" "${acc2tax}" "${tmp_selected}"
+tar --use-compress-program=pigz -cf "${archive}" "${reference_fasta}" "${reference_fasta}.fai" "${reference_fasta}".* "${manifest}" "${acc2tax}" "${tmp_selected}"
 checkpoint "Targeted reference archive ready"
 
 echo

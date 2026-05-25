@@ -141,7 +141,7 @@ done
 
 cp "${summary}" "${outdir}/${summary}"
 checkpoint "Compressing metaDMG results archive"
-tar -czf "${archive}" "${outdir}" "${summary}"
+tar --use-compress-program=pigz -cf "${archive}" "${outdir}" "${summary}"
 checkpoint "metaDMG results archive ready"
 
 echo

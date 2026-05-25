@@ -128,7 +128,7 @@ for file in "${fastq_files[@]}"; do
 
     mkdir -p "input_msi/${sample_id}"
     sed -i "s/\t/ /g" "${dir2}${sample_id}.fastq"
-    gzip -c "${dir2}${sample_id}.fastq" > "input_msi/${sample_id}/${sample_id}.fastq.gz"
+    pigz -c "${dir2}${sample_id}.fastq" > "input_msi/${sample_id}/${sample_id}.fastq.gz"
 done
 checkpoint "MSI input FASTQ preparation done"
 

@@ -199,8 +199,8 @@ class DemultiplexerModule extends Module {
 
 	format_output(filename) {
 		return '<p>' + filename +
-		'  <a href="' + file_manager.get_download_link(filename) +
-		'" download><img src="/imgs/download.png" class="download"></a></p>';
+			'  <a href="' + file_manager.get_download_link(filename) +
+			'" download><img src="/imgs/download.png" class="download"></a></p>';
 	}
 
 	getConfiguration () {

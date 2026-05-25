@@ -276,7 +276,7 @@ fi
 
 rm -rf "${fastp_trim_dir}"
 checkpoint "Compressing targeted-reference mapping archive"
-tar -czf "${archive}" "${outdir}" *.bam *.bam.bai
+tar --use-compress-program=pigz -cf "${archive}" "${outdir}" *.bam *.bam.bai
 checkpoint "Targeted-reference mapping archive ready"
 
 echo

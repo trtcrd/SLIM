@@ -303,7 +303,7 @@ cp "${abundance_matrix}" "${outdir}/${abundance_matrix}"
 cp "${relative_abundance_matrix}" "${outdir}/${relative_abundance_matrix}"
 rm -rf "${fastp_trim_dir}"
 checkpoint "Compressing Kraken2/Bracken results archive"
-tar -czf "${results_archive}" "${outdir}"
+tar --use-compress-program=pigz -cf "${results_archive}" "${outdir}"
 checkpoint "Kraken2/Bracken results archive ready"
 
 echo

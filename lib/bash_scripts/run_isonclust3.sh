@@ -268,7 +268,7 @@ count_fastq_reads() {
     fi
 
     if [[ "${file}" == *.gz ]]; then
-        gzip -cd "${file}" | awk 'END {print int(NR / 4)}'
+        pigz -cd "${file}" | awk 'END {print int(NR / 4)}'
     else
         awk 'END {print int(NR / 4)}' "${file}"
     fi
@@ -1035,9 +1035,10 @@ process_cluster_set() {
             checkpoint "${cluster_label}: PacBio isONclust3 representative selection done"
 
             oriented_cluster_fastq="${outdir}/oriented_reads/${cluster_label}.seed_oriented.fastq"
-            checkpoint "${cluster_label}: cluster read orientation to representative started"
+            checkpoint "${cluster_label}: cluster read orientation to seed started"
+            echo "7. Cluster reads are oriented to the seed with minimap2 PAF strand calls."
             orient_cluster_reads_to_seed "${cluster_label}" "${cluster_fastq}" "${centroid_fasta}" "${oriented_cluster_fastq}"
-            checkpoint "${cluster_label}: cluster read orientation to representative done"
+            checkpoint "${cluster_label}: cluster read orientation to seed done"
 
             primer_oriented_cluster_fastq="${outdir}/primer_orientation/${cluster_label}.primer_oriented.fastq"
             oriented_centroid_fasta="${outdir}/primer_orientation/${cluster_label}.primer_oriented_representative.fasta"
@@ -1537,7 +1538,7 @@ validate_representatives_and_otu_table "${consensus_fasta}" "${otu_table}"
 checkpoint "Representative FASTA and OTU table ID validation done"
 
 checkpoint "Compressing isONclust3 results archive"
-tar -czf "${results_archive}" "${outdir}" "${consensus_fasta}" "${otu_table}" "${stats_tsv}"
+tar --use-compress-program=pigz -cf "${results_archive}" "${outdir}" "${consensus_fasta}" "${otu_table}" "${stats_tsv}"
 checkpoint "isONclust3 results archive ready"
 
 echo
