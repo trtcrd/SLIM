@@ -1,0 +1,26 @@
+[
+  {
+    "label": "Illumina - demultiplex; DADA2; assignment-table-vsearch",
+    "file": "illumina-demultiplex-dada2-assignment-table-vsearch.conf"
+  },
+  {
+    "label": "Illumina - demultiplex; mergepair-vsearch; chimera-vsearch; remove-ambiguous-reads; swarm3",
+    "file": "illumina-demultiplex-merge-chimera-remove-ambiguous-swarm3.conf"
+  },
+  {
+    "label": "Illumina - wildcard-creator(R1); wildcard-creator(R2); DADA2; assignment-table-IDTAXA",
+    "file": "illumina-wildcards-dada2-assignment-table-idtaxa.conf"
+  },
+  {
+    "label": "Nanopore - wildcard-creator; MSI; OPTICS; assignment-table-vsearch",
+    "file": "nanopore-wildcard-msi-optics-assignment-table-vsearch.conf"
+  },
+  {
+    "label": "Nanopore - wildcard-creator; isONclust3; assignment-table-vsearch",
+    "file": "nanopore-wildcard-isonclust3-assignment-table-vsearch.conf"
+  },
+  {
+    "label": "PacBio - wildcard-creator; isONclust3; assignment-table-vsearch",
+    "file": "pacbio-wildcard-isonclust3-assignment-table-vsearch.conf"
+  }
+]

@@ -33,6 +33,10 @@ body
       button#reset_conf Reset
       // Managed in js/global.js
       input#up_conf_hidden(type='file', name='uploaded', hidden)
+      div#suggested_pipelines
+        label(for='suggested_pipeline_select')
+        select#suggested_pipeline_select
+          option(value='') Choose an example pipeline…
 
     div#uploader.module
       h2 Files uploader

@@ -33,6 +33,7 @@ app.use('/js', express.static('www/js'));
 app.use('/css', express.static('www/css'));
 app.use('/imgs', express.static('www/imgs'));
 app.use('/modules', express.static('www/modules'));
+app.use('/pipelines', express.static('www/pipelines'));
 app.use('/man', express.static('/app/man'));
 
 app.use('/data', express.static('/app/data'));

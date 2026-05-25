@@ -99,17 +99,13 @@ var load_modules = (log) => {
 	__next_id = 0;
 
 	// Reload optional mail address when present, but do not treat it as a module.
-	if (log.mail) {
-		let mail = document.getElementById('mail');
-		if (mail)
-			mail.value = log.mail;
-	}
+	let mail = document.getElementById('mail');
+	if (mail)
+		mail.value = log.mail ? log.mail : "";
 
-	if (log.job_title) {
-		let job_title = document.getElementById('job_title');
-		if (job_title)
-			job_title.value = log.job_title;
-	}
+	let job_title = document.getElementById('job_title');
+	if (job_title)
+		job_title.value = log.job_title ? log.job_title : "";
 
 	// For each module in the log file
 	for (let idx in log) {
@@ -253,6 +249,48 @@ up_conf.onchange = () => {
 	};
 	reader.readAsText(file);
 };
+
+var setup_suggested_pipeline_loader = () => {
+	let select = document.getElementById("suggested_pipeline_select");
+	if (!select)
+		return;
+
+	$.get('/pipelines/index.json')
+	.done((data) => {
+		let examples = typeof data == "string" ? JSON.parse(data) : data;
+		for (let idx=0 ; idx<examples.length ; idx++) {
+			let example = examples[idx];
+			let option = document.createElement('option');
+			option.value = example.file;
+			option.textContent = example.label;
+			select.appendChild(option);
+		}
+	})
+	.fail(() => {
+		select.disabled = true;
+	});
+
+	select.onchange = () => {
+		if (!select.value)
+			return;
+
+		let selected_file = select.value;
+		select.value = "";
+
+		$.get('/pipelines/' + selected_file)
+		.done((data) => {
+			let json = typeof data == "string" ? JSON.parse(data) : data;
+			load_modules(json);
+		})
+		.fail(() => {
+			let warnings = document.getElementsByClassName('gui_warnings');
+			if (warnings.length > 0)
+				warnings[0].innerHTML = '<p>Unable to load the selected pipeline example.</p>';
+		});
+	};
+};
+
+setup_suggested_pipeline_loader();
 
 var store_wildcard_creator_suggestions = (conf) => {
 	for (let idx in module_manager.modules) {
