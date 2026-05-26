@@ -42,8 +42,9 @@ var update_server_load = (status) => {
 	let cpu = document.getElementById('server_load_cpu');
 	let jobs = document.getElementById('server_load_jobs');
 	let ram = document.getElementById('server_load_ram');
+	let storage = document.getElementById('server_load_storage');
 
-	if (!cpu || !jobs || !ram)
+	if (!cpu || !jobs || !ram || !storage)
 		return;
 
 	if (status.load) {
@@ -52,9 +53,25 @@ var update_server_load = (status) => {
 		ram.innerHTML = 'RAM: ' + html_escape(status.load.ram_percent) + '% (' +
 			html_escape(format_server_bytes(status.load.ram_used)) + ' / ' +
 			html_escape(format_server_bytes(status.load.ram_total)) + ')';
+
+		if (status.load.storage) {
+			let storage_percent = status.load.storage.storage_percent || status.load.storage.storage_percent === 0
+				? status.load.storage.storage_percent + '%'
+				: 'n/a';
+			storage.innerHTML = 'Storage: ' + html_escape(storage_percent) + ' (' +
+				html_escape(format_server_bytes(status.load.storage.storage_used)) + ' / ' +
+				html_escape(format_server_bytes(status.load.storage.storage_total)) + ')';
+			storage.title = 'Available: ' + format_server_bytes(status.load.storage.storage_available) +
+				' on ' + (status.load.storage.storage_mount || 'storage volume');
+		} else {
+			storage.innerHTML = 'Storage: n/a';
+			storage.title = '';
+		}
 	} else {
 		cpu.innerHTML = 'CPU: n/a';
 		ram.innerHTML = 'RAM: n/a';
+		storage.innerHTML = 'Storage: n/a';
+		storage.title = '';
 	}
 
 	if (status.jobs) {
