@@ -1,5 +1,3 @@
-# SLIM
-
 <p align="center">
   <img src="https://github.com/trtcrd/SLIM/blob/master/www/imgs/slim_logo.svg" alt="SLIM logo" width="250px"/>
 </p>
