@@ -20,6 +20,10 @@ body
     img.image(src='/imgs/slim_logo.svg')
     a#github_repo(href='https://github.com/trtcrd/SLIM', target='_blank', rel='noopener noreferrer') GitHub repository
   div#server_health_alert
+  div#server_load
+    span#server_load_jobs Jobs: …
+    span#server_load_cpu CPU: …
+    span#server_load_ram RAM: …
   // Managed in css/pipeline.css
   div#main_frame
     // Managed in css/pipeline.css
@@ -51,6 +55,10 @@ body
         p   
         div.progress
           div.progress-bar(role="progressbar")
+      div#secure_data_controls
+        button#secure_data(type='button') Secure uploaded data
+        button#delete_secure_data(type='button') Delete secured data
+        div#secure_data_status
 
     div.gui_warnings
     // Managed in js/module.js and js/run_pipeline.js
@@ -76,4 +84,5 @@ body
   script(src='/js/upload.js')
   script(src='/js/module.js')
   script(src='/js/run_pipeline.js')
+  script(src='/js/secure_data.js')
   script(src='/js/global.js')

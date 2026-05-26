@@ -66,6 +66,9 @@ bash start_slim_v1.0.0.sh --docker
 # Expose SLIM on another host port
 bash start_slim_v1.0.0.sh --port 8081:80
 
+# Generate an ignored Caddyfile and bind SLIM locally for HTTPS
+bash start_slim_v1.0.0.sh --caddy-domain slim.example.org
+
 # Enable shotgun modules and download/mount their databases
 bash start_slim_v1.0.0.sh --shotgun-databases
 
@@ -117,11 +120,46 @@ By default, SLIM listens on host port `8080`.
 * Local machine: `http://localhost:8080/`
 * Remote server: `http://<server-ip>:8080/`
 
-After the first page load, SLIM adds a session token to the URL. If a gmail emailing service is configured, you will receive an email with a direct lonk to your job, otherwise please bookmark the tokenized URL to return to the same session while it remains available.
+After the first page load, SLIM adds a session token to the URL. If a Gmail emailing service is configured, you will receive an email with a direct link to your job; otherwise, bookmark the tokenized URL to return to the same session while it remains available.
 
 <p align="left">
   <img src="https://github.com/trtcrd/SLIM/blob/master/tutos/slim_webpage.png" alt="SLIM homepage" width="800px"/>
 </p>
+
+## HTTPS with a DNS Name
+
+The easiest production setup is to give the server a DNS name and put a small HTTPS reverse proxy in front of SLIM. Caddy is a good fit because it can request and renew free TLS certificates automatically.
+
+1. Create or buy a DNS name, for example `slim.example.org`.
+2. Point the DNS `A` record to the public IPv4 address of the SLIM server. Add an `AAAA` record too if the server has public IPv6.
+3. Open ports `80/tcp` and `443/tcp` on the server firewall. Start SLIM with the DNS name:
+
+```bash
+bash start_slim_v1.0.0.sh --caddy-domain slim.example.org
+```
+
+This writes `deployment/Caddyfile`, keeps it out of version control, and binds SLIM to `127.0.0.1:8080` so plain HTTP is not exposed publicly. The generated Caddyfile looks like:
+
+```text
+slim.example.org {
+    reverse_proxy 127.0.0.1:8080
+}
+```
+
+4. Install Caddy on the host server, copy the generated `deployment/Caddyfile` to the Caddy configuration path, and reload Caddy. Do not put the generated Caddyfile in git; [deployment/Caddyfile.example](deployment/Caddyfile.example) is only a committed template.
+
+```bash
+sudo cp deployment/Caddyfile /etc/caddy/Caddyfile
+sudo caddy fmt --overwrite /etc/caddy/Caddyfile
+sudo systemctl reload caddy
+sudo systemctl status caddy
+```
+
+After Caddy is running, users should access SLIM at `https://slim.example.org/`. The internal `http://127.0.0.1:8080/` address is only used by Caddy on the server.
+
+If `http://slim.example.org/` shows nothing, Caddy is not reachable on public port `80`. Check that Caddy is installed/running and that the server firewall, cloud security group, or router forwards ports `80` and `443` to the SLIM server.
+
+If `http://slim.example.org:8080/` works but Chrome says the site is not secure, you are bypassing Caddy and reaching the SLIM container directly. Reload Caddy, make sure ports `80` and `443` are open, and use `https://slim.example.org/` without `:8080`.
 
 ## Prepare Input Files
 
@@ -197,6 +235,14 @@ For already-demultiplexed data, use [wildcard creator](man/sections/wildcard_cre
 
 The pipeline can be saved with **Save** and restored with **Load**. When a job starts, SLIM writes a `pipeline.conf` file recording the selected modules and parameters.
 
+### Securing Uploaded Data
+
+Use **Secure uploaded data** to preserve the initial uploaded files in a new tokenized SLIM page. This is useful when a long upload has completed but a queued, running, or aborted pipeline needs to be restarted with a fresh configuration.
+
+SLIM asks for a job title and email address before securing the files. The secured page uses the job title, receives a new tokenized URL, and is excluded from automatic housekeeping. If email notifications are configured, SLIM sends the secured link to the provided address; otherwise, the link is shown directly in the interface.
+
+Secured uploaded data remains on the server until the user explicitly removes it with **Delete secured data** on the secured page. This protects the original input files, not intermediate or result files from failed analyses.
+
 ## Wildcards
 
 SLIM uses wildcard patterns to pass groups of files between modules. For example:
@@ -266,11 +312,13 @@ To add a module, see:
 ### v1.1.0
 
 - Updated version of most dependencies.
-- Updated install scripts for better dependencies handling and for x86_64 and ARM64 container builds.
-- Added a server status monitoring routine (a message will show up if the server is down/restarting).
-- Restored optional email notifications through gmail app-password configuration and job labelling.
-- Improved/fix wildcard-creation module.
-- Nanopore-oriented modules: streamlined the installation of MSI, integrated a module based on isONclust3-minimap2-racon.
+- Updated Dockerfile and bash scripts for better handling of dependencies and for x86_64 and ARM64 container builds.
+- Added a server status monitoring widget (CPU+RAM usage, queue position, and a message will show up if the server has crashed).
+- Added an option to secure uploaded files of a session, allowing to re-use the data in a new session.
+- Restored optional email notifications through Gmail app-password configuration.
+- Added a widget to pick suggested pipelines for Illumina, Nanopore and PacBio amplicon data.
+- Improved/fix the wildcard-creation module.
+- Nanopore-oriented modules: lighten the installation of MSI, integrated a module based on isONclust3-minimap2-racon.
 - PacBio-oriented modules: isONclust3.
 - Added optional shotgun modules for Kraken2-Bracken, mOTUs, and SingleM.
 - Fixed multiple interface and deployment issues.
@@ -281,7 +329,7 @@ To add a module, see:
 - Added modules for processing nanopore amplicon data (CHOPPER, MSI, ASHURE, OPTICS)
 - Added module to create wildcard grouping of files
 - Added SWARM3 module
-- Emailing service restored as an optional Gmail app-password configuration
+- Emailing service hidden, until a viable option is identified
 - Documentation moved from the wiki to the tutos folder.
 - Various interface bug fixes
 

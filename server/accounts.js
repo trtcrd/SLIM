@@ -16,6 +16,7 @@ exports.token_generation = function (app) {
 			fs.mkdir("/app/data/" + token, function(){res.send(token);});
 			exports.tokens[token] = token;
 		} else {
+			exports.tokens[req.query.token] = req.query.token;
 			res.send(req.query.token);
 		}
 	});

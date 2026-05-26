@@ -4,6 +4,7 @@ const path = require('path');
 const exec = require('child_process').spawn;
 
 const mailer = require('./mail_manager.js');
+const data_security = require('./data_security.js');
 
 exports.jokers = {};
 exports.deletions = {};
@@ -161,6 +162,13 @@ exports.upload = function (app) {
 			// Remove previous deletion delay
 			if (exports.deletions[token])
 				clearTimeout(exports.deletions[token]);
+			if (exports.delete_reminders[token])
+				clearTimeout(exports.delete_reminders[token]);
+
+			if (data_security.is_secured(token)) {
+				console.log(token + ': secured uploaded data kept; upload housekeeping skipped');
+				return;
+			}
 
 			// Delete data after 2h if they are not used.
 			exports.deletions[token] = setTimeout(
@@ -209,6 +217,7 @@ var decompress_gz = (token, archive) => {
 		console.log(`stderr: ${data}`);
 	});
 	gunzip.on('close', () => {
+		data_security.record_uploaded_file(token, archive.name.replace(/\.gz$/i, ''));
 		files_to_process[token].splice (files_to_process[token].indexOf(archive.name), 1);
 	});
 };
@@ -302,6 +311,7 @@ var proccess_file = (token, file, upload_dir) => {
 		.on('close', () => {
 			// Rename
 			fs.renameSync(file.path, path.join(upload_dir, file.name));
+			data_security.record_uploaded_file(token, file.name);
 
 			files_to_process[token].splice (files_to_process[token].indexOf(file.name), 1);
 		});
@@ -315,6 +325,10 @@ var schedule_job_deletion = (token) => {
 		clearTimeout(exports.deletions[token]);
 	if (exports.delete_reminders[token])
 		clearTimeout(exports.delete_reminders[token]);
+	if (data_security.is_secured(token)) {
+		console.log(token + ': secured uploaded data kept; housekeeping skipped');
+		return;
+	}
 
 	// Reminder 3h before deletion.
 	exports.delete_reminders[token] = setTimeout(

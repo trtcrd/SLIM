@@ -30,10 +30,52 @@ var dismiss_server_health_alert = () => {
 		alert.style.display = 'none';
 };
 
+var format_server_bytes = (bytes) => {
+	if (!bytes && bytes !== 0)
+		return 'n/a';
+
+	let gib = bytes / (1024 * 1024 * 1024);
+	return gib.toFixed(1) + ' GiB';
+};
+
+var update_server_load = (status) => {
+	let cpu = document.getElementById('server_load_cpu');
+	let jobs = document.getElementById('server_load_jobs');
+	let ram = document.getElementById('server_load_ram');
+
+	if (!cpu || !jobs || !ram)
+		return;
+
+	if (status.load) {
+		let cores = status.load.cpu_cores ? ' / ' + status.load.cpu_cores + ' cores' : '';
+		cpu.innerHTML = 'CPU: ' + html_escape(status.load.cpu_percent) + '%' + cores;
+		ram.innerHTML = 'RAM: ' + html_escape(status.load.ram_percent) + '% (' +
+			html_escape(format_server_bytes(status.load.ram_used)) + ' / ' +
+			html_escape(format_server_bytes(status.load.ram_total)) + ')';
+	} else {
+		cpu.innerHTML = 'CPU: n/a';
+		ram.innerHTML = 'RAM: n/a';
+	}
+
+	if (status.jobs) {
+		let job_text = status.jobs.running + ' running / ' + status.jobs.capacity + ' jobs';
+		if (status.jobs.queue_position)
+			job_text += ' — queue position ' + status.jobs.queue_position + ' / ' + status.jobs.queued;
+		else if (status.jobs.queued > 0)
+			job_text += ' — ' + status.jobs.queued + ' queued';
+		jobs.innerHTML = 'Jobs: ' + html_escape(job_text);
+	} else {
+		jobs.innerHTML = 'Jobs: n/a';
+	}
+};
+
 var check_server_health = () => {
-	$.get('/server_status')
+	let token_query = typeof exec_token != "undefined" && exec_token ? '?token=' + encodeURIComponent(exec_token) : '';
+	$.get('/server_status' + token_query)
 	.done((data) => {
 		let status = JSON.parse(data);
+		update_server_load(status);
+
 		if (!status.last_crash || !status.last_crash.timestamp)
 			return;
 
@@ -58,13 +100,15 @@ var check_server_health = () => {
 };
 
 check_server_health();
-setInterval(check_server_health, 10000);
+setInterval(check_server_health, 1000);
 
 
 // --- Actions on load ---
 var on_token_generated = () => {
 	// Files loading
 	file_manager.load_from_server();
+	if (typeof refresh_secure_data_status != "undefined")
+		refresh_secure_data_status();
 
 	// Delay the module reconstructions if they are not loaded
 	if (module_manager.isLoading()) {

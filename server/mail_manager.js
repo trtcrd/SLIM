@@ -158,3 +158,14 @@ exports.send_delete_reminder = (token) => {
 		'Note that this is an automatically generated email sent by SLIM\n\n'
 	);
 }
+
+exports.send_secured_data_link = (token) => {
+	send_mail(
+		token,
+		'Your secured SLIM input data for ' + job_label(token),
+		'Your initial uploaded data has been secured in a new SLIM page:\n' +
+		exports.urls[token] + '\n\n' +
+		'This secured page is excluded from automatic housekeeping. Use the delete button on that page when you no longer need it.\n\n' +
+		'Note that this is an automatically generated email sent by SLIM\n\n'
+	);
+}

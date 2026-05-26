@@ -16,8 +16,9 @@ const PORT = 80;
 
 // App
 const app = express();
-app.use( bodyParser.json() );       // to support JSON-encoded bodies
+app.use( bodyParser.json({limit: '10mb'}) );       // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
+  limit: '10mb',
   extended: true
 }));
 
@@ -77,9 +78,12 @@ accounts.token_generation(app);
 const filesIO = require("./files_upload.js");
 filesIO.exposeDir(app);
 filesIO.upload(app);
+const dataSecurity = require("./data_security.js");
+dataSecurity.expose(app);
 
 // Start job scheduler
 const scheduler = require('./scheduler.js');
+system_status.set_job_status_provider(scheduler.get_job_capacity);
 scheduler.start();
 scheduler.listen_commands(app);
 scheduler.expose_status(app);

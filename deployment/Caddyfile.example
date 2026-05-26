@@ -1,0 +1,5 @@
+# Template only. Generate deployment/Caddyfile with:
+# bash start_slim_v1.0.0.sh --caddy-domain slim.example.org
+slim.example.org {
+	reverse_proxy 127.0.0.1:8080
+}

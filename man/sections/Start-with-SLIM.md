@@ -77,6 +77,10 @@ SLIM also writes a `pipeline.conf` file inside the session folder while modules 
 
 When a module finishes, download icons appear next to its output fields. You can also download uploaded, intermediate, and final result files from the session while they remain on the server.
 
+## HTTPS Access
+
+For a public server, use a DNS name and put Caddy in front of SLIM. Start SLIM with `bash start_slim_v1.0.0.sh --caddy-domain slim.example.org` to generate an ignored local Caddyfile and bind SLIM to localhost, then let Caddy expose the HTTPS URL. See [HTTPS with Caddy](/man/sections/HTTPS-with-Caddy.md).
+
 ## Optional Shotgun Modules
 
 By default, SLIM starts without the large shotgun metagenomics databases, so Kraken2-Bracken, SingleM, and mOTUs are hidden from the module list.

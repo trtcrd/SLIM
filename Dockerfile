@@ -424,6 +424,9 @@ RUN cp node_modules/jquery/dist/jquery.js /app/www/js/jquery.js
 COPY lib/jquery-autocomplete/dist/jquery.autocomplete.js /app/www/js/jquery.autocomplete.js
 COPY lib/papa/papaparse.js /app/www/js/papaparse.js
 
+# Resolve build-time version placeholders from the software installed in this image.
+RUN bash /app/update_versions.sh
+
 # use browserify to create the bundle.js file
 # RUN browserify /app/www/js/upload_SRA.js -o /app/www/js/bundle.js
 

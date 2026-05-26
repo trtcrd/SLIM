@@ -57,6 +57,23 @@ body {
 	margin-top: 8px;
 }
 
+#server_load {
+	width: 250px;
+	margin: 0px auto 10px auto;
+	padding: 6px 12px;
+	background-color: white;
+	border: 1px solid #d8d8d8;
+	border-radius: 8px;
+	color: #335b78;
+	box-shadow: 1px 1px 6px #d0d0d0;
+	font-size: 13px;
+}
+
+#server_load span {
+	display: inline-block;
+	margin: 0px 12px;
+}
+	
 /* ------------------------ Global style ------------------------ */
 input[type="text"],  
 select {
@@ -274,6 +291,26 @@ input[type="text"].number {
 #up_list .download {
 	visibility: visible;
 	width: 20px;
+}
+
+#secure_data_controls {
+	margin-top: 10px;
+}
+
+#secure_data_status {
+	margin-top: 8px;
+	font-size: 13px;
+	color: #335b78;
+}
+
+#secure_data_status a {
+	color: #335b78;
+	font-weight: bold;
+}
+
+#delete_secure_data {
+	display: none;
+	margin-left: 6px;
 }
 
 

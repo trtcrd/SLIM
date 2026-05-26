@@ -7,6 +7,7 @@ Project repository: [trtcrd/SLIM](https://github.com/trtcrd/SLIM)
 ## Tutorials
 
 * [Start with SLIM](/man/sections/Start-with-SLIM.md)
+* [HTTPS with Caddy](/man/sections/HTTPS-with-Caddy.md)
 * [How to write a module](/man/sections/How-to-write-a-new-module.md)
 * [How to write a module II: ASHURE example, concept and installation](/man/sections/How-to-write-a-new-module-IIa.md)
 * [How to write a module II: ASHURE example, module scripts](/man/sections/How-to-write-a-new-module-IIb.md)

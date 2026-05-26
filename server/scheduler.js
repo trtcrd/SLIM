@@ -9,6 +9,7 @@ const mailer = require('./mail_manager.js');
 const accounts = require('./accounts.js');
 const config_module = require('./config.js');
 const system_status = require('./system_status.js');
+const data_security = require('./data_security.js');
 
 var get_uploaded_file_path = (file) => {
 	return file.filepath || file.path;
@@ -27,6 +28,19 @@ const SCHEDULE_TIME = 10000;
 
 
 exports.urls = {};
+
+exports.get_job_capacity = (token=null) => {
+	let waiting_position = token ? waiting_jobs.indexOf(token) : -1;
+	let is_running = token ? running_jobs[token] != undefined : false;
+
+	return {
+		running: Object.keys(running_jobs).length,
+		capacity: MAX_JOBS,
+		queued: waiting_jobs.length,
+		token_status: is_running ? 'running' : (waiting_position == -1 ? null : 'queued'),
+		queue_position: waiting_position == -1 ? null : waiting_position + 1
+	};
+};
 
 
 exports.start = function () {
@@ -526,7 +540,8 @@ exports.expose_status = function (app) {
 
 var remove_outputs = function (params, token) {
 	let directory = '/app/data/' + token + '/';
-	
+	let protected_uploads = new Set(data_security.is_secured(token) ? data_security.read_upload_manifest(token) : []);
+
 	// For each software
 	for (let key in params) {
 		let soft = params[key];
@@ -549,17 +564,18 @@ var remove_outputs = function (params, token) {
 				let end = split[1];
 
 				// Remove all the files corresponding to the joker
-				all_files = fs.readdirSync(directory);
+				let all_files = fs.readdirSync(directory);
 				for (let idx=0 ; idx<all_files.length ; idx++) {
 					let serv_file = all_files[idx];
-					if (serv_file.startsWith(begin) && serv_file.endsWith(end)) {
+					if (serv_file.startsWith(begin) && serv_file.endsWith(end) && !protected_uploads.has(serv_file)) {
 						fs.unlink(directory + serv_file, ()=>{});
 					}
 				}
 			}
 			// Remove the corresponding file
 			else {
-				fs.unlink(directory + file, ()=>{})
+				if (!protected_uploads.has(file))
+					fs.unlink(directory + file, ()=>{})
 			}
 		}
 	}
