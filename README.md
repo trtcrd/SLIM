@@ -173,9 +173,9 @@ Typical metabarcoding inputs include:
 
 Toy datasets:
 
-* [Illumina example dataset](https://github.com/trtcrd/SLIM/blob/gh-pages/assets/tuto/illumina_tuto.zip)
-* [Nanopore example dataset](https://github.com/trtcrd/SLIM/blob/gh-pages/assets/tuto/nanopore_tuto.zip)
-* [PacBio example dataset](https://github.com/trtcrd/SLIM/blob/gh-pages/assets/tuto/pacbio_tuto.zip)
+* [Illumina example dataset](https://github.com/trtcrd/SLIM/raw/refs/heads/gh-pages/assets/tuto/illumina_tuto.zip)
+* [Nanopore example dataset](https://github.com/trtcrd/SLIM/raw/refs/heads/gh-pages/assets/tuto/nanopore_tuto.zip)
+* [PacBio example dataset](https://github.com/trtcrd/SLIM/raw/refs/heads/gh-pages/assets/tuto/pacbio_tuto.zip)
 
 ### Tag-to-Sample CSV
 
