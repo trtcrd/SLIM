@@ -268,6 +268,25 @@ $.get('/token_generation' + (exec_token == '' ? '' : '?token=' + exec_token))
 	exec_token = data;
 	history.pushState({urlPath:'/?token=' + data},'', '/?token=' + data);
 	on_token_generated();
+})
+.fail(function(jqXHR, textStatus, errorThrown) {
+	let message = jqXHR.responseText || errorThrown || textStatus || 'Unable to create a SLIM session.';
+	if (message.toLowerCase().includes('storage is full') ||
+			message.toLowerCase().includes('enospc') ||
+			message.toLowerCase().includes('no space left'))
+		message = 'Storage is full, cannot upload more data.';
+
+	show_server_health_alert('Unable to create SLIM session', message, '');
+
+	let upload = document.querySelector('#up_files');
+	let upload_button = document.querySelector('#up_submit');
+	let start = document.querySelector('#start');
+	if (upload)
+		upload.disabled = true;
+	if (upload_button)
+		upload_button.disabled = true;
+	if (start)
+		start.disabled = true;
 });
 
 

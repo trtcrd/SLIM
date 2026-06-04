@@ -2,6 +2,7 @@
 var up_formData;
 var up_filenames = [];
 var up_processing_interval = null;
+var upload_storage_full_message = 'Storage is full, cannot upload more data.';
 
 var upload_html_escape = (txt) => {
 	if (typeof html_escape != "undefined")
@@ -35,6 +36,24 @@ var set_start_disabled = (disabled) => {
 	let start = document.querySelector('#start');
 	if (start)
 		start.disabled = disabled;
+};
+
+var normalize_upload_error_message = (message) => {
+	message = String(message || 'Upload failed');
+
+	let lower = message.toLowerCase();
+	if (lower.includes('enospc') || lower.includes('no space left') || lower.includes('not enough space') || lower.includes('storage is full'))
+		return upload_storage_full_message;
+
+	return message;
+};
+
+var format_upload_error_message = (message) => {
+	message = normalize_upload_error_message(message);
+	if (message == upload_storage_full_message)
+		return message;
+
+	return 'Upload failed: ' + message;
 };
 
 // this will select the files to upload
@@ -100,7 +119,7 @@ document.querySelector("#up_submit").onclick = function (event) {
 					file_manager.load_from_server();
 				} else {
 					// Handle errors here
-					set_upload_message('Upload failed: ' + data.error, true);
+					set_upload_message(format_upload_error_message(data.error), true);
 					set_start_disabled(false);
 				}
 			},
@@ -108,7 +127,7 @@ document.querySelector("#up_submit").onclick = function (event) {
 			// Handle errors here
 			clear_upload_processing_interval();
 			let message = jqXHR.responseText || errorThrown || textStatus || 'Upload failed';
-			set_upload_message('Upload failed: ' + message, true);
+			set_upload_message(format_upload_error_message(message), true);
 			set_start_disabled(false);
 		},
 		xhr: function() {

@@ -5,6 +5,7 @@ const exec = require('child_process').spawn;
 
 const mailer = require('./mail_manager.js');
 const data_security = require('./data_security.js');
+const storage_errors = require('./storage_errors.js');
 
 exports.jokers = {};
 exports.deletions = {};
@@ -99,8 +100,11 @@ exports.upload = function (app) {
 			onError = true;
 			console.log('Upload request failed: ' + (err && err.message ? err.message : err));
 
-			if (!res.headersSent && !res.writableEnded)
-				res.status(400).send(err && err.message ? err.message : 'Upload request failed');
+			if (!res.headersSent && !res.writableEnded) {
+				let message = storage_errors.message_for_error(err, 'Upload request failed');
+				let status = storage_errors.is_storage_full_error(err) ? 507 : 400;
+				res.status(status).send(message);
+			}
 		};
 
 		form.on('field', function(name, value) {
@@ -112,7 +116,10 @@ exports.upload = function (app) {
 					token = value;
 					form.uploadDir = path.join(__dirname, '/data/' + value);
 				} else {
-					res.status(403).send('Invalid token');
+					if (storage_errors.is_storage_full('/app/data'))
+						res.status(507).send(storage_errors.storage_full_message);
+					else
+						res.status(403).send('Invalid token');
 					onError = true;
 				}
 			}
@@ -135,9 +142,9 @@ exports.upload = function (app) {
 					fs.unlinkSync(filepath);
 
 				if (file.name.endsWith('gz'))
-					decompress_archive(token, file);
+					decompress_archive(token, file, handle_form_error);
 				else
-					proccess_file(token, file, form.uploadDir);
+					proccess_file(token, file, form.uploadDir, handle_form_error);
 			}
 		});
 
@@ -152,6 +159,9 @@ exports.upload = function (app) {
 				return;
 
 			var send_success = () => {
+				if (onError)
+					return;
+
 				if (!files_to_process[token] || files_to_process[token].length > 0)
 					setTimeout(send_success, 100);
 				else
@@ -193,19 +203,25 @@ exports.upload = function (app) {
 };
 
 
-var decompress_archive = (token, archive) => {
+var decompress_archive = (token, archive, on_error=()=>{}) => {
 	if (archive.name.endsWith('.tar.gz'))
-		decompress_tgz(token, archive);
+		decompress_tgz(token, archive, on_error);
 	else
-		decompress_gz(token, archive);
+		decompress_gz(token, archive, on_error);
 };
 
-var decompress_gz = (token, archive) => {
+var decompress_gz = (token, archive, on_error=()=>{}) => {
 	if (!files_to_process[token])
 		files_to_process[token] = [];
 	files_to_process[token].push(archive.name);
 
-	fs.renameSync(archive.path, '/app/data/' + token + '/' + archive.name);
+	try {
+		fs.renameSync(archive.path, '/app/data/' + token + '/' + archive.name);
+	} catch (err) {
+		files_to_process[token].splice(files_to_process[token].indexOf(archive.name), 1);
+		on_error(err);
+		return;
+	}
 	archive.path = '/app/data/' + token + '/' + archive.name;
 
 	let gunzip = exec('gunzip', [archive.path]);
@@ -222,7 +238,7 @@ var decompress_gz = (token, archive) => {
 	});
 };
 
-let decompress_tgz = function (token, archive) {
+let decompress_tgz = function (token, archive, on_error=()=>{}) {
 	let dir = '/app/data/' + token + '/';
 
 	if (!files_to_process[token])
@@ -282,7 +298,7 @@ let decompress_tgz = function (token, archive) {
 			let files = [];
 			for (let idx in file_list) {
 				let file = file_list[idx];
-				proccess_file(token, file, dir);
+				proccess_file(token, file, dir, on_error);
 				files.push(file.name);
 			}
 
@@ -298,7 +314,7 @@ let decompress_tgz = function (token, archive) {
 };
 
 
-var proccess_file = (token, file, upload_dir) => {
+var proccess_file = (token, file, upload_dir, on_error=()=>{}) => {
 	// Add files to convertion array
 	if (!files_to_process[token])
 		files_to_process[token] = [];
@@ -310,8 +326,14 @@ var proccess_file = (token, file, upload_dir) => {
 		exec('mac2unix', [file.path, '-q'])
 		.on('close', () => {
 			// Rename
-			fs.renameSync(file.path, path.join(upload_dir, file.name));
-			data_security.record_uploaded_file(token, file.name);
+			try {
+				fs.renameSync(file.path, path.join(upload_dir, file.name));
+				data_security.record_uploaded_file(token, file.name);
+			} catch (err) {
+				files_to_process[token].splice (files_to_process[token].indexOf(file.name), 1);
+				on_error(err);
+				return;
+			}
 
 			files_to_process[token].splice (files_to_process[token].indexOf(file.name), 1);
 		});
