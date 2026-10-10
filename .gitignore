@@ -64,6 +64,7 @@ lib/miniconda/
 lib/DECIPHER/
 lib/ASHURE/
 lib/miniforge3
+lib/racon/
 # SingleM database / metapackages are large runtime data
 lib/singleM/db/
 lib/singleM/**/*.smpkg
@@ -75,4 +76,3 @@ lib/mOTUs/db/*
 # Other
 data/
 node_modules/
-

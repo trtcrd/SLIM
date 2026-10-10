@@ -4,9 +4,11 @@ The `optics` module runs the clustering submodule (`clst`) from the [ASHURE](/ma
 
 ## Inputs
 
-### Input FASTQ Files
+### Input FASTA Files
 
-FASTQ files to process. To select multiple FASTQ files at once, use a wildcard pattern created by the [wildcard creator](/man/sections/wildcard_creator.md).
+FASTA files to process. To select multiple FASTA files at once, use a wildcard pattern created by the [wildcard creator](/man/sections/wildcard_creator.md).
+
+All files matching the pattern are kept in one OPTICS execution. They are combined for clustering, while the source filename is retained as the sample ID used to construct one OTU table.
 
 ## Parameters
 

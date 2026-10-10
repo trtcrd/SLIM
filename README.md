@@ -43,7 +43,7 @@ bash get_dependencies_slim_v1.0.0.sh
 bash start_slim_v1.0.0.sh
 ```
 
-`get_dependencies_slim_v1.0.0.sh` downloads third-party source archives and prepares local dependency folders. `start_slim_v1.0.0.sh` builds the image, stops/replaces any running SLIM container, removes dangling images, and starts the web server.
+`get_dependencies_slim_v1.0.0.sh` downloads third-party source archives and prepares local dependency folders. This includes Racon 1.5.0 and its pinned CMake dependencies, so the container build does not need to clone or download Racon from GitHub. `start_slim_v1.0.0.sh` builds the image, stops/replaces any running SLIM container, removes dangling images, and starts the web server.
 
 > Restarting SLIM replaces the current container. Files uploaded to the previous container and analysis results stored there are removed.
 

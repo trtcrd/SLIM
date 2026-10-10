@@ -6,7 +6,7 @@ Swarm v3 introduced a faster default algorithm, reduced memory use, mandatory st
 
 ## Inputs
 
-* Sequence files: FASTA files to merge before clustering.
+* Sequence files: FASTA files to merge before clustering. Wildcard-creator patterns are supported. SLIM records the source filename as the sample ID, combines and dereplicates the selected files, and runs Swarm once so that one sample-by-OTU table is produced.
 * Optional tag-to-sample CSV: used to sort samples in the output table when requested.
 
 ## Parameters

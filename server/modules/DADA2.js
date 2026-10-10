@@ -36,15 +36,23 @@ exports.run = function(os,config,callback){
         }
       }
     }
+
+    fwd.sort();
+    rev.sort();
   } else {
     fwd = [fwd];
     rev = [rev];
   }
 
+  if (fwd.length == 0 || fwd.length != rev.length) {
+    callback(os, 'DADA2 requires the same non-zero number of forward and reverse FASTQ files. Check the wildcard pattern and file naming convention.');
+    return;
+  }
+
   fwd = fwd.join('£');
   rev = rev.join('£');
 
-  var command = ['/app/lib/R_scripts/dada2.R',by_lib,tags,asvs_seq,asvs_table,token,proc,,stats,pool,fwd,rev];
+  var command = ['/app/lib/R_scripts/dada2.R',by_lib,tags,asvs_seq,asvs_table,token,proc,stats,pool,fwd,rev];
   console.log('R command line:' + command.join(' '));
 
   var child = Rexec('/usr/bin/Rscript '+command.join(' '));
@@ -61,7 +69,7 @@ exports.run = function(os,config,callback){
   child.on('close', (code) => {
 		if (code != 0) {
 			console.log("Error code " + code + " during DADA2");
-			callback(os, code);
+			callback(os, 'DADA2 terminated with code ' + code);
 		} else {
 			callback(os, null);
 		}

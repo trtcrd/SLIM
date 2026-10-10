@@ -10,6 +10,7 @@ const accounts = require('./accounts.js');
 const config_module = require('./config.js');
 const system_status = require('./system_status.js');
 const data_security = require('./data_security.js');
+const pipeline_wildcards = require('./pipeline_wildcards.js');
 
 var get_uploaded_file_path = (file) => {
 	return file.filepath || file.path;
@@ -373,6 +374,11 @@ var run_job = (params, callback) => {
 	delete params.mail;
 	delete params.job_title;
 
+	// A `*` input creates one execution per sample.  Ensure those executions do
+	// not overwrite one fixed output file, and propagate the generated wildcard
+	// through downstream modules.  Aggregate `$`/`€` inputs are unaffected.
+	pipeline_wildcards.preserve_fanout_outputs(params);
+
 	if (mail == "Your email address")
 		mail = "";
 
@@ -382,8 +388,8 @@ var run_job = (params, callback) => {
 	}
 
 	if (mail != "" && !mailer.is_configured()) {
-		callback(400, 'The server mailer is not configured')
-		return;
+		console.log(token + ': email recipient ignored because the mailer is not configured');
+		mail = "";
 	}
 
 	// Verification of the existance of the token
@@ -467,7 +473,7 @@ exports.expose_status = function (app) {
 	app.get('/status', function (req, res) {
 		messages = []
 		if (!config_module.mailer.__enabled) {
-			messages.push("No mail account configured for the server. Email updates are disabled.");
+			messages.push("Email notifications are disabled because no mail account is configured. This does not prevent analyses from running.");
 		}
 
 		// If no token, send back a general status

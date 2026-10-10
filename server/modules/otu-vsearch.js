@@ -82,7 +82,7 @@ var otu_search = (os, config, callback) => {
 	});
 	child.on('close', function(code) {
 		if (code != 0)
-			callback();
+			callback(os, 'VSEARCH OTU clustering terminated with code ' + code);
 		else {
 			config.params.inputs.uc = tmp_output;
 			config.params.params.ordered = config.params.params.ordered_vsearch;

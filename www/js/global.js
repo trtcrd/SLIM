@@ -159,10 +159,11 @@ var load_modules = (log) => {
 	file_manager.futur_files = {};
 	__next_id = 0;
 
-	// Reload optional mail address when present, but do not treat it as a module.
+	// Email notification settings are local to a run, not part of a reproducible
+	// pipeline.  Do not restore a stale recipient from an imported configuration.
 	let mail = document.getElementById('mail');
 	if (mail)
-		mail.value = log.mail ? log.mail : "";
+		mail.value = "";
 
 	let job_title = document.getElementById('job_title');
 	if (job_title)
@@ -309,6 +310,7 @@ down_conf.onclick = () => {
 	var conf = get_config();
 	store_wildcard_creator_suggestions(conf);
 	delete conf.token;
+	delete conf.mail;
 	var data = new Blob([JSON.stringify(conf)], {type: 'text/plain'});
 	var textFile = window.URL.createObjectURL(data);
 	var link = document.createElement('a');

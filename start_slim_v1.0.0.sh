@@ -354,6 +354,26 @@ cleanup_old_containers_and_images()
     done < <("${engine}" images -f "dangling=true" -q)
 }
 
+verify_racon_sources()
+{
+    local required=(
+        "lib/racon/source/CMakeLists.txt"
+        "lib/racon/deps/bioparser/CMakeLists.txt"
+        "lib/racon/deps/edlib/CMakeLists.txt"
+        "lib/racon/deps/spoa/CMakeLists.txt"
+        "lib/racon/deps/thread_pool/CMakeLists.txt"
+    )
+    local file
+
+    for file in "${required[@]}"; do
+        if [ ! -f "${file}" ]; then
+            echo "Error: Racon build sources are missing (${file})."
+            echo "Run: bash get_dependencies_slim_v1.0.0.sh"
+            exit 1
+        fi
+    done
+}
+
 ensure_singlem_db()
 {
     local engine="$1"
@@ -601,6 +621,7 @@ build_mail_env_args()
     fi
 }
 
+verify_racon_sources
 stop_existing_slim_containers "${engine}"
 cleanup_old_containers_and_images "${engine}"
 
@@ -646,13 +667,17 @@ fi
 build_mail_env_args
 
 echo "Starting SLIM."
-"${engine}" run \
-    --name "${CONTAINER_NAME}" \
-    --restart unless-stopped \
-    -p "${port}" \
-    "${DATABASE_RUNTIME_ARGS[@]}" \
-    "${MAIL_ENV_ARGS[@]}" \
-    -d "${IMAGE_NAME}"
+CONTAINER_RUN_ARGS=(
+    --name "${CONTAINER_NAME}"
+    --restart unless-stopped
+    -p "${port}"
+)
+CONTAINER_RUN_ARGS+=("${DATABASE_RUNTIME_ARGS[@]}")
+if [ "${#MAIL_ENV_ARGS[@]}" -gt 0 ]; then
+    CONTAINER_RUN_ARGS+=("${MAIL_ENV_ARGS[@]}")
+fi
+CONTAINER_RUN_ARGS+=(-d "${IMAGE_NAME}")
+"${engine}" run "${CONTAINER_RUN_ARGS[@]}"
 
 echo "SLIM is running at $(slim_url_from_port_mapping "${port}")"
 if [ -n "${caddy_domain}" ]; then

@@ -7,6 +7,13 @@ The `mergepair-vsearch` module assembles paired-end reads with VSEARCH. For stor
 * Forward reads: FASTQ file containing R1 reads.
 * Reverse reads: FASTQ file containing R2 reads.
 
+Wildcard input pairs are matched by their shared sample portion. For example,
+`sample*_R1.fastq` and `sample*_R2.fastq` produce one merged FASTA per sample.
+SLIM automatically keeps the wildcard in downstream per-sample output names so
+that one sample cannot overwrite another. Modules such as `swarm3` then
+aggregate those per-sample FASTAs while retaining their filenames as sample
+identifiers.
+
 ## Output
 
 Merged FASTA file containing assembled reads.

@@ -51,135 +51,16 @@ async function runModule(os, config) {
     if (isonclustK || isonclustW)
         baseOptions.push('-k', isonclustK, '-w', isonclustW);
 
-    const readFiles = resolveFastqFiles(directory, config.params.inputs.fastq);
-
-    if (readFiles.length > 1) {
-        await runParallelSamplePreparation({
-            runner,
-            directory,
-            logFile: config.log,
-            baseOptions,
-            readFiles,
-            cores,
-            outputs: config.params.outputs
-        });
-    } else {
-        const options = baseOptions.concat(['-t', String(cores), '-X', 'all']);
-        await runCommand({
-            command: runner,
-            options,
-            logPath: directory + config.log,
-            displayName: 'run_isonclust3'
-        });
-    }
-}
-
-function resolveFastqFiles(directory, inputPattern) {
-    const pattern = String(inputPattern || '').replace(/€/g, '*').replace(/\$/g, '*');
-
-    if (!pattern.includes('*')) {
-        return fs.existsSync(directory + pattern) ? [pattern] : [];
-    }
-
-    const prefix = pattern.substring(0, pattern.indexOf('*'));
-    const suffix = pattern.substring(pattern.indexOf('*') + 1);
-
-    return fs.readdirSync(directory)
-        .filter((filename) => filename.startsWith(prefix) && filename.endsWith(suffix))
-        .filter((filename) => fs.statSync(directory + filename).isFile())
-        .sort();
-}
-
-async function runParallelSamplePreparation({ runner, directory, logFile, baseOptions, readFiles, cores, outputs }) {
-    cleanPreviousOutputs(directory, outputs);
-
-    const maxParallel = Math.max(1, Math.min(8, cores, readFiles.length));
-    const workerThreads = 1;
-    const prepLogs = readFiles.map((_, idx) => directory + 'isonclust3_results/sample_metadata/sample_' + idx + '.server_prepare.log');
-    const mainLogPath = directory + logFile;
-
-    fs.mkdirSync(directory + 'isonclust3_results/sample_metadata', { recursive: true });
-    fs.appendFileSync(mainLogPath, '--- Parallel sample preparation ---\n');
-    fs.appendFileSync(mainLogPath, 'Samples: ' + readFiles.length + '\n');
-    fs.appendFileSync(mainLogPath, 'Parallel jobs: ' + maxParallel + '\n');
-    fs.appendFileSync(mainLogPath, 'Threads per sample preparation job: ' + workerThreads + '\n');
-    fs.appendFileSync(mainLogPath, 'VSEARCH quality/length filtering is parallelized by sample batches, not by VSEARCH threads.\n');
-
-    const jobs = readFiles.map((readFile, idx) => {
-        const metadataFile = 'isonclust3_results/sample_metadata/sample_' + idx + '.metadata.tsv';
-        const options = baseOptions.concat([
-            '-t', String(workerThreads),
-            '-X', 'prepare',
-            '-F', readFile,
-            '-D', metadataFile
-        ]);
-
-        return () => runCommand({
-            command: runner,
-            options,
-            logPath: prepLogs[idx],
-            displayName: 'run_isonclust3'
-        });
-    });
-
-    const results = await runLimited(jobs, maxParallel);
-
-    for (const prepLog of prepLogs) {
-        if (fs.existsSync(prepLog))
-            fs.appendFileSync(mainLogPath, fs.readFileSync(prepLog));
-    }
-
-    const failed = results.find((result) => result && result.error);
-    if (failed)
-        throw failed.error;
-
-    const clusterOptions = baseOptions.concat([
-        '-t', String(cores),
-        '-X', 'cluster',
-        '-K', String(readFiles.length)
-    ]);
-
+    // The runner owns the complete aggregate workflow: prepare every matching
+    // sample, prefix read headers with the sample ID, pool the reads, cluster
+    // the pool once, and build one sample-by-OTU table.
+    const options = baseOptions.concat(['-t', String(cores), '-X', 'all']);
     await runCommand({
         command: runner,
-        options: clusterOptions,
-        logPath: mainLogPath,
+        options,
+        logPath: directory + config.log,
         displayName: 'run_isonclust3'
     });
-}
-
-function cleanPreviousOutputs(directory, outputs) {
-    fs.rmSync(directory + 'isonclust3_results', { recursive: true, force: true });
-
-    for (const key of ['otus_table', 'centroids', 'stats', 'results_archive']) {
-        if (outputs[key])
-            fs.rmSync(directory + outputs[key], { force: true });
-    }
-}
-
-async function runLimited(jobs, limit) {
-    const results = new Array(jobs.length);
-    const executing = new Set();
-
-    for (let idx = 0; idx < jobs.length; idx++) {
-        const promise = jobs[idx]()
-            .then(() => {
-                results[idx] = { ok: true };
-            })
-            .catch((error) => {
-                results[idx] = { error };
-            })
-            .finally(() => {
-                executing.delete(promise);
-            });
-
-        executing.add(promise);
-
-        if (executing.size >= limit)
-            await Promise.race(executing);
-    }
-
-    await Promise.all(executing);
-    return results;
 }
 
 function runCommand({ command, options, logPath, displayName }) {

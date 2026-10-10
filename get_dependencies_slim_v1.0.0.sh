@@ -92,7 +92,7 @@ download_tar_gz() {
     (
         set -e
         cd "${dir}"
-        curl -fL -o "${archive}" "${url}"
+        curl -fL --retry 5 --retry-delay 5 --retry-all-errors -o "${archive}" "${url}"
         tar -xzf "${archive}"
         mv "${extracted}"/* .
     )
@@ -545,6 +545,48 @@ prepare_ashure() {
     fi
 }
 
+prepare_racon() {
+    download_tar_gz \
+        "Racon 1.5.0 source" \
+        "racon/source" \
+        "https://codeload.github.com/lbcb-sci/racon/tar.gz/refs/tags/1.5.0" \
+        "racon-1.5.0.tar.gz" \
+        "racon-1.5.0" \
+        "CMakeLists.txt"
+
+    download_tar_gz \
+        "Racon bioparser 3.0.15" \
+        "racon/deps/bioparser" \
+        "https://codeload.github.com/rvaser/bioparser/tar.gz/refs/tags/3.0.15" \
+        "bioparser-3.0.15.tar.gz" \
+        "bioparser-3.0.15" \
+        "CMakeLists.txt"
+
+    download_tar_gz \
+        "Racon edlib 1.2.7" \
+        "racon/deps/edlib" \
+        "https://codeload.github.com/martinsos/edlib/tar.gz/refs/tags/v1.2.7" \
+        "edlib-1.2.7.tar.gz" \
+        "edlib-1.2.7" \
+        "CMakeLists.txt"
+
+    download_tar_gz \
+        "Racon spoa 4.0.8" \
+        "racon/deps/spoa" \
+        "https://codeload.github.com/rvaser/spoa/tar.gz/refs/tags/4.0.8" \
+        "spoa-4.0.8.tar.gz" \
+        "spoa-4.0.8" \
+        "CMakeLists.txt"
+
+    download_tar_gz \
+        "Racon thread_pool 4.0.0" \
+        "racon/deps/thread_pool" \
+        "https://codeload.github.com/rvaser/thread_pool/tar.gz/refs/tags/4.0.0" \
+        "thread_pool-4.0.0.tar.gz" \
+        "thread_pool-4.0.0" \
+        "CMakeLists.txt"
+}
+
 download_tar_gz \
     "jQuery Autocomplete" \
     "jquery-autocomplete" \
@@ -578,6 +620,8 @@ download_tar_gz \
     "src/vsearch.cc"
 
 prepare_casper
+
+prepare_racon
 
 download_tar_gz \
     "SWARM3" \

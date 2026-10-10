@@ -17,21 +17,24 @@ class MergeVsearchModule extends Module {
 	}
 
 	input_change () {
-		// If the names are standards
-		if (this.fwd.value.includes('_fwd.fastq') && this.rev.value.includes('_rev.fastq')) {
-			// Get the main name
-			var i1 = this.fwd.value.indexOf('_fwd.fastq');
-			var sub1 = this.fwd.value.substring(0, i1);
-			var i2 = this.rev.value.indexOf('_rev.fastq');
-			var sub2 = this.rev.value.substring(0, i2);
+		let fwd_prefix = this.pair_prefix(this.fwd.value, true);
+		let rev_prefix = this.pair_prefix(this.rev.value, false);
 
-			if (sub2 == sub1) {
-				let output_file = this.dom.getElementsByClassName('output_zone')[0];
-				output_file = output_file.getElementsByTagName('input')[0];
-				output_file.value = sub1 + '_merge-vsearch.fasta';
-				output_file.onchange();
-			}
+		if (fwd_prefix != null && fwd_prefix == rev_prefix) {
+			let output_file = this.dom.getElementsByClassName('output_zone')[0];
+			output_file = output_file.getElementsByTagName('input')[0];
+			let separator = fwd_prefix == '' || /[_\-.]$/.test(fwd_prefix) ? '' : '_';
+			output_file.value = fwd_prefix + separator + 'merge-vsearch.fasta';
+			output_file.onchange();
 		}
+	}
+
+	pair_prefix (filename, forward) {
+		let stem = filename.replace(/\.(fastq|fq)(\.gz)?$/i, '');
+		let direction = forward ? '(?:R1|1|fwd|forward)' : '(?:R2|2|rev|reverse)';
+		let match = stem.match(new RegExp('([._-])' + direction + '(?:[._-]001)?$', 'i'));
+
+		return match ? stem.substring(0, match.index) : null;
 	}
 };
 

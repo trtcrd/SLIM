@@ -34,9 +34,9 @@ The module does not perform taxonomy. The representative FASTA and OTU table can
 8. When a primer FASTA is supplied, the whole cluster and representative seed are kept or reverse-complemented by primer-majority voting.
 9. Final PacBio cluster/OTU representatives.
 
-For OTU-table counting, SLIM uses the sample prefix added to each pooled read header before clustering. Counts therefore come directly from retained isONclust3 cluster membership instead of remapping reads to the final representative FASTA.
+For OTU-table counting, SLIM adds the source sample name to every retained read header before pooling. It then invokes isONclust3 once on the combined reads. Counts therefore come directly from retained cluster membership, and the resulting OTU table has one column per input sample instead of one independent table per file.
 
-Per-sample preparation steps are run in parallel when multiple input FASTQ files are provided. VSEARCH quality and length filtering are not effectively multithreaded in this workflow, so SLIM batches samples instead, launching up to 8 preparation jobs or the available core count, whichever is lower. Prepared sample metadata is loaded in the original input order before pooling reads for isONclust3.
+The single module workflow may parallelize its internal per-sample quality and length preparation. Those preparation workers are not separate isONclust3 runs: all successfully prepared reads are combined before the one clustering step.
 
 ## Inputs
 
@@ -93,7 +93,7 @@ When a primer FASTA is supplied, SLIM scores each seed-oriented cluster by looki
 
 Default: `3`.
 
-Nanopore only. The module allows `1` to `4` polishing iterations per retained cluster. Clusters with one retained read are not polished with Racon, because there is no within-cluster read support to improve the seed; SLIM keeps the isONclust3 representative seed instead.
+Nanopore only. The module accepts between `1` and `4` polishing iterations per retained cluster. Clusters with one retained read are not polished with Racon, because there is no within-cluster read support to improve the seed; SLIM keeps the isONclust3 representative seed instead.
 
 ## Outputs
 

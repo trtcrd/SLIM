@@ -41,6 +41,13 @@ exports.run = function (os, config, callback) {
 	});
 	child.on('close', function(code) {
 		if (code == 0) {
+			let tmp_path = directory + tmp_fasta;
+			if (!fs.existsSync(tmp_path) || fs.statSync(tmp_path).size == 0) {
+				fs.unlink(tmp_path, ()=>{});
+				callback(os, 'No read pairs were merged. Check the forward/reverse pairing and the merge length, overlap, and mismatch settings.');
+				return;
+			}
+
 			// Dereplicate
 			let derep_config = {params: {
 				inputs: {fasta: tmp_fasta},
@@ -48,11 +55,11 @@ exports.run = function (os, config, callback) {
 				params: {}
 			},log:config.log};
 			derep.run(os, derep_config, (os, msg)=>{
-				fs.unlink(directory + tmp_fasta, ()=>{});
-				callback(os, null);
+				fs.unlink(tmp_path, ()=>{});
+				callback(os, msg);
 			});
 		}
 		else
-			callback(os, "vsearch --fastq_filter terminate on code " + code);
+			callback(os, "vsearch --fastq_mergepairs terminated with code " + code);
 	});
 };

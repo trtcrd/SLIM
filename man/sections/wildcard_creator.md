@@ -12,6 +12,8 @@ Use only one `*` wildcard. More specific patterns are safer and reduce the risk 
 
 The suggested wildcard can be edited, but this is not recommended unless you understand the downstream file-matching behavior.
 
+Per-sample processing modules run once for each match and receive sample-specific output names. Aggregate OTU/ASV modules instead receive the complete match set in one workflow: isONclust3 prefixes long-read headers before pooling, VSEARCH/Swarm/OPTICS retain source filenames as sample IDs, and DADA2 retains paired FASTQ files as separate samples. This produces one cross-sample OTU/ASV table rather than one table per input file.
+
 ## Example
 
 Uploaded files:

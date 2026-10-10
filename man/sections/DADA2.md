@@ -16,6 +16,8 @@ Forward FASTQ files. These reads must already be oriented and primer-trimmed.
 
 Reverse FASTQ files. These reads must already be oriented and primer-trimmed.
 
+Wildcard-creator patterns remain aggregated: all matching forward/reverse files are passed to one DADA2 workflow and produce one ASV table. Unlike sequence-similarity OTU clustering, DADA2 retains the paired files as per-sample inputs rather than concatenating their reads. File names must follow the tag-to-sample/demultiplexer naming convention so that DADA2 can match pairs, libraries, and sample IDs.
+
 ## Parameters
 
 ### Error Model

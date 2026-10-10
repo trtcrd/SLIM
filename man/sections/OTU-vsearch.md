@@ -6,7 +6,7 @@ The `otu-vsearch` module clusters FASTA reads into OTUs with VSEARCH and creates
 
 ### Input FASTA Files
 
-Select one or more FASTA files. The module merges the selected files, records read origin, then clusters the merged file.
+Select one or more FASTA files. Wildcard-creator patterns are supported. SLIM dereplicates and merges all matching files into one clustering input while recording each source filename as the sample ID. VSEARCH is run once on that combined input, and the source records are used to build one sample-by-OTU table.
 
 ## Parameters
 

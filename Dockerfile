@@ -388,19 +388,29 @@ ENV PATH=/root/miniforge3/envs/isonclust3/bin:$PATH
 
 # Build Racon from source instead of using the bioconda binary. Some older
 # deployment CPUs crash with exit code 132 on the prebuilt Racon package.
-RUN git clone --recursive --branch 1.5.0 https://github.com/lbcb-sci/racon.git /tmp/racon && \
-    cmake -S /tmp/racon -B /tmp/racon/build \
+COPY lib/racon/source /tmp/racon
+COPY lib/racon/deps/bioparser /tmp/bioparser
+COPY lib/racon/deps/edlib /tmp/edlib
+COPY lib/racon/deps/spoa /tmp/spoa
+COPY lib/racon/deps/thread_pool /tmp/thread_pool
+RUN cmake -S /tmp/racon -B /tmp/racon/build \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/root/miniforge3/envs/isonclust3 \
         -DCMAKE_C_COMPILER=/usr/bin/gcc \
         -DCMAKE_CXX_COMPILER=/usr/bin/g++ \
         -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG" \
         -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG" \
+        -DFETCHCONTENT_SOURCE_DIR_BIOPARSER=/tmp/bioparser \
+        -DFETCHCONTENT_SOURCE_DIR_EDLIB=/tmp/edlib \
+        -DFETCHCONTENT_SOURCE_DIR_SPOA=/tmp/spoa \
+        -DFETCHCONTENT_SOURCE_DIR_THREAD_POOL=/tmp/thread_pool \
+        -Dracon_build_tests=OFF \
         -Dracon_enable_cuda=OFF && \
     cmake --build /tmp/racon/build --parallel $(nproc) && \
     install -m 0755 /tmp/racon/build/bin/racon /root/miniforge3/envs/isonclust3/bin/racon && \
     /root/miniforge3/envs/isonclust3/bin/racon --version && \
-    rm -rf /tmp/racon
+    rm -rf \
+        /tmp/racon /tmp/bioparser /tmp/edlib /tmp/spoa /tmp/thread_pool
 
 # ----- copy python_scripts -----
 COPY lib/python_scripts /app/lib/python_scripts
