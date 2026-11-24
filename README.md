@@ -31,19 +31,19 @@ Download the latest stable archive:
 ```bash
 sudo apt-get update
 sudo apt-get install -y git curl
-curl -OL https://github.com/trtcrd/SLIM/archive/v1.0.0.tar.gz
-tar -xzvf v1.0.0.tar.gz
-cd SLIM-1.0.0
+curl -OL https://github.com/trtcrd/SLIM/archive/v2.0.0.tar.gz
+tar -xzvf v2.0.0.tar.gz
+cd SLIM-2.0.0
 ```
 
 Then fetch bundled dependencies and build/start the container:
 
 ```bash
-bash get_dependencies_slim_v1.0.0.sh
-bash start_slim_v1.0.0.sh
+bash get_dependencies_slim_v2.0.0.sh
+bash start_slim_v2.0.0.sh
 ```
 
-`get_dependencies_slim_v1.0.0.sh` downloads third-party source archives and prepares local dependency folders. This includes Racon 1.5.0 and its pinned CMake dependencies, so the container build does not need to clone or download Racon from GitHub. `start_slim_v1.0.0.sh` builds the image, stops/replaces any running SLIM container, removes dangling images, and starts the web server.
+`get_dependencies_slim_v2.0.0.sh` downloads third-party source archives and prepares local dependency folders. This includes Racon 1.5.0 and its pinned CMake dependencies, so the container build does not need to clone or download Racon from GitHub. `start_slim_v2.0.0.sh` builds the image, stops/replaces any running SLIM container, removes dangling images, and starts the web server.
 
 > Restarting SLIM replaces the current container. Files uploaded to the previous container and analysis results stored there are removed.
 
@@ -52,26 +52,26 @@ bash start_slim_v1.0.0.sh
 Show all options:
 
 ```bash
-bash start_slim_v1.0.0.sh --help
+bash start_slim_v2.0.0.sh --help
 ```
 
 Common options:
 
 ```bash
 # Use Docker instead of Podman
-bash start_slim_v1.0.0.sh --docker
+bash start_slim_v2.0.0.sh --docker
 
 # Expose SLIM on another host port
-bash start_slim_v1.0.0.sh --port 8081:80
+bash start_slim_v2.0.0.sh --port 8081:80
 
 # Generate an ignored Caddyfile and bind SLIM locally for HTTPS
-bash start_slim_v1.0.0.sh --caddy-domain slim.example.org
+bash start_slim_v2.0.0.sh --caddy-domain slim.example.org
 
 # Enable shotgun modules and download/mount their databases
-bash start_slim_v1.0.0.sh --shotgun-databases
+bash start_slim_v2.0.0.sh --shotgun-databases
 
 # Choose a Kraken2 database when shotgun modules are enabled
-bash start_slim_v1.0.0.sh --shotgun-databases --kraken-db viral
+bash start_slim_v2.0.0.sh --shotgun-databases --kraken-db viral
 ```
 
 Available Kraken2 choices are `viral`, `standard_8`, `standard_16`, `pluspf_8`, and `pluspf_16`. The default is `pluspf_16`.
@@ -95,7 +95,7 @@ Shotgun databases are large and are kept outside the Docker image. By default, S
 Start with `--shotgun-databases` to download/mount the databases and expose the modules:
 
 ```bash
-bash start_slim_v1.0.0.sh --shotgun-databases
+bash start_slim_v2.0.0.sh --shotgun-databases
 ```
 
 Manual download helpers are also available after the SLIM image exists:
@@ -133,7 +133,7 @@ The easiest production setup is to give the server a DNS name and put a small HT
 3. Open ports `80/tcp` and `443/tcp` on the server firewall. Start SLIM with the DNS name:
 
 ```bash
-bash start_slim_v1.0.0.sh --caddy-domain slim.example.org
+bash start_slim_v2.0.0.sh --caddy-domain slim.example.org
 ```
 
 This writes `deployment/Caddyfile`, keeps it out of version control, and binds SLIM to `127.0.0.1:8080` so plain HTTP is not exposed publicly. The generated Caddyfile looks like:
@@ -308,7 +308,7 @@ To add a module, see:
 
 ## Version History
 
-### v1.1.0
+### v2.0.0
 
 - Updated version of most dependencies.
 - Updated Dockerfile and bash scripts for better handling of dependencies and for x86_64 and ARM64 container builds.

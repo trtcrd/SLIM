@@ -20,10 +20,10 @@ Avoid exposing every command-line option at first. Start with the options that a
 
 Dependencies are prepared in two places:
 
-* `get_dependencies_slim_v1.0.0.sh`: downloads or prepares source archives under `lib/`.
+* `get_dependencies_slim_v2.0.0.sh`: downloads or prepares source archives under `lib/`.
 * `Dockerfile`: copies dependencies into the image and installs/builds them.
 
-For tools cloned from GitHub, add a guarded download step to `get_dependencies_slim_v1.0.0.sh`. For tools that must be pinned, prefer release archives or explicit versions.
+For tools cloned from GitHub, add a guarded download step to `get_dependencies_slim_v2.0.0.sh`. For tools that must be pinned, prefer release archives or explicit versions.
 
 For example, VSEARCH is copied from `lib/vsearch` and built in the Docker image before modules use `/app/lib/vsearch/bin/vsearch`.
 
@@ -160,8 +160,8 @@ If your bash script receives the `€` marker from `input_file_text`, convert it
 
 ## Testing a Module
 
-1. Run `bash get_dependencies_slim_v1.0.0.sh` if new dependency folders are needed.
-2. Build/start SLIM with `bash start_slim_v1.0.0.sh`.
+1. Run `bash get_dependencies_slim_v2.0.0.sh` if new dependency folders are needed.
+2. Build/start SLIM with `bash start_slim_v2.0.0.sh`.
 3. Open `http://localhost:8080/`.
 4. Upload a small test dataset.
 5. Run the new module alone.

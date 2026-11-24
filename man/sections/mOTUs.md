@@ -88,7 +88,7 @@ The mOTUs marker-gene database is kept outside the Docker image:
 lib/mOTUs/db/db_mOTU
 ```
 
-`start_slim_v1.0.0.sh` downloads it after the image is built if it is not already present, then mounts it into the container at:
+`start_slim_v2.0.0.sh` downloads it after the image is built if it is not already present, then mounts it into the container at:
 
 ```text
 /app/lib/mOTUs/db/db_mOTU

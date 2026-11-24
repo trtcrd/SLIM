@@ -53,7 +53,7 @@ The database selected in the module must exist in:
 /app/lib/kraken2/db
 ```
 
-When using the `start_slim_v1.0.0.sh` script, this directory is mounted from:
+When using the `start_slim_v2.0.0.sh` script, this directory is mounted from:
 
 ```
 lib/kraken2/db

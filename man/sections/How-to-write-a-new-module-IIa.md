@@ -32,7 +32,7 @@ This keeps the interface small while still covering the major ASHURE controls ex
 
 ## Dependency Download
 
-ASHURE and its supporting code are prepared by `get_dependencies_slim_v1.0.0.sh`. The dependency script should:
+ASHURE and its supporting code are prepared by `get_dependencies_slim_v2.0.0.sh`. The dependency script should:
 
 1. Create or refresh `lib/ASHURE`.
 2. Download the pinned ASHURE release.
@@ -60,7 +60,7 @@ The server module should activate or call this environment only when the ASHURE 
 Build/start the container:
 
 ```bash
-bash start_slim_v1.0.0.sh
+bash start_slim_v2.0.0.sh
 ```
 
 Then enter the running container:

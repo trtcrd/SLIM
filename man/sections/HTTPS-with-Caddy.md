@@ -17,7 +17,7 @@ You need:
 Start SLIM with your DNS name. The start script writes a local `deployment/Caddyfile`, which is ignored by git, and binds SLIM to `127.0.0.1` so the raw HTTP service is not exposed directly on the public network:
 
 ```bash
-bash start_slim_v1.0.0.sh --caddy-domain slim.example.org
+bash start_slim_v2.0.0.sh --caddy-domain slim.example.org
 ```
 
 With this setting, SLIM is reachable only from the server itself at:

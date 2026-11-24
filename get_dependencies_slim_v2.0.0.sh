@@ -185,7 +185,7 @@ prepare_motus_db_dir() {
     mkdir -p mOTUs/db
 
     if [ -d "mOTUs/db/db_mOTU" ] && { [ ! -r "mOTUs/db/db_mOTU" ] || [ ! -x "mOTUs/db/db_mOTU" ]; }; then
-        mark_ok "mOTUs database directory present, but permissions need repair; run ./download_motus_db.sh or ./start_slim_v1.0.0.sh after image build"
+        mark_ok "mOTUs database directory present, but permissions need repair; run ./download_motus_db.sh or ./start_slim_v2.0.0.sh after image build"
     elif [ -d "mOTUs/db/db_mOTU" ] && find "mOTUs/db/db_mOTU" -type f -name "*.bwt" 2>/dev/null | grep -q .; then
         mark_ok "mOTUs database directory"
     else

@@ -1,6 +1,6 @@
 {
   "name": "amplicon_pipeline",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Node.js on Docker",
   "author": "Yoann Dufresne <yoann.dufresne0@gmail.com>",
   "main": "server.js",

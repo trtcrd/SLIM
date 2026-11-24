@@ -79,7 +79,7 @@ When a module finishes, download icons appear next to its output fields. You can
 
 ## HTTPS Access
 
-For a public server, use a DNS name and put Caddy in front of SLIM. Start SLIM with `bash start_slim_v1.0.0.sh --caddy-domain slim.example.org` to generate an ignored local Caddyfile and bind SLIM to localhost, then let Caddy expose the HTTPS URL. See [HTTPS with Caddy](/man/sections/HTTPS-with-Caddy.md).
+For a public server, use a DNS name and put Caddy in front of SLIM. Start SLIM with `bash start_slim_v2.0.0.sh --caddy-domain slim.example.org` to generate an ignored local Caddyfile and bind SLIM to localhost, then let Caddy expose the HTTPS URL. See [HTTPS with Caddy](/man/sections/HTTPS-with-Caddy.md).
 
 ## Optional Shotgun Modules
 
@@ -88,7 +88,7 @@ By default, SLIM starts without the large shotgun metagenomics databases, so Kra
 Start SLIM with `--shotgun-databases` to download/mount those databases and expose the shotgun modules:
 
 ```bash
-bash start_slim_v1.0.0.sh --shotgun-databases
+bash start_slim_v2.0.0.sh --shotgun-databases
 ```
 
 Ancient-DNA helper modules are present in the codebase but are not exposed in the default module list.

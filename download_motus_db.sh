@@ -76,7 +76,7 @@ fi
 if ! "${engine}" image inspect "${IMAGE_NAME}" >/dev/null 2>&1; then
     echo "Image ${IMAGE_NAME} was not found."
     echo "This downloader uses the motus executable inside the built SLIM image."
-    echo "Run start_slim_v1.0.0.sh, or build the image first with:"
+    echo "Run start_slim_v2.0.0.sh, or build the image first with:"
     echo "  ${engine} build -t ${IMAGE_NAME} ."
     echo "Then run this script again."
     exit 1
